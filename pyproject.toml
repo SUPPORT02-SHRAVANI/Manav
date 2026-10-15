@@ -18,6 +18,13 @@ dependencies = [
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
+# Frappe and ERPNext versions this app works with. Frappe Cloud reads this to offer the app on a
+# bench (added 2026-10-15; without it "Add app from GitHub" refuses the repository). The app uses
+# ERPNext's Quotation, Item and Customer and imports ERPNext code, so ERPNext is required too.
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0,<17.0.0"
+erpnext = ">=16.0.0,<17.0.0"
+
 # These dependencies are only installed when developer mode is enabled
 [tool.bench.dev-dependencies]
 # package_name = "~=1.1.0"

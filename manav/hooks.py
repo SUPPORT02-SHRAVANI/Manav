@@ -8,7 +8,12 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+# CHANGE NOTE
+# Date: 2026-10-15
+# Change: ERPNext is a required app.
+# Reason: Manav adds fields to and code on ERPNext's Quotation, Item and Customer; installing it on
+# a site without ERPNext (e.g. through Frappe Cloud) must be refused rather than half work.
+required_apps = ["frappe/erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

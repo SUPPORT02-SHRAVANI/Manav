@@ -4,6 +4,19 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-15
 
+**App can be added on Frappe Cloud: Frappe/ERPNext versions declared, ERPNext required.**
+
+- Reason: Frappe Cloud's "Add app from GitHub" refused the repository: "Could not find a
+  compatible Frappe version in pyproject.toml ... ensure '[tool.bench.frappe-dependencies]' is
+  defined".
+- Changes: `pyproject.toml` has `[tool.bench.frappe-dependencies]` with frappe and erpnext
+  `>=16.0.0,<17.0.0` (the bench runs Frappe 16.33.1; the app uses ERPNext 16's Quotation, Item and
+  Customer). `manav/hooks.py`: `required_apps = ["frappe/erpnext"]`.
+- Testing: pyproject.toml parses (tomllib) with the new section; hooks.py compiles. Not tested on
+  Frappe Cloud (needs the change pushed to GitHub).
+- Pending: commit and push. `manav/manav/legacy_data/` is in .gitignore, so the old data and the
+  import tools that read it are not in the repository; the imports run only on this server.
+
 **Old quotations made into ERPNext Quotations, with their lines from the report "35-Quotation-Item".**
 
 - Reason: the user supplied the old system's report of all quotation lines (2788 pages; also as
