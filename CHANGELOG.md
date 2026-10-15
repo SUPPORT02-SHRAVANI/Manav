@@ -4,6 +4,33 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-15
 
+**Copy items, prices, quotation print setup and customers to another site (Frappe Cloud).**
+
+- Reason: the user asked to upload all item data and the quotation printing data to
+  https://mmblr.frappe.cloud/, choosing all four groups (items, item prices, quotation print
+  setup, customers and contacts) and to skip records the site already has. Frappe Cloud gives no
+  bench command line, so the data has to go over the site's API.
+- Changes:
+  - `manav/manav/site_transfer.py`: `export()` (run on manav.local) writes
+    `sites/<site>/private/transfer/manav_transfer.json.gz` with the records of UOM, Brand, Item
+    Group, Price List (selling), Region Zone, Territory, Customer Group, Sales Person, Employee
+    Master, Letter Head, Terms and Conditions, Quotation Type, Item, Item Price, Quotation Item /
+    Sub Item Master, Customer, Address and Contact (those of customers), Customer Contact Person
+    and CRM Organization, plus the files they show (item photos, letter head pictures).
+    `receive_files()`, `receive()` and `relink()` (System Manager only) store them on the other
+    site under their own names, skipping names already there. Company-bound tables (item
+    defaults, customer accounts, credit limits) are left out; a customer's mobile/e-mail summary
+    is left out so ERPNext does not make a second contact.
+  - `tools/push_to_site.py`: sends the transfer file in parts with the other site's API key, read
+    from a file outside the project (%USERPROFILE%\.manav_transfer_site.json); rerunnable; writes
+    the failed records next to the transfer file.
+- Testing: both files compile; the picture-url pattern was checked on sample HTML. Not run: the
+  export needs the server, the receive side needs this version of the app deployed on the cloud
+  site, and the push needs its API key.
+- Pending: deploy this version on mmblr.frappe.cloud (Manav installed there, migrate run), an API
+  key of a System Manager there, the export on manav.local, the push. The transfer file holds
+  customer details and should be deleted afterwards.
+
 **GitHub CI: test bench on Frappe 16 with ERPNext.**
 
 - Reason: the "Server" job of the CI workflow failed after the push (exit code 1; the user pasted
