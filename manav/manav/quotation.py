@@ -20,11 +20,22 @@ cannot hold. The per-machine prices therefore stay in Quotation Sub Item Master,
 returns them for the machines on the quotation.
 
 Created: 2026-10-12, when the quotation process was moved from Quotation Head to ERPNext's Quotation.
+
+CHANGE NOTE
+Date: 2026-10-15
+Change: Added number_sub_items (Sub-Item Sr.No of each sub-item line, on validate).
+Reason: The user asked for the sub-items to be numbered under their machine in the Items table.
+
+CHANGE NOTE
+Date: 2026-10-15
+Change: last_number reads the highest number with Frappe's query builder instead of SQL text.
+Reason: Upgrade-safe rule: no raw SQL on ERPNext's own tables (here tabQuotation).
 """
 
 import json
 
 import frappe
+from frappe.query_builder.functions import Length, Max
 from frappe.utils import cint, getdate, nowdate
 
 
@@ -96,6 +107,21 @@ def get_options(main_item_codes):
 	return result
 
 
+def number_sub_items(doc, method=None):
+	"""Number the sub-items of each machine 1, 2, 3 ... in Sub-Item Sr.No, in the order of the
+	lines (hooked to Quotation's validate in hooks.py). A machine's line has no number. The form
+	numbers them the same way while the user works (number_sub_items in public/js/quotation.js);
+	this keeps the saved numbers right also after lines were moved or deleted."""
+	counts = {}
+	for row in doc.get("items"):
+		main_item_code = row.get("custom_main_item_code")
+		if main_item_code:
+			counts[main_item_code] = counts.get(main_item_code, 0) + 1
+			row.custom_sub_item_sr_no = str(counts[main_item_code])
+		else:
+			row.custom_sub_item_sr_no = None
+
+
 def autoname(doc, method=None):
 	"""Give a Quotation its Manav number, e.g. 26QP000639 (hooked to Quotation in hooks.py).
 
@@ -125,11 +151,16 @@ def last_number(prefix):
 	"""Return the highest running number used with this year + series prefix, 0 when there is none."""
 	highest = 0
 	# All numbers of one prefix have the same length, so the highest name is the highest number.
-	for table in ("tabQuotation", "tabQuotation Head"):
-		last = frappe.db.sql(
-			f"select max(name) from `{table}` where name like %s and char_length(name) = %s",
-			(prefix + "%", len(prefix) + 6),
-		)[0][0]
+	# Frappe's query builder, not SQL text naming ERPNext's table (upgrade-safe; names are ASCII,
+	# so Length counts characters).
+	for doctype in ("Quotation", "Quotation Head"):
+		table = frappe.qb.DocType(doctype)
+		last = (
+			frappe.qb.from_(table)
+			.select(Max(table.name))
+			.where(table.name.like(prefix + "%"))
+			.where(Length(table.name) == len(prefix) + 6)
+		).run()[0][0]
 		if last:
 			highest = max(highest, cint(last[len(prefix) :]))
 	return highest

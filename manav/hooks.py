@@ -124,7 +124,16 @@ after_migrate = [
 doctype_js = {"Quotation": "public/js/quotation.js", "Item": "public/js/item.js"}
 
 # The Manav quotation number (e.g. 26QP000639) for a Quotation that has a principal.
-doc_events = {"Quotation": {"autoname": "manav.manav.quotation.autoname"}}
+# CHANGE NOTE
+# Date: 2026-10-15
+# Change: validate numbers the sub-items of each machine (Sub-Item Sr.No).
+# Reason: The user asked for a column numbering the sub-items in the Items table.
+doc_events = {
+	"Quotation": {
+		"autoname": "manav.manav.quotation.autoname",
+		"validate": "manav.manav.quotation.number_sub_items",
+	}
+}
 
 # Uninstallation
 # ------------

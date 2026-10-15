@@ -14,7 +14,7 @@ What the fields are for:
 - Quotation: the principal (Quotation Type) that decides currency, price list, letter head, terms and
   the quotation number; the customer's reference; the two sales persons printed on the quotation
   (Signed By, Sales Engineer); the Haas Cust ID and machine number of the old system.
-- Quotation Item: "Option of Item" marks a line as an option of a machine on the same quotation;
+- Quotation Item: "Sub-Item of" marks a line as a sub-item (option) of a machine on the same quotation;
   Specifications holds the lines printed under an item (one per line, copied from the Item).
 - Sales Person: the old employee code (M-02, M-36 ...), which the old data uses everywhere.
 - Contact: the old key Customer Code-Sr No, which lets the import find a contact it already loaded.
@@ -29,7 +29,20 @@ Change: The help text of Quotation Item's Specifications describes the lines
 "label : value || value" and "#Title || Column 2 || Column 3".
 Reason: The quotation now prints the specifications as a table of three columns, whose titles come
 from the heading line (S.A.E. and Metric for Haas, Units and the model for Jagdeep).
+
+CHANGE NOTE
+Date: 2026-10-15
+Change: The label of Quotation Item's custom_main_item_code is "Sub-Item of" (was "Option of Item").
+Reason: The user asked for options to be called sub-items on the quotation form.
+
+CHANGE NOTE
+Date: 2026-10-15
+Change: Added Quotation Item's "Sub-Item Sr.No" (custom_sub_item_sr_no), shown in the Items table
+right after No. (place_sub_item_no_first); Quantity is one column wide there instead of two.
+Reason: The user asked for a column numbering the sub-items beside the row number.
 """
+
+import json
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
@@ -112,11 +125,23 @@ ERPNEXT_FIELDS = {
 	"Quotation Item": [
 		{
 			"fieldname": "custom_main_item_code",
-			"label": "Option of Item",
+			"label": "Sub-Item of",
 			"fieldtype": "Data",
 			"insert_after": "item_name",
 			"read_only": 1,
-			"description": "Filled by Add Options: the machine this line is an option of",
+			"description": "Filled by Add Sub-Items: the machine this line is a sub-item (option) of",
+		},
+		{
+			# Shown in the Items table right after No. (see SUB_ITEM_NO_FIRST below).
+			"fieldname": "custom_sub_item_sr_no",
+			"label": "Sub-Item Sr.No",
+			"fieldtype": "Data",
+			"insert_after": "item_code",
+			"read_only": 1,
+			"in_list_view": 1,
+			"columns": 1,
+			"no_copy": 1,
+			"description": "Number of a sub-item under its machine (1, 2, 3 ...); set on saving",
 		},
 		{
 			"fieldname": "custom_specifications",
@@ -171,6 +196,8 @@ def setup_erpnext_fields():
 	"""
 	fields = {dt: f for dt, f in ERPNEXT_FIELDS.items() if frappe.db.exists("DocType", dt)}
 	create_custom_fields(fields, update=True)
+	if "Quotation Item" in fields:
+		place_sub_item_no_first()
 
 	# The print formats are part of this app (print_format/); migrate has synced them before this
 	# function runs. Setting the default here keeps ERPNext's own doctype file untouched.
@@ -187,3 +214,24 @@ def setup_erpnext_fields():
 					"Quotation", None, "default_print_format", print_format, "Data", for_doctype=True
 				)
 				break
+
+
+def place_sub_item_no_first():
+	"""Put Sub-Item Sr.No in front of Item Code, so the Items table shows it right after No.
+
+	The Items table shows its columns in the order of the fields. Item Code is ERPNext's first
+	field of Quotation Item and a custom field can only be placed after a field, so the order is
+	set with a `field_order` property setter, as Customize Form does; fields ERPNext adds later
+	still find their place (Frappe's Meta.sort_fields). Quantity is narrowed from 2 to 1 column so
+	that the table keeps its width (Frappe's grid shares about 11 column units between No. and the
+	other columns, and Item Code, Quantity, Rate and Amount took them all; Quantity shows short
+	figures).
+	"""
+	frappe.clear_cache(doctype="Quotation Item")
+	order = [df.fieldname for df in frappe.get_meta("Quotation Item").fields]
+	if order and order[0] != "custom_sub_item_sr_no":
+		order.remove("custom_sub_item_sr_no")
+		order = json.dumps(["custom_sub_item_sr_no", *order])
+		make_property_setter("Quotation Item", None, "field_order", order, "Data", for_doctype=True)
+	make_property_setter("Quotation Item", "qty", "columns", 1, "Int")
+	frappe.clear_cache(doctype="Quotation Item")

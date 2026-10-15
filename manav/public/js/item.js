@@ -74,6 +74,11 @@
 // Change: A line typed with a running number in front ("1 : Table Diameter || 1200") is
 // rewritten by the Format buttons as "Table Diameter : 1200".
 // Reason: The user typed an Item's specifications that way; the number was taken for the label.
+//
+// CHANGE NOTE
+// Date: 2026-10-15
+// Change: The call to Frappe's internal frm.attachments.attachment_uploaded is checked first.
+// Reason: Upgrade-safe rule: an internal that a later Frappe version drops must not stop the upload.
 
 // Separates the cells of a line after the label (S.A.E. and Metric, or Units and value). Two bars,
 // because a single bar is used inside values on the maker's page (Taper: CT40 | BT40 | HSK-A63).
@@ -153,7 +158,11 @@ function manav_read_screenshot(frm) {
 		restrictions: { allowed_file_types: [".png", ".jpg", ".jpeg", ".gif", ".webp"] },
 		on_success(file_doc) {
 			if (!file_doc) return;
-			if (frm.attachments) frm.attachments.attachment_uploaded(file_doc);
+			// Shows the new file in the sidebar at once. frm.attachments is Frappe's internal
+			// sidebar object (checked on Frappe 16.33.1); without it the file shows after a reload.
+			if (frm.attachments && typeof frm.attachments.attachment_uploaded === "function") {
+				frm.attachments.attachment_uploaded(file_doc);
+			}
 			frappe.call({
 				method: "manav.manav.specification_screenshot.read_table",
 				args: { file_name: file_doc.name },

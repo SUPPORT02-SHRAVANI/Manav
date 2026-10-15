@@ -2,6 +2,187 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-10-15
+
+**Old quotations made into ERPNext Quotations, with their lines from the report "35-Quotation-Item".**
+
+- Reason: the user supplied the old system's report of all quotation lines (2788 pages; also as
+  .xls) and chose to have the old quotations made as ERPNext Quotations. Quotation Head already
+  held the 22527 old quotations, but without lines.
+- Changes:
+  - `manav/manav/legacy_data/convert_quotation_lines.py` (tool, run on a developer machine): reads
+    the report's .xls (one column of printed text) into `legacy_data/quotation_line.json.gz`:
+    34899 lines of 21992 quotations with item code, Sr, description, qty, rate, amount, discount %
+    and amount, net amount. Descriptions printed on lines above/below the report line are joined
+    back; item codes are matched against the old item masters (codes with spaces, codes running
+    into the Sr column); lines without an item code are kept.
+  - `manav/manav/legacy_quotations.py`: `run()` makes one ERPNext Quotation per old quotation with
+    lines, named by the old number (set_name, so no naming rule renumbers it): Customer, Contact,
+    address, principal, letter head, currency (RS -> INR, US$ -> USD; ERPNext's exchange rate of
+    the month), Your Reference, Signed By / Sales Engineer, Haas Cust ID, machine number, the old
+    terms, and the lines at their old prices (list rate, discount, net rate; pricing rules off).
+    Valid till 30 days after the date; submitted. Missing item codes become Items (not stock;
+    lines without code use OLD-NO-CODE). Dry run by default (each quotation made and rolled
+    back); skips quotations already made, so it can run in parts.
+- Testing (on Windows, not on the site): every report line is read (0 unread); for all 32726
+  priced lines qty x rate = amount and amount - discount = net; no (quotation, Sr) twice; the
+  pricing of every line was run through the importer's item_row (rate x qty = old net, list rate
+  - discount = rate, no negative rate); a sample of wrapped descriptions read back correctly. The
+  importer compiles; it was not run against ERPNext (needs the server).
+- Found: 10509 old quotations have a header total different from the sum of their lines (often
+  0 in the header), with no mark in the report to tell lines apart; ERPNext totals the lines.
+  536 old quotations have no lines in the report and are not made; 1 report quotation has no old
+  header.
+- Fix after the first run on the server (it stopped with KeyError 'quotation_date' before making
+  anything): 3 old quotations (13QX000506, 16QX000197, 24QX001104) have no date; their creation
+  date in the old system is used (`date_of`).
+- Pending: dry run and the real run on the server; the old sales tax is not carried over (8736
+  quotations; needs a tax account per company); the print of an imported quotation not checked.
+
+**Upgrade-safety review of the Manav app (rules of the new global skill frappe-upgrade-safe).**
+
+- Reason: the user asked that the Manav project survive `bench update` and future Frappe/ERPNext
+  versions, using Frappe's built-in customization rather than code that an update overwrites.
+- Found already in order: all changes live in the Manav app; no file of Frappe or ERPNext was
+  changed by it. Fields on ERPNext/Frappe doctypes (Customer, Item, Quotation, Quotation Item,
+  Sales Person, Contact) are Custom Fields with the `custom_` prefix, created on every migrate by
+  `after_migrate`; the Quotation's default print format, the Items table order and the Quantity
+  width are Property Setters made there too. Server logic attaches through `doc_events`
+  (autoname, validate), form logic through `doctype_js`; no overridden doctype classes or
+  methods, no monkey patching. The four print formats are standard, of module Manav, so they ship
+  with the app.
+- Changed:
+  - `manav/manav/quotation.py`: `last_number` uses Frappe's query builder instead of SQL text on
+    ERPNext's `tabQuotation` (same query: MAX(name), LIKE prefix%, LENGTH = prefix + 6; checked by
+    rendering it with pypika).
+  - `manav/public/js/quotation.js`: ERPNext's `frm.cscript.calculate_taxes_and_totals` is only
+    called when present; the upgrade note lists every Frappe internal the file uses, checked on
+    Frappe 16.33.1.
+  - `manav/public/js/item.js`: Frappe's internal `frm.attachments.attachment_uploaded` is checked
+    before it is called.
+- Testing: Python compiles; both scripts parse (node); the new query renders to the same SQL. Not
+  run on the server.
+- Pending / outside this app: the bench's own copies of Frappe and ERPNext have edits from
+  2026-09-23/26 that are not from Manav (ERPNext's Employee doctype: two permission rows and
+  read_only; Frappe's modules.txt: module "Evision"). `bench update` will clash with or drop them;
+  they belong in the app that needs them (Custom DocPerm / Property Setter, the module in that
+  app). Settings made in the site's UI (Customize Form, Client/Server Scripts) survive updates but
+  are not in the app's code; they were not checked from here (needs the site's database).
+
+**Quotation form: no row number on sub-items; machine colour on the whole line; "+" fixed.**
+
+- Reason: the user's next screenshot showed the sub-items numbered 2 to 5 in No. ("for sub-items
+  don't add these numbers"), the machine line coloured only in some cells while open for typing,
+  and the "+" still above the pen.
+- Causes: Frappe 16 keeps the pen element itself (`.btn-open-row`), not its cell, in
+  `grid_row.open_form_button`, so the "+" was put inside the pen's box and the cell styles did not
+  reach it. An open line's input boxes have their own white background.
+- Changes (`manav/public/js/quotation.js`): the "+" is put into the cell in front of the pen; No.
+  shows 1, 2, 3 for the machines (and unfilled lines) and nothing for sub-items (only the shown
+  text; idx and the order are Frappe's); input boxes of a machine line are see-through so the
+  whole line shows the colour.
+- Testing: the script parses; checked against Frappe 16's grid_row.js (open_form_button,
+  set_row_index runs before `grid-row-render`). Not looked at in the browser.
+- Pending: cache clear and browser reload on the site. After rows are dragged into a new order,
+  No. may show Frappe's numbers until the table is drawn again (save or reload).
+
+**Quotation form: machine lines coloured; "+" beside the pen instead of above it.**
+
+- Reason: the user's screenshot showed the "+" above the edit pen, making each machine row twice
+  as high, and they asked for the machines' rows to be coloured. (The Sub-Item Sr.No column was
+  missing because the migrate on the server ran at 14:17, before that field was added at 14:23.)
+- Changes (`manav/public/js/quotation.js`): on `grid-row-render` a machine's line gets the class
+  `manav-machine-row`, styled with Frappe's `--bg-blue` (light and dark theme) and semi-bold text;
+  the cell with "+" and pen is kept on one line (no wrap, 52 px wide at least).
+- Testing: the script parses; the CSS selectors were checked against Frappe 16's grid_row.js
+  (`.grid-row > .data-row.row > .col`, `.static-area`). Not looked at in the browser.
+- Pending: `bench --site manav.local migrate` (for Sub-Item Sr.No), a cache clear and a browser
+  reload.
+
+**Quotation form: Sub-Item Sr.No column, and the sub-items already chosen shown ticked.**
+
+- Reason: the user asked for a column "Sub-Item Sr.No" beside No. with the number of each
+  sub-item, and for the sub-items already on the quotation to be ticked in the list.
+- Changes:
+  - `manav/manav/erpnext_fields.py`: new Quotation Item field `custom_sub_item_sr_no` ("Sub-Item
+    Sr.No", read only, in the Items table). `place_sub_item_no_first()` puts it in front of Item
+    Code with a `field_order` property setter, so it shows right after No., and sets Quantity to
+    one column (from two) so the table keeps its width.
+  - `manav/manav/quotation.py` + `hooks.py`: `number_sub_items` on Quotation's validate numbers the
+    sub-items of each machine 1, 2, 3 in line order; machine lines have none.
+  - `manav/public/js/quotation.js`: the sub-items dialog lists all sub-items of the machine, those
+    on the quotation ticked; "Update" adds the newly ticked ones under the machine and takes the
+    unticked ones off. The numbers are set again after the dialog and after a line is deleted.
+- Testing: in node with stand-ins for Frappe, the dialog for VF-2 showed its two sub-items on the
+  quotation ticked; unticking one and ticking another removed and added the right lines (under
+  VF-2) and numbered them 1 and 2. The Python numbering gave 1, 1, 2 for sub-items of two
+  machines. Files parse/compile. Not tested in the browser or on the site.
+- Pending: needs `bench --site manav.local migrate` (field, order, Quantity width), a cache clear
+  and a browser reload; quotations saved before get their numbers when next saved. Deleting a
+  machine's line leaves its sub-items (as before).
+
+**Quotation form: options called sub-items, and added from the machine's own line.**
+
+- Reason: the user asked for "Sub-Items" in place of "Options", and for the button to add them
+  beside the edit pen of the machine's line instead of under the Items table.
+- Changes:
+  - `manav/public/js/quotation.js`: each machine line of the Items table has a "+" beside its edit
+    pen (added on Frappe's `grid-row-render` event); it opens the sub-items of that machine only.
+    The "Add Options" button under the table is gone; the one at the top of the form is "Add
+    Sub-Items" and still offers the sub-items of all machines. The dialog and its messages say
+    sub-items. Ticked sub-items are put under their machine's line (after its earlier sub-items)
+    instead of at the end of the table.
+  - `manav/manav/erpnext_fields.py`: Quotation Item's "Option of Item" is labelled "Sub-Item of".
+- Testing: the ordering function was run in node on a sample table (two machines, a sub-item
+  each, an empty line): new sub-items went under the right machine and the lines were numbered
+  1 to 6; quotation.js and erpnext_fields.py parse. Not tested in the browser or on the site.
+- Pending: the new label needs `bench --site manav.local migrate` on the server; the script needs
+  a cache clear and a browser reload. The data keeps its names (Quotation Sub Item Master, item
+  group Options).
+
+**Haas machine Items: short Item Name in place of the catalogue text.**
+
+- Reason: the user pointed out Item Names such as "Super-Speed Vertical Machining Center; 50" x
+  20" x 25" (1270 x 508 x 635 mm), 40 taper, 30 hp ..." and did not want the description in the
+  name. The old item master held the catalogue line as the name; the import cut it at 140
+  characters. The full text is in the Item's Description.
+- Changes: new `manav/manav/haas_item_names.py`. `run()` renames Items of the group Machines whose
+  name holds catalogue text to "Haas USA Make <kind> Model <code>" (the style of the machines that
+  already had a short name; the user chose it), the kind being the text before the first ";" or
+  ", <figure>". Only Item Name is changed; an empty Description gets the old name.
+- Testing (on Windows, with a stand-in for Frappe's database, not on the site): on the legacy
+  item data 84 Items are renamed (VF, VM, VS, UMC-750, ST, DS, TL, TM, EC, HS-3R, GR, DT-1, Mini
+  Mills, OL/OM); bar feeders, rotary tables and spares keep their names; the longest new name is
+  under 110 characters. Not run on the server.
+- Pending: the dry run and the write have to be run on the server (commands in the module).
+  Quotations made before keep the item name they were made with.
+
+**Haas machine Items: shipping size and weight added to Specifications from Haas document
+ES0428.**
+
+- Reason: the user asked for the specifications of each Haas machine on its Item. haascnc.com
+  could not be read from here (its Cloudflare check answers 403), so the user supplied Haas's
+  "Shipping Dimensions, Weight, and Crating Information" (ES0428 Rev DN, August 2020) to use
+  instead.
+- Changes: new `manav/manav/haas_shipping.py`. It holds the document's domestic pallet, export
+  pallet and export crate sizes and the weight (S.A.E. and Metric) for 104 machine models (65 rows of the document), and
+  `run()` writes them into `custom_specifications` of each matching Item that has none, as a
+  block "#Shipping Dimensions and Weight || S.A.E. || Metric" with a source line. Item codes with
+  a trailing "." or "-I" and the old names MINIMILL/SMINIMILL(2) and GM-2 are matched to their
+  model. Option rows of the document (50+1 SMTC, EC8, conveyor, pallet pool), rotary tables and
+  accessories are not used. Photos are not touched (the document has none).
+- Testing (on Windows, with a stand-in for Frappe's database, not on the site): run against the
+  230 machine codes of the legacy item data, 122 Items match and every model of the table is
+  used; an Item with Specifications is skipped. The written text passes through the Item form's
+  "Format: all rows" unchanged (node, public/js/item.js). Not run on the server; not checked in
+  the quotation print.
+- Pending: the dry run and the write have to be run on the server (commands in the module).
+  Pressing "Format: key specifications" on such an Item drops the shipping block (it drops
+  blocks named shipping/dimension). Machines not in the document (e.g. ST-15Y, ST-20L, UMC-350,
+  UMC-1250, VF-14/40, VS-3, EC-630) get nothing. Full machine specifications and photos still
+  need the haascnc.com pages; `manav/manav/haas_specs.py` (added earlier the same day, not
+  from this change) downloads them from the server and is likely to be blocked the same way.
+
 ## 2026-10-14
 
 **Quotation print: the head made shorter so that it repeats on every page also on US Letter paper.**
