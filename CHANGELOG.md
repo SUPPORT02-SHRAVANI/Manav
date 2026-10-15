@@ -4,6 +4,18 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-15
 
+**GitHub CI: test bench on Frappe 16 with ERPNext.**
+
+- Reason: the "Server" job of the CI workflow failed after the push (exit code 1; the user pasted
+  the summary, not the log). The workflow built a bench of Frappe's default branch without ERPNext
+  and installed Manav on it, but Manav needs ERPNext 16 (its custom fields and code are on
+  ERPNext's Quotation, Item and Customer; `required_apps` and pyproject.toml now say so).
+- Changes (`.github/workflows/ci.yml`): `bench init --frappe-branch version-16`;
+  `bench get-app --branch version-16 erpnext` and `install-app erpnext` before Manav.
+- Testing: the workflow file parses (YAML). Not run: it runs on GitHub after the push. The
+  failed run's log was not seen, so this fixes the cause found in the workflow; if the job still
+  fails, its log shows the next one.
+
 **App can be added on Frappe Cloud: Frappe/ERPNext versions declared, ERPNext required.**
 
 - Reason: Frappe Cloud's "Add app from GitHub" refused the repository: "Could not find a

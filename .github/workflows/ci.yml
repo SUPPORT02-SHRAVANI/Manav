@@ -80,17 +80,21 @@ jobs:
           sudo apt update
           sudo apt-get install mariadb-client
 
+      # Manav is built on Frappe 16 and needs ERPNext 16 (pyproject.toml, required_apps), so the
+      # test bench uses those branches and ERPNext is installed before Manav (changed 2026-10-15).
       - name: Setup
         run: |
           pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
+          bench init --frappe-branch version-16 --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
 
       - name: Install
         working-directory: /home/runner/frappe-bench
         run: |
+          bench get-app --branch version-16 erpnext
           bench get-app manav $GITHUB_WORKSPACE
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app erpnext
           bench --site test_site install-app manav
           bench build
         env:
