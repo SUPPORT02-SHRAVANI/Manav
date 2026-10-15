@@ -1,0 +1,768 @@
+{#-
+	The layout of the modern Manav quotation, shared by two print formats:
+	- "Manav Modern Quotation" for ERPNext's Quotation (the quotations made now);
+	- "Manav Modern Quotation Head" for Quotation Head (the old quotations and those made there).
+	The two doctypes keep the same things in different fields. Each print format therefore only
+	gathers the values of its doctype into one variable `q` and then includes this file, which
+	draws the page from `q`. A change of the look is made here once and shows in both.
+
+	It follows the design the user supplied on 2026-10-13 (file quotation_template (2).html,
+	"Modern Minimalist Black & White"). That file was a sample with the figures typed in, styled by
+	scripts loaded from the internet; here the same look is plain CSS and tables, because the PDF
+	maker (wkhtmltopdf) runs no such scripts and knows neither flexbox nor grid.
+
+	What `q` holds (every amount already as printable text; lists may be empty):
+	  company, date (a date or None), number
+	  customer_name, address (HTML), attn, phone, issuer_address (HTML)
+	  refs      list of [name, value]: Ref. No., Ref Dt., Sales Engg., Cust ID. All four are
+	            given always; a value may be empty and is then printed as an empty field
+	  notes     list of plain lines printed under the strip (the message lines of an old quotation)
+	  machines  list of {code, name, image, spec_text, description, rate, qty, amount, options}
+	            image: address of the machine's picture, or empty
+	            spec_text: the specification lines, one per line; description: text or HTML
+	            options: list of {code, name, description, rate, qty, amount}
+	  loose_options  options whose machine is not on the quotation, same keys as options
+	  subtotal, taxes (list of [label, amount]), grand_total
+	  payment   list of HTML lines for "Payment Info"
+	  terms     HTML: a table with one term to a row, or paragraphs / a list
+	  signer, designation
+
+	Working, top to bottom:
+	1. Head of every page, as on the old printed quotation: the letter head (the principal's
+	   header, see manav/manav/letter_heads.py), or the company name without one; the title
+	   QUOTATION; and the quotation box: the customer, its address, Kind Attn and phone on the
+	   left; quotation number, date, Ref. No., Ref Dt., Sales Engg. and Cust ID on the right.
+	2. (The quotation box is part of the head of every page, see 1.)
+	3. The notes, at the start of the first page.
+	4. One "Equipment Specification" box for every machine, with the machine's picture on its
+	   left when the Item has one. The specification lines are shown as small name / value
+	   cells, four to a row (three beside a picture):
+	   - a line "label : a || b" under a heading "#Title || S.A.E. || Metric" shows "a / b";
+	   - under a heading whose second column is Units ("#Descriptions || Units || Model") it
+	     shows the value with its unit, "b a";
+	   - a line "label : value" shows the value; a line without " : " is printed across the box;
+	   - a heading line starts a new group with its title above it.
+	   A machine without specification lines shows its description instead: as cells when it
+	   is written as a list ("Title; feature, feature" or six comma parts or more), each cell
+	   with a name worked out from its wording (see feature_rules below); as rows when it has
+	   several lines with "label : value"; otherwise as plain text.
+	5. Line table: every machine followed by its options, then the loose options. It is left
+	   out when the quotation has no lines (an old quotation loaded without its items).
+	6. Payment info on the left; on the right the totals: subtotal, taxes ("As Applicable" when
+	   there are none, as the machine quotations leave taxes to the terms), grand total.
+	7. The terms as one bordered table across the page (No. / Term / Details), right after the
+	   totals; it may go on over the next page between two terms, with its heading row repeated.
+	   Then the signing person.
+	8. The footer of the letter head, when it has one, at the foot of every page. The page is
+	   put out in two copies, one for printing from the browser (without the browser's own date,
+	   address and page number lines) and one for the PDF made on the server.
+
+	Created: 2026-10-13, out of the print format Manav Modern Quotation, when the old quotations
+	(Quotation Head) were to print in the same layout. The earlier changes of that day (machine
+	name on the left of the box, payment info beside the totals, terms in two columns, machine
+	name as the bold element, names for the cells of a description, letter head across the page
+	and its footer) were made in that print format and are carried over unchanged.
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: Ref. No., Ref Dt., Sales Engg., Cust ID and Kind Attn are printed always, with their
+	names, also when empty. Before, each was left out when the quotation did not have it.
+	Reason: The user pointed to the header of the old layout, which shows all of them, and asked
+	for the same information here.
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The terms always start a new page, under a larger heading that repeats the quotation
+	number. Before, they followed the totals on the same page when there was room.
+	Reason: Asked for by the user ("add terms on new page").
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The title QUOTATION and its date are in the middle of the page, with the company name
+	(when there is no letter head) centred above them. Before, the title was on the right and the
+	company name on the left.
+	Reason: Asked for by the user ("make quotation in middle").
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The terms no longer always start a new page: they follow the totals and move to the
+	next page as one block only when they do not fit. Their heading no longer repeats the
+	quotation number.
+	Reason: The user's print showed most of the page under the totals empty and the terms alone
+	on the next page, and asked for the terms in that space.
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The footer of the letter head is at the foot of every page, in the browser's print
+	and in the PDF, whatever "Repeat Header and Footer" in Print Settings says; before, it was
+	printed once after the signature unless that setting was on, and never at the foot in the
+	browser. A print from the browser has no page margin of the browser's own, which makes the
+	browser leave out its date, address and page number lines; the margins are made by a table
+	around the page. For this the page is put out in two copies (see "8." at the end).
+	Reason: The user's print showed the footer in the middle of the last page and the browser's
+	lines on every page, and asked for a real footer and for those lines to be off always.
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The letter head is printed at the top of every page; before, only on the first.
+	In the browser's copy it is in the repeated head row of the table around the page, in the
+	PDF's copy it is handed to the PDF maker as header-html.
+	Reason: Asked for by the user ("on every page print letter head").
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: A machine whose Item has a picture shows it on the left of its specification box,
+	with one cell fewer to a row beside it. A machine without a picture prints as before.
+	Reason: The user asked for the image of the item on the quotation.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: A specification line typed with a running number in front ("1 : Table Diameter ||
+	1200") is read as name and value; before, the number was taken for the name.
+	Reason: The user typed the specifications of an Item that way.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: The grey box, the strip with date and number and the reference row became one
+	quotation box: the number at its top left and the date at its top right on a shaded band,
+	customer and issuer below with addresses as one run of text, the references at its foot. The
+	date under the title was dropped (it is in the box). Shaded parts are printed also when the
+	browser's "background graphics" is off.
+	Reason: The user asked for this part to look better, with the quotation number at the top left
+	in the box.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: (1) Number and date moved out of the quotation box into a band at the head of every
+	page, under the letter head, with the title QUOTATION in its middle; the separate title is
+	gone. (2) The terms are one bordered table across the page (No. / Term / Details) instead of
+	two columns side by side; breaks inside a sentence left by the old system are joined; the
+	table may go on over the next page between two terms. The two-column cut is gone.
+	Reason: The user asked for the terms "more proper with table" and for the quotation number
+	box on every page.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: The whole quotation box is now in the head of every page, laid out like the old
+	printed quotation: customer, address, Kind Attn and phone on the left; quotation number, date,
+	Ref. No., Ref Dt., Sales Engg. and Cust ID on the right; the title QUOTATION above it. This
+	replaces the band of number and date and the box on the first page only. "Issued By" (the
+	company's name and address, and FMT: QUOT-11) was left out, as on the old print, where the
+	letter head carries the company.
+	Reason: The user showed a two-page quotation of the old system, whose header repeats on every
+	page, and asked for the information to be printed that way on all pages.
+-#}
+{#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
+{%- macro plain(html) -%}
+	{{- frappe.utils.strip_html((html or "") | replace("</p>", "\n") | replace("</div>", "\n") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n")) | replace("&nbsp;", " ") | trim -}}
+{%- endmacro -%}
+{#- Names for the features of a description shown as cells. A description such as
+    "Vertical Machining Center; 50" x 20" x 25" (1270 x 508 x 635 mm), 40 taper, 12,000 rpm" lists
+    values without saying what each one is, so the name is worked out from the wording: the first
+    rule whose words occur in the feature gives its name, and a feature no rule knows is printed
+    without a name. The rules follow the wording of the Haas descriptions in the item master. They
+    are a reading of the text, not data: a machine with specification lines never uses them. To
+    change a name or add one, change this list (words in small letters, most particular first).
+    Added 2026-10-13, when the user asked which specification each value in the box is. -#}
+{%- set feature_rules = [
+	["max capacity", "Max Capacity"],
+	["trunnion", "Rotary Table"],
+	["rotary table", "Rotary Table"],
+	["tool changer", "Tool Changer"],
+	["turret", "Turret"],
+	["taper", "Spindle Taper"],
+	["vector drive", "Spindle Power"],
+	[" hp", "Spindle Power"],
+	["-hp", "Spindle Power"],
+	["rpm", "Spindle Speed"],
+	["direct-drive", "Drive System"],
+	["belt drive", "Drive System"],
+	["belt-drive", "Drive System"],
+	["geared", "Drive System"],
+	["rapids", "Rapids"],
+	["swing", "Swing"],
+	["bore", "Spindle Bore"],
+	["chuck", "Chuck"],
+	["spindle", "Spindle"],
+	["program memory", "Program Memory"],
+	["monitor", "Display"],
+	["usb", "Connectivity"],
+	["keyswitch", "Security"],
+	["coolant", "Coolant"],
+	["tapping", "Tapping"],
+	["chip", "Chip Removal"],
+	["pallet", "Pallet"],
+] -%}
+{%- macro feature_name(feature) -%}
+	{%- set words = feature | lower -%}
+	{%- set found = namespace(name="") -%}
+	{%- if ". " in feature -%}
+		{#- more than one sentence ("8.3" chuck. Secondary Spindle: 20 hp ..."): several things in
+		    one cell, which no single name fits; it is printed without a name -#}
+	{%- elif "tapping" in words and "coolant" in words -%}
+		{#- the last feature of a description often joins two with "and" -#}
+		{%- set found.name = "Tapping &amp; Coolant" -%}
+	{%- elif "max capacity" not in words and words.count(" x ") >= 4 -%}
+		{#- three sizes in inches and again in mm: the X, Y and Z travels of a mill -#}
+		{%- set found.name = "Travels (X/Y/Z)" -%}
+	{%- else -%}
+		{%- for rule in feature_rules -%}
+			{%- if not found.name and rule[0] in words -%}{%- set found.name = rule[1] -%}{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+	{{- found.name -}}
+{%- endmacro -%}
+
+{%- macro line_row(number, line, title) -%}
+	<tr>
+		<td class="mm-no">{{ number }}.</td>
+		<td class="mm-desc">
+			<div class="mm-code">{{ line.code or "" }}</div>
+			{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}
+		</td>
+		<td class="mm-num">{{ line.rate }}</td>
+		<td class="mm-qty">{{ line.qty }}</td>
+		<td class="mm-num mm-strong">{{ line.amount }}</td>
+	</tr>
+{%- endmacro -%}
+
+<style>
+	.mm { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1a1a1a; line-height: 1.4; }
+	.mm table { width: 100%; border-collapse: collapse; }
+	/* Frappe's print style forces 6px padding on every cell and a margin on every paragraph; the
+	   !important rules below set the paddings this layout needs. */
+	.print-format .mm td, .print-format .mm th { padding: 0 !important; vertical-align: top; line-height: 1.4; border: 0; }
+	.print-format .mm p { margin: 0 !important; }
+	.mm .mm-muted { color: #6b7280; }
+	.mm .mm-label { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #000; }
+
+
+	/* the shaded parts are printed also when the browser is set not to print backgrounds */
+	.mm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+	.print-format .mm .mm-notes td { padding: 5px 0 0 0 !important; font-size: 8pt; color: #374151; }
+
+	.mm .mm-spec { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; margin-top: 12px; padding: 8px 10px; page-break-inside: avoid; }
+	.mm .mm-spec-head { border-bottom: 1px solid #e5e7eb; }
+	.print-format .mm .mm-spec-head td { padding: 0 0 6px 0 !important; vertical-align: middle; }
+	/* In the specification box the machine's name is the bold element; the caption and the
+	   specification values are in normal weight. */
+	.mm .mm-chip { display: inline-block; background: #fff; border: 1px solid #d1d5db; border-radius: 4px; padding: 1px 8px; font-weight: 800; font-size: 9.5pt; color: #000; }
+	.mm .mm-chip-name { margin-left: 8px; font-size: 8.5pt; font-weight: 600; color: #374151; }
+	.mm .mm-spec-caption { font-size: 8pt; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; text-align: right; }
+	.print-format .mm .mm-grid td { padding: 5px 8px 0 0 !important; width: 25%; font-size: 8pt; }
+	.print-format .mm .mm-grid td.mm-third { width: 33.3%; }
+	.print-format .mm .mm-grid td.mm-half { width: 50%; }
+	/* picture of the machine on the left of its specification box */
+	.print-format .mm .mm-spec-split > tbody > tr > td.mm-spec-pic { width: 30%; padding: 8px 12px 0 0 !important; vertical-align: top; text-align: center; }
+	.print-format .mm .mm-spec-split > tbody > tr > td.mm-spec-text { padding: 0 !important; }
+	.mm .mm-spec-pic img { max-width: 100%; max-height: 45mm; height: auto; }
+	.print-format .mm .mm-grid td.mm-group { padding-top: 7px !important; font-size: 7.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; }
+	.mm .mm-k { display: block; color: #9ca3af; font-weight: 600; }
+	.mm .mm-v { display: block; color: #111827; font-weight: 400; }
+
+	.mm .mm-lines { margin-top: 14px; border-bottom: 2px solid #000; }
+	.print-format .mm .mm-lines th { padding: 7px 8px !important; border-top: 2px solid #000; border-bottom: 2px solid #000; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; color: #000; text-align: left; }
+	.print-format .mm .mm-lines td { padding: 6px 8px !important; border-bottom: 1px solid #e5e7eb; font-size: 8.5pt; }
+	.mm .mm-lines tr { page-break-inside: avoid; }
+	.print-format .mm .mm-lines .mm-no { width: 6%; text-align: center; color: #6b7280; font-weight: 600; padding-left: 2px !important; padding-right: 2px !important; }
+	.print-format .mm .mm-lines .mm-num { width: 17%; text-align: right; color: #374151; white-space: nowrap; }
+	.print-format .mm .mm-lines .mm-qty { width: 11%; text-align: center; color: #374151; }
+	.mm .mm-code { font-weight: 700; color: #111827; }
+	.mm .mm-sub { font-size: 8pt; color: #6b7280; }
+	.mm .mm-strong { font-weight: 700; color: #111827 !important; }
+
+	.mm .mm-sum { margin-top: 14px; page-break-inside: avoid; }
+	.print-format .mm .mm-sum > tbody > tr > td { width: 50%; }
+	.print-format .mm .mm-sum > tbody > tr > td.mm-pay { padding: 4px 14px 0 0 !important; font-size: 8pt; color: #4b5563; }
+	.print-format .mm .mm-totals td { padding: 4px 0 !important; border-bottom: 1px solid #f3f4f6; font-size: 8.5pt; font-weight: 600; }
+	.mm .mm-totals .mm-tk { color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; }
+	.mm .mm-totals .mm-tv { text-align: right; color: #000; font-weight: 700; white-space: nowrap; }
+	.print-format .mm .mm-totals tr.mm-grand td { border-bottom: 0; font-size: 10.5pt; font-weight: 800; color: #000; }
+
+	/* The terms follow the totals on the same page when they fit in the space left there. They
+	   are kept in one piece: when they do not fit, the whole block moves to the next page
+	   instead of being cut in two. (For a short while on 2026-10-13 they always began a new
+	   page; that left the rest of the page with the totals empty, so it was taken back.) */
+	/* The terms may run on to the next page, between two terms (a term is never cut), with the
+	   heading row of the table repeated; the title stays with the first rows. */
+	.mm .mm-foot { margin-top: 16px; font-size: 8pt; color: #4b5563; }
+	.mm .mm-foot-title { page-break-after: avoid; }
+	.mm .mm-foot-title { font-size: 9pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #000; margin-bottom: 8px; }
+	/* the terms table: shaded heading row, a line under every term, the heading of a term in bold */
+	.mm table.mm-terms-table { border: 1px solid #d1d5db; }
+	.print-format .mm .mm-terms-table th { padding: 6px 8px !important; background: #f3f4f6; border-bottom: 1px solid #d1d5db; font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #000; text-align: left; }
+	.print-format .mm .mm-terms-table td { padding: 6px 8px !important; border-top: 1px solid #e5e7eb; font-size: 8pt; color: #374151; line-height: 1.45; }
+	.print-format .mm .mm-terms-table tr.mm-term-more td { border-top: 0; padding-top: 0 !important; }
+	.print-format .mm .mm-terms-table .mm-term-no { width: 7% !important; text-align: center; color: #6b7280; }
+	.print-format .mm .mm-terms-table td.mm-term-name { width: 27% !important; font-weight: 700; color: #111827; }
+	.print-format .mm .mm-terms-table th.mm-term-name { width: 27% !important; }
+	.mm .mm-terms-table tr { page-break-inside: avoid; }
+	.mm .mm-foot ul, .mm .mm-foot ol { margin: 0; padding-left: 14px; }
+	.mm .mm-sign { text-align: right; margin-top: 16px; page-break-inside: avoid; }
+	.mm .mm-sign-name { font-size: 13pt; font-style: italic; font-weight: 700; color: #111827; margin: 14px 0 2px 0; }
+
+	/* The sheet: the table around the copy that the browser prints (see "8." at the end). */
+	.print-format table.mm-sheet { width: 100%; border-collapse: collapse; border: 0; margin: 0; }
+	.print-format table.mm-sheet > thead > tr > td,
+	.print-format table.mm-sheet > tbody > tr > td,
+	.print-format table.mm-sheet > tfoot > tr > td { padding: 0 !important; border: 0; }
+	.mm-sheet-room { visibility: hidden; }
+	/* The page is put out in pieces, each in a row of its own (see "a)" at the end): the head
+	   of the quotation box, each machine's box, each line, the totals, each term, the signature.
+	   A row is kept whole, so a page ends between two pieces. A page may not end inside a row:
+	   the browsers keep the room for the footer only where a page ends between rows, and inside
+	   a row the text ran under the footer (Chrome and Firefox both, tried on 2026-10-14). */
+	.print-format table.mm-sheet > tbody > tr { page-break-inside: avoid; break-inside: avoid; }
+	/* Frappe's standard.css makes every tfoot a header group ("hack for webkit specific browser",
+	   thead, tfoot { display: table-header-group }). The foot row of this table must stay a foot
+	   row: it is what keeps the room for the footer free at the bottom of every page. As a head
+	   row it went to the top, and the text ran under the footer. */
+	.print-format table.mm-sheet > thead { display: table-header-group !important; }
+	.print-format table.mm-sheet > tfoot { display: table-footer-group !important; }
+	/* the lines and the terms are written as one small table per row; these keep them looking
+	   like one table: the same column widths, one line between rows, the outer line once */
+	.mm table.mm-lines, .mm table.mm-terms-table { table-layout: fixed; }
+	.mm table.mm-lines.mm-lines-more { margin-top: 0; }
+	.mm table.mm-lines.mm-lines-open { border-bottom: 0; }
+	.print-format .mm .mm-lines.mm-lines-open tr:last-child td { border-bottom: 1px solid #e5e7eb; }
+	.mm .mm-foot.mm-foot-more { margin-top: 0; }
+	.mm table.mm-terms-table.mm-terms-cont { border-top: 0; }
+	.mm table.mm-terms-table.mm-terms-open { border-bottom: 0; }
+	@media screen {
+		/* on the screen the footer follows the quotation; no room is kept for it */
+		.mm-sheet-bottom { display: none; }
+		.mm-sheet-footer { margin-top: 24px; }
+		.mm-sheet-top .letter-head { margin-bottom: 10px; }
+	}
+	@media print {
+		/* No page margin: the browser then prints no date, address or page number of its own. */
+		@page { margin: 0; }
+		/* top margin; with a letter head, the letter head below that margin and a gap under it */
+		.print-format table.mm-sheet > thead > tr > td.mm-sheet-top { padding: 3mm 12mm 1.5mm 12mm !important; }
+		.print-format table.mm-sheet > tbody > tr > td.mm-sheet-body { padding: 0 12mm !important; }
+		/* room for the footer (the unseen copy) and the bottom margin under it */
+		.print-format table.mm-sheet > tfoot > tr > td.mm-sheet-bottom { padding: 4mm 12mm 8mm 12mm !important; }
+		.mm-sheet-footer { position: fixed; bottom: 8mm; left: 12mm; right: 12mm; }
+	}
+</style>
+
+{#- The quotation itself is drawn once into `page` and put out twice below: once for printing
+    from the browser and once for the PDF made on the server (see "8." at the end). -#}
+{% set page_letter_head = letter_head if letter_head and not no_letterhead else "" %}
+
+{#- 1. The head of every page, as on the old printed quotation, which repeats its whole header on
+    each page (asked for on 2026-10-14): the letter head (or, without one, the company name), the
+    title QUOTATION, and the quotation box: on the left the customer, its address, Kind Attn and
+    phone; on the right the quotation number, the date and the four reference fields of the old
+    header (Ref. No., Ref Dt., Sales Engg., Cust ID), each printed with its name also when empty,
+    so that a missing reference is seen and can be written in by hand.
+    It is printed at the top of every page by the two copies at the end ("8."). Its look is
+    written into the tags themselves, because the PDF maker draws the head of the pages apart
+    from the page and without the styles of this file; for the same reason every padding carries
+    !important, to win over Frappe's padding on all table cells.
+    An address is written as one run of text, its lines joined by commas, so that it takes two or
+    three lines instead of six. -#}
+{%- macro one_line(html) -%}
+	{{- (html or "") | replace("<br/>", "<br>") | replace("<br />", "<br>") | replace("\n", "<br>") | trim -}}
+{%- endmacro -%}
+{% set customer_address = one_line(q.address).split("<br>") | map("trim") | select | join(", ") %}
+{% set head_font = "font-family: Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif;" %}
+{% set head_label = "font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280;" %}
+{#- The head is kept short on purpose. A browser repeats the head row of a table on every page
+    only while that row is at most a quarter of the page high (about 74 mm on A4); a taller head
+    would be printed on the first page only. So: the letter head picture is at most 27 mm high (a wide banner such as Manav Letter Head 2025
+    still fills the width of the page),
+    the title is the top strip of the box, and the references stand two to a row where they fit. Kind Attn and the phone share a
+    line. With the top margin the head stays near 60 mm, under the limit also on US Letter paper
+    (70 mm), which a printer set to Letter uses. -#}
+{% set page_head %}
+<style>
+	.mm-page-head .letter-head img { max-height: 27mm !important; width: auto !important; max-width: 100% !important; }
+	.mm-page-head .letter-head { text-align: center; }
+</style>
+<div class="mm-page-head" style="{{ head_font }}">
+{% if page_letter_head %}<div class="letter-head" style="margin: 0 0 1mm 0;">{{ page_letter_head }}</div>
+{% else %}<div style="font-size: 15pt; font-weight: 800; text-transform: uppercase; color: #000; text-align: center; margin: 0 0 2mm 0;">{{ q.company or "" }}</div>{% endif %}
+<table class="mm-head-box" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #9ca3af; border-radius: 6px; font-size: 8.5pt; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+	<tr>
+		<td colspan="2" style="padding: 1px 14px !important; border: 0; background: #1f2937; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: center; font-size: 10pt; font-weight: 900; letter-spacing: 0.2em; color: #fff; line-height: 1.3;">QUOTATION</td>
+	</tr>
+	<tr>
+		<td style="width: 57%; padding: 4px 14px 4px 14px !important; vertical-align: top; border: 0; border-right: 1px solid #d1d5db;">
+			<div style="{{ head_label }}">Quotation To</div>
+			<div style="font-size: 10pt; font-weight: 800; color: #000; margin: 2px 0 1px 0; line-height: 1.25;">{{ q.customer_name or "" }}</div>
+			{% if customer_address %}<div style="color: #4b5563; line-height: 1.3; font-size: 8pt;">{{ customer_address }}</div>{% endif %}
+			<div style="margin-top: 3px; color: #111827; line-height: 1.35;"><span style="{{ head_label }}">Kind Attn:</span> {{ q.attn or "" }}{% if q.phone %} &nbsp; <span style="white-space: nowrap;"><span style="{{ head_label }}">Ph:</span> {{ q.phone }}</span>{% endif %}</div>
+		</td>
+		<td style="padding: 3px 12px 3px 12px !important; vertical-align: top; border: 0;">
+			<table style="width: 100%; border-collapse: collapse;">
+				<tr>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; vertical-align: middle; white-space: nowrap; {{ head_label }}">Quotation No.</td>
+					<td colspan="3" style="padding: 1px 0 !important; border: 0; vertical-align: middle; font-size: 11pt; font-weight: 900; color: #000; letter-spacing: 0.02em; line-height: 1.2;">{{ q.number }}</td>
+				</tr>
+				{#- The reference fields of the old header, placed so that no value has to wrap: Date with
+				    Cust ID, Ref. No. with Ref Dt., and Sales Engg. (a name) on a row of its own. q.refs
+				    holds them in the order Ref. No., Ref Dt., Sales Engg., Cust ID. -#}
+				{% set ref = (q.refs + [["", ""], ["", ""], ["", ""], ["", ""]])[:4] %}
+				<tr>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; white-space: nowrap; {{ head_label }}">Date</td>
+					<td style="width: 29%; padding: 1px 6px 1px 0 !important; border: 0; font-weight: 700; color: #111827; white-space: nowrap;">{{ q.date.strftime("%d %b %Y") if q.date else "" }}</td>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; white-space: nowrap; {{ head_label }}">{{ ref[3][0] }}</td>
+					<td style="padding: 1px 6px 1px 0 !important; border: 0; font-weight: 600; color: #111827;">{{ ref[3][1] or "&nbsp;" }}</td>
+				</tr>
+				<tr>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; white-space: nowrap; {{ head_label }}">{{ ref[0][0] }}</td>
+					<td style="width: 29%; padding: 1px 6px 1px 0 !important; border: 0; font-weight: 600; color: #111827;">{{ ref[0][1] or "&nbsp;" }}</td>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; white-space: nowrap; {{ head_label }}">{{ ref[1][0] }}</td>
+					<td style="padding: 1px 6px 1px 0 !important; border: 0; font-weight: 600; color: #111827;">{{ ref[1][1] or "&nbsp;" }}</td>
+				</tr>
+				<tr>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; white-space: nowrap; {{ head_label }}">{{ ref[2][0] }}</td>
+					<td colspan="3" style="padding: 1px 6px 1px 0 !important; border: 0; font-weight: 600; color: #111827;">{{ ref[2][1] or "&nbsp;" }}</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</div>
+{% endset %}
+
+{% set page %}
+<div class="mm">
+	{% if q.notes %}
+	<table class="mm-notes">
+		{% for note in q.notes %}<tr><td>{{ note }}</td></tr>{% endfor %}
+	</table>
+	{% endif %}
+
+	{#- 4. one specification box for every machine -#}
+	{% for machine in q.machines %}
+	{% set spec_lines = (machine.spec_text or "").split("\n") | map("trim") | select | list %}
+	{#- No specification lines: see whether the description is a list that can be shown as cells. -#}
+	{% set feature_title = "" %}
+	{% set features = [] %}
+	{% set description_lines = plain(machine.description).split("\n") | map("trim") | select | list %}
+	{% if not spec_lines %}
+		{% if description_lines | length > 1 and " : " in (description_lines[1:] | join("\n")) %}
+			{#- several lines with "label : value" among them: title line, then rows -#}
+			{% set feature_title = description_lines[0] %}
+			{% set spec_lines = description_lines[1:] %}
+		{% elif description_lines %}
+			{#- one sentence. "Title; a, b, c" is a title and its features. Without the "; " it is
+			    only taken as a list when it has six parts or more, so that the name of a spare
+			    part such as "CABLE, AXIS, BRUSHLESS" is not cut up. A comma inside a number
+			    (12,000 rpm) has no space after it and does not cut. -#}
+			{% set sentence = description_lines | join(" ") %}
+			{% set halves = sentence.split("; ", 1) %}
+			{% set parts = (halves | last | replace("; ", ", ")).split(", ") | map("trim") | select | list %}
+			{% if halves | length > 1 and parts | length >= 3 %}
+				{% set feature_title = halves[0] | trim %}
+				{% set features = parts %}
+			{% elif halves | length == 1 and parts | length >= 6 %}
+				{% set feature_title = parts[0] %}
+				{% set features = parts[1:] %}
+			{% endif %}
+		{% endif %}
+	{% endif %}
+	{#- The short title beside the code: the title found in the description, else the machine's
+	    name when it is short enough for the chip. It is kept for the line table below. -#}
+	{% set machine_name = machine.name or "" %}
+	{% set short_title = feature_title or (machine_name if machine_name | length <= 70 else "") %}
+	{% if short_title == machine.code %}{% set short_title = "" %}{% endif %}
+	{% set _ = machine.update({"title": short_title or machine_name}) %}
+
+	</div><!--mm-cut--><div class="mm">
+	<div class="mm-spec">
+		<table class="mm-spec-head">
+			<tr>
+				{#- the machine's name on the left, the box's caption on the right -#}
+				<td><span class="mm-chip">{{ machine.code or "" }}{% if short_title %} {{ short_title }}{% endif %}</span>{#- a name too long for the chip is printed beside it, in smaller letters -#}{% if not short_title and machine_name and machine_name != machine.code %}<span class="mm-chip-name">{{ machine_name | truncate(95, True, "…", 0) }}</span>{% endif %}</td>
+				<td class="mm-spec-caption">Equipment Specification</td>
+			</tr>
+		</table>
+
+		{#- With a picture of the machine, the picture stands on the left of the box and the
+		    specifications beside it, one cell fewer to a row (three name / value cells, or two
+		    cells of a description) so that they keep their width. -#}
+		{% set pair_cols = 3 if machine.image else 4 %}
+		{% set feature_cols = 2 if machine.image else 3 %}
+		{% set feature_class = "mm-half" if machine.image else "mm-third" %}
+		{% set pair_class = "mm-third" if machine.image else "" %}
+		{% if machine.image %}<table class="mm-spec-split"><tr><td class="mm-spec-pic"><img src="{{ machine.image }}" alt="{{ machine.code or '' }}"></td><td class="mm-spec-text">{% endif %}
+
+		{% if features %}
+		<table class="mm-grid">
+			{% for row in features | batch(feature_cols) %}
+			<tr>
+				{% for feature in row %}{% set name = feature_name(feature) | trim %}<td class="{{ feature_class }}">{% if name %}<span class="mm-k">{{ name }}</span>{% endif %}<span class="mm-v">{{ feature }}</span></td>{% endfor %}
+				{% for filler in range(feature_cols - (row | length)) %}<td class="{{ feature_class }}"></td>{% endfor %}
+			</tr>
+			{% endfor %}
+		</table>
+		{% elif spec_lines %}
+		{#- Typed with a running number in front of each line, the first line is often the column
+		    titles written the same way ("Description : Unit || Specification" above
+		    "1 : Table Diameter || 1200"). It is then taken as the heading. -#}
+		{% if spec_lines | length > 1 and not spec_lines[0].startswith("#") and " : " in spec_lines[0] and " || " in spec_lines[0]
+			and not (spec_lines[0].split(" : ", 1)[0] | trim).isdigit() and (spec_lines[1].split(" : ", 1)[0] | trim).isdigit() %}
+			{% set spec_lines = ["#" ~ spec_lines[0].replace(" : ", " || ", 1)] + spec_lines[1:] %}
+		{% endif %}
+		{#- The text is cut at every line that starts with #: each piece is one group, whose first
+		    line (except in the piece before the first #) is the group's heading. -#}
+		{% set table = namespace(unit_first=False) %}
+		{% for block in ("\n" ~ (spec_lines | join("\n"))).split("\n#") %}
+		{% set block_lines = block.split("\n") | map("trim") | select | list %}
+		{% set titles = ([] if loop.first else (block_lines | first).split(" || ")) | map("trim") | list %}
+		{% set specs = block_lines if loop.first else block_lines[1:] %}
+		{#- A heading "Title || Units || Model" means the first value of a line is its unit. Such a
+		    heading names the columns of the whole table, so the sections below it ("#Travel",
+		    which has no column titles of its own) follow it until another heading names columns. -#}
+		{% if titles | length > 2 %}{% set table.unit_first = (titles[1] | lower)[:4] == "unit" %}{% endif %}
+		{% set unit_first = table.unit_first %}
+		{% set caption = "" %}
+		{% if titles | length > 2 %}
+			{% set caption = titles[2] if unit_first else (titles[0] ~ " (" ~ titles[1] ~ " / " ~ titles[2] ~ ")") %}
+		{% elif titles %}
+			{% set caption = titles[0] %}
+		{% endif %}
+		{% set pairs = [] %}
+		{% set notes = [] %}
+		{% for spec in specs %}
+			{% set text = (spec[1:] if spec.startswith("!") else spec) | trim %}
+			{% set cells = text.split(" : ", 1) %}
+			{% if cells | length == 2 and (cells[0] | trim).isdigit() and " || " in cells[1] %}
+				{#- typed with a running number in front, "1 : Table Diameter || 1200": the number
+				    is dropped, and the name and the value are the two sides of the || -#}
+				{% set cells = cells[1].split(" || ", 1) %}
+			{% endif %}
+			{% if cells | length == 2 %}
+				{% set values = cells[1].split(" || ", 1) | map("trim") | list %}
+				{% if values | length < 2 %}
+					{% set value = values[0] %}
+				{% elif unit_first %}
+					{% set value = values[1] ~ ("" if values[0] in ("-", "") else " " ~ values[0]) %}
+				{% else %}
+					{% set value = values[0] if values[0] == values[1] else values[0] ~ " / " ~ values[1] %}
+				{% endif %}
+				{% set _ = pairs.append([cells[0] | trim, value]) %}
+			{% else %}
+				{% set _ = notes.append(text) %}
+			{% endif %}
+		{% endfor %}
+		{% if caption or pairs or notes %}
+		<table class="mm-grid">
+			{% if caption %}<tr><td colspan="{{ pair_cols }}" class="mm-group">{{ caption }}</td></tr>{% endif %}
+			{% for row in pairs | batch(pair_cols) %}
+			<tr>
+				{% for pair in row %}<td{% if pair_class %} class="{{ pair_class }}"{% endif %}><span class="mm-k">{{ pair[0] }}</span><span class="mm-v">{{ pair[1] }}</span></td>{% endfor %}
+				{% for filler in range(pair_cols - (row | length)) %}<td{% if pair_class %} class="{{ pair_class }}"{% endif %}></td>{% endfor %}
+			</tr>
+			{% endfor %}
+			{% for note in notes %}<tr><td colspan="{{ pair_cols }}" class="mm-muted">{{ note }}</td></tr>{% endfor %}
+		</table>
+		{% endif %}
+		{% endfor %}
+		{#- a description that says no more than the title in the chip is not printed again -#}
+		{% elif description_lines and (description_lines | join(" ")) != short_title %}
+		<div class="mm-muted" style="padding-top: 6px; font-size: 8pt;">{{ description_lines | join("<br>") }}</div>
+		{% endif %}
+		{% if machine.image %}</td></tr></table>{% endif %}
+	</div>
+	{% endfor %}
+
+	{#- 5. The lines: each machine, then its options, then the options whose machine is not on the
+	    quotation. Each line is a piece of its own (a small table of one row, the first with the
+	    column headings), so that a page can end between two lines. -#}
+	{% set all_lines = [] %}
+	{% for machine in q.machines %}
+		{% set _ = all_lines.append([machine, machine.title]) %}
+		{% for option in machine.options %}{% set _ = all_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
+	{% endfor %}
+	{% for option in q.loose_options %}{% set _ = all_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
+	{% for entry in all_lines %}
+		{% if loop.first %}
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-lines{% if not loop.last %} mm-lines-open{% endif %}">
+		<thead>
+			<tr>
+				<th style="width: 6%; text-align: center;">No</th>
+				<th>Item Description</th>
+				<th style="width: 17%; text-align: right;">Price</th>
+				<th style="width: 11%; text-align: center;">Quantity</th>
+				<th style="width: 17%; text-align: right;">Total</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% else %}
+		</tbody>
+	</table>
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-lines mm-lines-more{% if not loop.last %} mm-lines-open{% endif %}">
+		<tbody>
+		{% endif %}
+			{{ line_row(loop.index, entry[0], entry[1]) }}
+		{% if loop.last %}
+		</tbody>
+	</table>
+		{% endif %}
+	{% endfor %}
+
+	{#- 6. payment info on the left, totals on the right -#}
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-sum">
+		<tr>
+			<td class="mm-pay">
+				{% if q.payment %}
+				<div class="mm-label" style="margin-bottom: 5px;">Payment Info:</div>
+				{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
+				{% endif %}
+			</td>
+			<td>
+				<table class="mm-totals">
+					<tr><td class="mm-tk">Subtotal:</td><td class="mm-tv">{{ q.subtotal }}</td></tr>
+					{% for tax in q.taxes %}
+					<tr><td class="mm-tk">{{ tax[0] }}:</td><td class="mm-tv">{{ tax[1] }}</td></tr>
+					{% else %}
+					<tr><td class="mm-tk">Tax / Duties:</td><td class="mm-tv">As Applicable</td></tr>
+					{% endfor %}
+					<tr class="mm-grand"><td>GRAND TOTAL:</td><td class="mm-tv">{{ q.grand_total }}</td></tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	{#- 7. The terms as one bordered table across the page (No. / Term / Details), right after the
+	    totals, then the signature. -#}
+	{% if q.terms %}
+	</div><!--mm-cut--><div class="mm">
+	<div class="mm-foot">
+		<div class="mm-foot-title">Terms &amp; Condition</div>
+		{#- The terms of a principal are a table, one term to a row, of three cells: number,
+		    heading, text. Each row is taken apart and written again into this layout's table. -#}
+		{% set term_rows = [] %}
+		{% for chunk in q.terms.split("</tr>") %}
+			{% if "<tr" in chunk %}{% set _ = term_rows.append(chunk.split("<tr", 1)[1]) %}{% endif %}
+		{% endfor %}
+		{% if term_rows %}
+		<table class="mm-terms-table{% if term_rows | length > 1 %} mm-terms-open{% endif %}">
+			<thead><tr><th class="mm-term-no">No.</th><th class="mm-term-name">Term</th><th>Details</th></tr></thead>
+			<tbody>
+			{% for row in term_rows %}
+					{#- each term after the first is a piece of its own: a small table of one row -#}
+					{% if not loop.first %}
+				</tbody>
+			</table>
+		</div>
+	</div><!--mm-cut--><div class="mm">
+		<div class="mm-foot mm-foot-more">
+			<table class="mm-terms-table mm-terms-cont{% if not loop.last %} mm-terms-open{% endif %}">
+				<tbody>
+					{% endif %}
+				{#- the content of each cell: what stands after the ">" that closes its <td ...> -#}
+				{% set cells = [] %}
+				{% for piece in row.split("</td>") %}
+					{% if "<td" in piece %}{% set _ = cells.append(piece.split("<td", 1)[1].split(">", 1)[1] | trim) %}{% endif %}
+				{% endfor %}
+				{% if cells | length >= 3 %}
+					{#- The old system broke its texts at a fixed width ("70% with Taxes 1 week before" /
+					    "dispatch."). A break followed by a small letter is such a break and becomes a
+					    space; any other break (an address line, a new item of a list) is kept. -#}
+					{% set text = namespace(html="") %}
+					{% for part in cells[2].replace("<br/>", "<br>").replace("<br />", "<br>").split("<br>") %}
+						{% if loop.first %}{% set text.html = part %}
+						{% elif (part | trim)[:1].islower() %}{% set text.html = text.html | trim ~ " " ~ (part | trim) %}
+						{% else %}{% set text.html = text.html ~ "<br>" ~ (part | trim) %}{% endif %}
+					{% endfor %}
+					{#- a row with neither number nor heading continues the term above it -#}
+					{% set more = not (frappe.utils.strip_html(cells[0] ~ cells[1]) | replace("&nbsp;", "") | trim) %}
+					<tr{% if more %} class="mm-term-more"{% endif %}>
+						<td class="mm-term-no">{{ cells[0] }}</td>
+						<td class="mm-term-name">{{ cells[1] }}</td>
+						<td>{{ text.html }}</td>
+					</tr>
+				{% else %}
+					{#- a table of another shape, typed by hand: its row as it is -#}
+					<tr{{ row }}</tr>
+				{% endif %}
+			{% endfor %}
+			</tbody>
+		</table>
+		{% else %}
+			{#- terms typed as paragraphs or a list: printed as they are -#}
+			<div class="mm-terms-flow">{{ q.terms }}</div>
+		{% endif %}
+	</div>
+	{% endif %}
+
+	</div><!--mm-cut--><div class="mm">
+	<div class="mm-sign">
+		<div class="mm-label">Account Manager</div>
+		<div class="mm-sign-name">{{ q.signer or "" }}</div>
+		<div class="mm-label">{{ q.signer or "" }}</div>
+		<div class="mm-muted" style="text-transform: uppercase; font-size: 7.5pt;">{{ q.designation or "" }}</div>
+	</div>
+</div>
+
+{% endset %}
+{% set page_footer = footer if footer and not no_letterhead else "" %}
+
+{#- 8. Putting the page out, with the footer of the letter head (Manav Letter Head 2025) at the
+    foot of every page. A quotation reaches paper in two ways, which need different HTML, so the
+    page is put out twice and each way sees only its own copy. Frappe provides the two classes
+    used for that: an element with the class hidden-pdf is taken out before the PDF is made, and
+    one with visible-pdf is not shown in the browser.
+
+    a) Printed from the browser (the Print button of the print view). The browser adds its own
+       lines to every page: date and title on top, the address of the page and the page number
+       below. It leaves them out only when the page has no margin, so the margin is set to
+       nothing and given back by this table: its head row and foot row are repeated by the
+       browser on every page and make the top and bottom margin, its cells make the side
+       margins. The footer is fixed to the bottom of the page, which the browser also repeats
+       on every page; the foot row holds an unseen copy of it, so that exactly its height is
+       kept free and the text never runs under it. On the screen none of this applies: the
+       footer simply follows the quotation. -#}
+<div class="hidden-pdf">
+	<table class="mm-sheet">
+		{#- the head row is repeated on every page: the top margin, and the letter head when there is one -#}
+		<thead><tr><td class="mm-sheet-top">{{ page_head }}</td></tr></thead>
+		<tbody>
+			{#- a piece that holds nothing (no notes, for example) gets no row -#}
+			{% for piece in page.split("<!--mm-cut-->") %}{% if (frappe.utils.strip_html(piece) | trim) or "<img" in piece %}
+			<tr><td class="mm-sheet-body">{{ piece }}</td></tr>
+			{% endif %}{% endfor %}
+		</tbody>
+		<tfoot><tr><td class="mm-sheet-bottom">{% if page_footer %}<div class="mm-sheet-room">{{ page_footer }}</div>{% endif %}</td></tr></tfoot>
+	</table>
+	{% if page_footer %}<div class="mm-sheet-footer"><div class="letter-head-footer">{{ page_footer }}</div></div>{% endif %}
+</div>
+
+{#- b) The PDF made on the server (Get PDF, and e-mails). The PDF maker takes the element with
+       the id footer-html out of the page and puts it at the foot of every page. It is inside
+       an element that the browser does not show, because the print view would otherwise show
+       this footer as well. -#}
+{#- c) The page margins of that PDF. wkhtmltopdf draws the head of the pages inside the top
+       margin of every page and the footer inside the bottom margin, and Frappe gives it a top
+       margin of about 10 mm. The head here is some 60 mm high: drawn in a 10 mm margin it lies
+       over the page and the quotation itself cannot be seen. Frappe takes the page margins of
+       the PDF from a rule ".print-format { margin-top: ...; margin-bottom: ... }", so the
+       margins are given that way, worked out from what the head holds: the letter head (at most
+       27 mm), the box (about 27 mm, and some 3.6 mm for each line of the customer's address,
+       which runs at about 60 letters to a line) and a little space. The second rule (two classes,
+       so that it weighs more and is not read by Frappe) keeps the page itself without these
+       margins in every view: print view, the print preview in the form, and the PDF, where they
+       are page margins and not space inside the page. -#}
+{% set address_lines = [[((customer_address | length) / 60) | round(0, "ceil") | int, 1] | max, 4] | min %}
+{% set head_box_mm = 27 + 3.6 * address_lines %}
+{% set pdf_margin_top = (28 if page_letter_head else 23) + head_box_mm + 4 %}
+{% set pdf_margin_bottom = 26 if page_footer else 15 %}
+<style>
+	.print-format { margin-top: {{ "%.0f" | format(pdf_margin_top) }}mm; margin-bottom: {{ pdf_margin_bottom }}mm; }
+	.print-format.print-format { margin-top: 0 !important; margin-bottom: 0 !important; }
+</style>
+<div class="visible-pdf">
+	{#- the head of the pages likewise: the element with the id header-html is put at the top of every page -#}
+	<div id="header-html">{{ page_head }}</div>
+	{{ page | replace("<!--mm-cut-->", "") }}
+	{% if page_footer %}<div id="footer-html"><div class="letter-head-footer">{{ page_footer }}</div></div>{% endif %}
+</div>

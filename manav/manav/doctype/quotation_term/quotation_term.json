@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "term_type",
+  "term_desc",
+  "sr_no",
+  "description",
+  "legacy_modified_by",
+  "legacy_modified_on"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "term_type",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Term Type"
+  },
+  {
+   "columns": 2,
+   "fieldname": "term_desc",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Term"
+  },
+  {
+   "columns": 1,
+   "fieldname": "sr_no",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sr No"
+  },
+  {
+   "columns": 6,
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Date",
+   "label": "Modified On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Term",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

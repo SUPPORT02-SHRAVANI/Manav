@@ -88,6 +88,44 @@ app_license = "mit"
 # before_install = "manav.install.before_install"
 # after_install = "manav.install.after_install"
 
+# CHANGE NOTE
+# Date: 2026-10-12
+# Change: Create the Manav custom fields on the inbuilt Customer doctype after every migrate.
+# Reason: The old customer master has columns that ERPNext's Customer does not have, and the
+# Customer doctype itself belongs to ERPNext and must not be edited.
+#
+# CHANGE NOTE
+# Date: 2026-10-12
+# Change: Also create the Manav custom fields on the inbuilt Item doctype after every migrate.
+# Reason: The old items are loaded into ERPNext's Item, which has no field for the Quotation Type
+# and the old rate.
+#
+# CHANGE NOTE
+# Date: 2026-10-12
+# Change: Also create the Manav custom fields on ERPNext's Quotation, Quotation Item, Sales Person
+# and Contact (erpnext_fields). Added doctype_js and doc_events for Quotation below.
+# Reason: Quotations are now made in ERPNext's own Quotation form instead of Quotation Head.
+#
+# CHANGE NOTE
+# Date: 2026-10-13
+# Change: Also create the principals' Letter Heads and set them on their Quotation Types
+# (letter_heads).
+# Reason: The machine quotations are to print with the Haas Factory Outlet header.
+after_migrate = [
+	"manav.manav.customer_fields.setup_customer_fields",
+	"manav.manav.item_fields.setup_item_fields",
+	"manav.manav.erpnext_fields.setup_erpnext_fields",
+	"manav.manav.letter_heads.setup_letter_heads",
+]
+
+# Manav's screen logic on ERPNext's Quotation form: principal defaults, item filter, Add Options.
+# Item: the "Format Pasted Specifications" button (added 2026-10-12, so that a specification table
+# copied from the manufacturer's site can be turned into the lines the quotation prints).
+doctype_js = {"Quotation": "public/js/quotation.js", "Item": "public/js/item.js"}
+
+# The Manav quotation number (e.g. 26QP000639) for a Quotation that has a principal.
+doc_events = {"Quotation": {"autoname": "manav.manav.quotation.autoname"}}
+
 # Uninstallation
 # ------------
 

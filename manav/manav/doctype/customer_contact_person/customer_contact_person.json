@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:{customer_code}-{sr_no}",
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "customer_code",
+  "sr_no",
+  "inactive",
+  "column_break_main",
+  "contact_name",
+  "designation",
+  "department",
+  "contact_section",
+  "mobile_no",
+  "phone",
+  "column_break_contact",
+  "res_phone",
+  "email",
+  "old_record_section",
+  "legacy_created_by",
+  "legacy_created_on",
+  "column_break_old_record_1",
+  "legacy_modified_by",
+  "legacy_modified_on",
+  "column_break_old_record_2",
+  "legacy_status_by",
+  "legacy_status_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "description": "Customer code of the old system",
+   "fieldname": "customer_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sr_no",
+   "fieldtype": "Int",
+   "label": "Sr No",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "inactive",
+   "fieldtype": "Check",
+   "label": "Inactive"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Designation"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department"
+  },
+  {
+   "fieldname": "contact_section",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile No"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "res_phone",
+   "fieldtype": "Data",
+   "label": "Residence Phone"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "E-mail"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "legacy_created_by",
+   "fieldtype": "Data",
+   "label": "Created By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Datetime",
+   "label": "Modified On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_status_by",
+   "fieldtype": "Data",
+   "label": "Active Status Set By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_status_on",
+   "fieldtype": "Datetime",
+   "label": "Active Status Set On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Customer Contact Person",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "contact_name,customer_code,mobile_no",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "contact_name"
+}

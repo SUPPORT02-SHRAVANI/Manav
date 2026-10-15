@@ -1,0 +1,635 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "creation": "2026-10-12 14:00:00.000000",
+ "default_print_format": "Manav Modern Quotation Head",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "quotation_no",
+  "quotation_date",
+  "quotation_type",
+  "number_series",
+  "revision_no",
+  "column_break_main",
+  "customer",
+  "customer_code",
+  "customer_name",
+  "column_break_main_2",
+  "currency",
+  "letter_head",
+  "haas_customer_id",
+  "draft_pi_no",
+  "ref_quotation_no",
+  "machine_number",
+  "reference_section",
+  "our_reference",
+  "our_reference_date",
+  "column_break_reference",
+  "your_reference",
+  "your_reference_date",
+  "column_break_reference_2",
+  "agent_code",
+  "signature_one_code",
+  "signed_by_name",
+  "signature_two_code",
+  "sales_engineer_name",
+  "address_section",
+  "address_1",
+  "address_2",
+  "address_3",
+  "column_break_address",
+  "city",
+  "state",
+  "pin",
+  "column_break_address_2",
+  "customer_contact",
+  "contact_person_sr",
+  "contact_person",
+  "designation",
+  "contact_email",
+  "region_section",
+  "region_zone",
+  "column_break_region",
+  "region_state_code",
+  "column_break_region_2",
+  "region_city_code",
+  "items_section",
+  "items",
+  "specifications_section",
+  "specifications",
+  "sub_items_section",
+  "sub_items",
+  "amounts_section",
+  "item_total",
+  "quotation_amount",
+  "freight",
+  "final_amount",
+  "column_break_amounts",
+  "sales_tax_code",
+  "sales_tax_percent",
+  "sales_tax_amount",
+  "column_break_amounts_2",
+  "sc_on_sales_tax_percent",
+  "sc_on_sales_tax_amount",
+  "sc_on_taxable_percent",
+  "sc_on_taxable_amount",
+  "message_section",
+  "message_line_1",
+  "message_line_2",
+  "terms_section",
+  "terms",
+  "requirement_section",
+  "requirement_model",
+  "requirement_category",
+  "requirement_quantity",
+  "column_break_requirement",
+  "cycle_time_required",
+  "cycle_time_by_date",
+  "old_record_section",
+  "legacy_created_by",
+  "legacy_created_on",
+  "column_break_old_record_1",
+  "legacy_modified_by",
+  "legacy_modified_on",
+  "column_break_old_record_2",
+  "legacy_status_by",
+  "legacy_status_on"
+ ],
+ "fields": [
+  {
+   "description": "Given automatically when the quotation is first saved",
+   "fieldname": "quotation_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Quotation No",
+   "no_copy": 1,
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "quotation_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Quotation Date"
+  },
+  {
+   "description": "Decides the currency, letter head, number series, standard terms and the items that can be chosen",
+   "fieldname": "quotation_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Principal (Quotation Type)",
+   "options": "Quotation Type",
+   "reqd": 1
+  },
+  {
+   "description": "From the Quotation Type; can be changed before the first save",
+   "fieldname": "number_series",
+   "fieldtype": "Data",
+   "label": "Quotation No Series",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "revision_no",
+   "fieldtype": "Int",
+   "label": "Revision No"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "description": "Customer code of the old system",
+   "fieldname": "customer_code",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Customer Code"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name"
+  },
+  {
+   "fieldname": "column_break_main_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "As typed in the old system, e.g. RS or US$",
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency"
+  },
+  {
+   "description": "From the Quotation Type; the header the quotation is printed with",
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "label": "Letter Head",
+   "options": "Letter Head",
+   "print_hide": 1
+  },
+  {
+   "description": "Printed as Cust ID",
+   "fieldname": "haas_customer_id",
+   "fieldtype": "Data",
+   "label": "Haas Cust ID"
+  },
+  {
+   "fieldname": "draft_pi_no",
+   "fieldtype": "Data",
+   "label": "Draft PI No"
+  },
+  {
+   "fieldname": "ref_quotation_no",
+   "fieldtype": "Data",
+   "label": "Ref Quotation No"
+  },
+  {
+   "fieldname": "machine_number",
+   "fieldtype": "Data",
+   "label": "Machine Number"
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "our_reference",
+   "fieldtype": "Data",
+   "label": "Our Reference"
+  },
+  {
+   "fieldname": "our_reference_date",
+   "fieldtype": "Date",
+   "label": "Our Reference Date"
+  },
+  {
+   "fieldname": "column_break_reference",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "your_reference",
+   "fieldtype": "Data",
+   "label": "Your Reference"
+  },
+  {
+   "fieldname": "your_reference_date",
+   "fieldtype": "Date",
+   "label": "Your Reference Date"
+  },
+  {
+   "fieldname": "column_break_reference_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_code",
+   "fieldtype": "Data",
+   "label": "Agent Code"
+  },
+  {
+   "description": "Employee Master code, e.g. M-02; signs the quotation",
+   "fieldname": "signature_one_code",
+   "fieldtype": "Data",
+   "label": "Signed By (Employee Code)"
+  },
+  {
+   "fieldname": "signed_by_name",
+   "fieldtype": "Data",
+   "label": "Signed By",
+   "read_only": 1
+  },
+  {
+   "description": "Employee Master code; printed as Sales Engg.",
+   "fieldname": "signature_two_code",
+   "fieldtype": "Data",
+   "label": "Discussion With (Employee Code)"
+  },
+  {
+   "fieldname": "sales_engineer_name",
+   "fieldtype": "Data",
+   "label": "Sales Engineer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "Address and Contact"
+  },
+  {
+   "fieldname": "address_1",
+   "fieldtype": "Data",
+   "label": "Address 1"
+  },
+  {
+   "fieldname": "address_2",
+   "fieldtype": "Data",
+   "label": "Address 2"
+  },
+  {
+   "fieldname": "address_3",
+   "fieldtype": "Data",
+   "label": "Address 3"
+  },
+  {
+   "fieldname": "column_break_address",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "pin",
+   "fieldtype": "Data",
+   "label": "Pin"
+  },
+  {
+   "fieldname": "column_break_address_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Choose one to fill the three fields below",
+   "fieldname": "customer_contact",
+   "fieldtype": "Link",
+   "label": "Customer Contact Person",
+   "options": "Customer Contact Person"
+  },
+  {
+   "description": "Sr No of the Customer Contact Person",
+   "fieldname": "contact_person_sr",
+   "fieldtype": "Int",
+   "label": "Contact Person Sr No"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Contact E-mail"
+  },
+  {
+   "fieldname": "region_section",
+   "fieldtype": "Section Break",
+   "label": "Region"
+  },
+  {
+   "fieldname": "region_zone",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Region Zone",
+   "options": "Region Zone"
+  },
+  {
+   "fieldname": "column_break_region",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "region_state_code",
+   "fieldtype": "Data",
+   "label": "Region State Code"
+  },
+  {
+   "fieldname": "column_break_region_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "region_city_code",
+   "fieldtype": "Data",
+   "label": "Region City Code"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Quotation Head Item"
+  },
+  {
+   "description": "Printed under each item in two columns. Filled from the item when it is chosen; change them for this quotation as needed",
+   "fieldname": "specifications_section",
+   "fieldtype": "Section Break",
+   "label": "Specifications"
+  },
+  {
+   "fieldname": "specifications",
+   "fieldtype": "Table",
+   "label": "Specifications",
+   "options": "Quotation Head Specification"
+  },
+  {
+   "fieldname": "sub_items_section",
+   "fieldtype": "Section Break",
+   "label": "Options (Sub Items)"
+  },
+  {
+   "fieldname": "sub_items",
+   "fieldtype": "Table",
+   "label": "Options",
+   "options": "Quotation Head Sub Item"
+  },
+  {
+   "fieldname": "amounts_section",
+   "fieldtype": "Section Break",
+   "label": "Amounts and Taxes"
+  },
+  {
+   "fieldname": "item_total",
+   "fieldtype": "Float",
+   "label": "Item Total",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quotation_amount",
+   "fieldtype": "Float",
+   "label": "Quotation Amount",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "freight",
+   "fieldtype": "Float",
+   "label": "Freight (Other Add)",
+   "precision": "2"
+  },
+  {
+   "bold": 1,
+   "fieldname": "final_amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Final Amount",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_amounts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_tax_code",
+   "fieldtype": "Data",
+   "label": "Sales Tax Code"
+  },
+  {
+   "description": "CGST % on the quotations made since GST",
+   "fieldname": "sales_tax_percent",
+   "fieldtype": "Float",
+   "label": "Sales Tax %",
+   "precision": "2"
+  },
+  {
+   "fieldname": "sales_tax_amount",
+   "fieldtype": "Float",
+   "label": "Sales Tax Amount",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_amounts_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "SGST % on the quotations made since GST",
+   "fieldname": "sc_on_sales_tax_percent",
+   "fieldtype": "Float",
+   "label": "SC on Sales Tax % (ED Cess %)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "sc_on_sales_tax_amount",
+   "fieldtype": "Float",
+   "label": "SC on Sales Tax Amount (ED Cess Amount)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "description": "IGST % on the quotations made since GST",
+   "fieldname": "sc_on_taxable_percent",
+   "fieldtype": "Float",
+   "label": "SC on Taxable % (HSEC %)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "sc_on_taxable_amount",
+   "fieldtype": "Float",
+   "label": "SC on Taxable Amount (HSEC Amount)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "fieldname": "message_line_1",
+   "fieldtype": "Data",
+   "label": "Message Line 1"
+  },
+  {
+   "fieldname": "message_line_2",
+   "fieldtype": "Data",
+   "label": "Message Line 2"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Terms and Conditions"
+  },
+  {
+   "fieldname": "terms",
+   "fieldtype": "Table",
+   "label": "Terms",
+   "options": "Quotation Term"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "requirement_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Requirement"
+  },
+  {
+   "fieldname": "requirement_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "requirement_category",
+   "fieldtype": "Data",
+   "label": "Category"
+  },
+  {
+   "fieldname": "requirement_quantity",
+   "fieldtype": "Data",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "column_break_requirement",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cycle_time_required",
+   "fieldtype": "Data",
+   "label": "Cycle Time Required"
+  },
+  {
+   "fieldname": "cycle_time_by_date",
+   "fieldtype": "Date",
+   "label": "Cycle Time by Date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "legacy_created_by",
+   "fieldtype": "Data",
+   "label": "Created By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Datetime",
+   "label": "Modified On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_status_by",
+   "fieldtype": "Data",
+   "label": "Active Status Set By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_status_on",
+   "fieldtype": "Datetime",
+   "label": "Active Status Set On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-13 14:32:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Head",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "customer_name,customer_code,quotation_date",
+ "show_title_field_in_link": 1,
+ "sort_field": "quotation_date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name"
+}

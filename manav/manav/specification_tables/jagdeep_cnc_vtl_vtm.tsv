@@ -1,0 +1,30 @@
+Operations: Facing, Turning ID and OD, Profile Machining, Taper Machining, PCD Drilling & Tapping (Turn-Mill), Offset Drilling/Thread Milling (Turn-Mill), Profile Milling (Turn-Mill), Slotting (Turn-Mill), Multi Axis Machining (Turn-Mill)
+Models	JVTC/JVTM-1	JVTC/JVTM-1.2	JVTC/JVTM-1.5	JVTC/JVTM-2	JVTC/JVTM-2.5	JVTC/JVTM-3	JVTC/JVTM-3.5	JVTC/JVTM-4
+Descriptions	Units
+Table Diameter (Manual Chuck)	MM	1000	1200	1500	2000	2500	3000	3500	4000
+Max. Turning Diameter (*)	MM	1200	1500	1700	2200	2700	3200	3700	4200
+Max. Turning Height (*) (With Fixed Cross Rail)	MM	1000/1200
+Max. Turning Height (*) (With Moveable Cross Rail)	MM	NA	1500	1500	1500/2000	1500/2000	1500/2000	1500/2000	1500/2000
+Max. Work piece Weight (*)	KGS	4000	5000	6000	8000	10000	15000	15000	20000
+Travel
+X - Axis Rapid Rate	MM/MIN	1000
+Z - Axis Rapid Rate	MM/MIN	1000
+X-Axis (Horizontal Travel) (*)	MM	+600 to -200	+750 to -200	+850 to -200	+1100 to -200	+1350 to -200	+1600 to -200	+1850 to -200	+2150 to -200
+Z-Axis (Vertical Ram Travel)	MM	900/1100
+Electric Motors
+X-Axis Servo Motor (*)	N-M	40	40	40	40	53	75	75	75
+Z-Axis Servo Motor (*)	N-M	40
+Main Spindle Servo Motor (Table) (*) (Continuous/30min.)	Kw	15/18	15/18	15/18	22/26	30/36	36/40	36/40	60/75
+Range of Table Speeds	RPM	05-250	05-250	05-250	05-200	05-150	02-50	01-20	01-10
+Live Spindle Motor (***) (*)	Kw	7.5/11
+Live Spindle Speed (***) (*)	RPM	1500
+CNC Control (*)	-	FANUC / Siemens
+Positioning-Linear Axis	MM	±0.01
+Repeatability-Linear Axis	MM	±0.005
+C-Axis Positioning Accuracy (***)	Arc sec	±15
+C-Axis Repeatability (***)	Arc sec	±5
+Ovality (Turning)	MM/M	±0.01
+Taper (Turning)	MM/300MM	±0.01
+(*) Customization available.
+(**) Only with JVTC - Vertical Turning Lathe.
+(***) Only with JVTM - Vertical Turn Mill Centre.

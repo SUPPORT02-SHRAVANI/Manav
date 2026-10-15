@@ -1,0 +1,241 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:QIM-{#####}",
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "quotation_type",
+  "item_code",
+  "sr_no",
+  "uom",
+  "hsn_code",
+  "column_break_main",
+  "qty",
+  "rate",
+  "amount",
+  "gasket_price",
+  "description_section",
+  "item_description",
+  "specifications_section",
+  "specifications",
+  "old_flags_section",
+  "legacy_user_code",
+  "column_break_old_flags",
+  "source_location",
+  "column_break_old_flags_2",
+  "destination_location",
+  "old_record_section",
+  "legacy_created_by",
+  "legacy_created_on",
+  "column_break_old_record_1",
+  "legacy_modified_by",
+  "legacy_modified_on",
+  "column_break_old_record_2",
+  "legacy_status_by",
+  "legacy_status_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "quotation_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Quotation Type",
+   "options": "Quotation Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Item Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sr_no",
+   "fieldtype": "Int",
+   "label": "Sr No",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "UOM"
+  },
+  {
+   "fieldname": "hsn_code",
+   "fieldtype": "Data",
+   "label": "HSN Code"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "label": "Qty"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Rate",
+   "precision": "2"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "label": "Amount",
+   "precision": "2"
+  },
+  {
+   "fieldname": "gasket_price",
+   "fieldtype": "Float",
+   "label": "Gasket Price",
+   "precision": "2"
+  },
+  {
+   "fieldname": "description_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "item_description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Item Description"
+  },
+  {
+   "description": "Copied into a quotation when this item is chosen, and printed under the item",
+   "fieldname": "specifications_section",
+   "fieldtype": "Section Break",
+   "label": "Standard Specifications"
+  },
+  {
+   "fieldname": "specifications",
+   "fieldtype": "Table",
+   "label": "Standard Specifications",
+   "options": "Quotation Item Specification"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Flags"
+  },
+  {
+   "fieldname": "legacy_user_code",
+   "fieldtype": "Data",
+   "label": "User Code (Old System)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_flags",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source_location",
+   "fieldtype": "Data",
+   "label": "Source Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_flags_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "destination_location",
+   "fieldtype": "Data",
+   "label": "Destination Location",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "legacy_created_by",
+   "fieldtype": "Data",
+   "label": "Created By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Datetime",
+   "label": "Modified On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_status_by",
+   "fieldtype": "Data",
+   "label": "Active Status Set By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_status_on",
+   "fieldtype": "Datetime",
+   "label": "Active Status Set On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Item Master",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "item_code,item_description",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "item_code"
+}

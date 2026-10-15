@@ -1,0 +1,197 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:quotation_type",
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "quotation_type",
+  "description",
+  "column_break_main",
+  "signed_by_code",
+  "currency_code",
+  "number_series",
+  "letter_head",
+  "erpnext_section",
+  "currency",
+  "price_list",
+  "column_break_erpnext",
+  "item_group",
+  "terms_template",
+  "terms_section",
+  "terms",
+  "counters_section",
+  "period_count",
+  "column_break_counters",
+  "period_value",
+  "old_record_section",
+  "legacy_created_by",
+  "legacy_created_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "quotation_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Quotation Type",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "signed_by_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Signed By (Employee Code)"
+  },
+  {
+   "fieldname": "currency_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Currency Code"
+  },
+  {
+   "description": "Two letters used in the quotation number, e.g. QP in 26QP000639",
+   "fieldname": "number_series",
+   "fieldtype": "Data",
+   "label": "Quotation No Series"
+  },
+  {
+   "description": "The header printed on quotations of this type",
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "label": "Letter Head",
+   "options": "Letter Head"
+  },
+  {
+   "description": "Put on a Quotation when this principal is chosen",
+   "fieldname": "erpnext_section",
+   "fieldtype": "Section Break",
+   "label": "Used on ERPNext Quotations"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "column_break_erpnext",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Only items of this group, and Options, can be chosen",
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "label": "Item Group",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "terms_template",
+   "fieldtype": "Link",
+   "label": "Terms Template",
+   "options": "Terms and Conditions"
+  },
+  {
+   "description": "Copied into a new quotation of this type",
+   "fieldname": "terms_section",
+   "fieldtype": "Section Break",
+   "label": "Standard Terms"
+  },
+  {
+   "fieldname": "terms",
+   "fieldtype": "Table",
+   "label": "Standard Terms",
+   "options": "Quotation Term"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "counters_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Counters"
+  },
+  {
+   "fieldname": "period_count",
+   "fieldtype": "Int",
+   "label": "Period Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_counters",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "period_value",
+   "fieldtype": "Float",
+   "label": "Period Value",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "legacy_created_by",
+   "fieldtype": "Data",
+   "label": "Created By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Type",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "description",
+ "show_title_field_in_link": 1,
+ "sort_field": "quotation_type",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "description"
+}

@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "specification",
+  "highlight"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "item_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Code"
+  },
+  {
+   "columns": 7,
+   "fieldname": "specification",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Specification"
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "fieldname": "highlight",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Bold"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Head Specification",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "states": []
+}

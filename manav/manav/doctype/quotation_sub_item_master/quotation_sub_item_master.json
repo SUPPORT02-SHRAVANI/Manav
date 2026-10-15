@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "format:QSI-{#####}",
+ "creation": "2026-10-12 14:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "main_item_code",
+  "sub_item_code",
+  "sr_no",
+  "sub_item_type",
+  "uom",
+  "column_break_main",
+  "qty",
+  "rate",
+  "amount",
+  "net_amount",
+  "description_section",
+  "item_description",
+  "old_record_section",
+  "old_item_code",
+  "update_flag",
+  "column_break_old_record",
+  "legacy_modified_by",
+  "legacy_modified_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "main_item_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Main Item Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sub_item_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sub Item Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sr_no",
+   "fieldtype": "Int",
+   "label": "Sub Item Sr No",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "sub_item_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sub Item Type"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Data",
+   "label": "UOM"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "label": "Qty"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Rate",
+   "precision": "2"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Float",
+   "label": "Amount",
+   "precision": "2"
+  },
+  {
+   "fieldname": "net_amount",
+   "fieldtype": "Float",
+   "label": "Net Amount",
+   "precision": "2"
+  },
+  {
+   "fieldname": "description_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "item_description",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Item Description"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "old_item_code",
+   "fieldtype": "Data",
+   "label": "Old Item Code",
+   "read_only": 1
+  },
+  {
+   "description": "Y or U in the old system",
+   "fieldname": "update_flag",
+   "fieldtype": "Data",
+   "label": "Update Flag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Date",
+   "label": "Modified On (Old System)",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 21:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Quotation Sub Item Master",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "main_item_code,sub_item_code,item_description",
+ "show_title_field_in_link": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "sub_item_code"
+}

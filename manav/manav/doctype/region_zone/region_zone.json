@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:zone_code",
+ "creation": "2026-10-12 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "zone_code",
+  "zone_name",
+  "inactive",
+  "column_break_zone",
+  "file_no_range_from",
+  "file_no_range_to",
+  "old_record_section",
+  "legacy_created_by",
+  "legacy_created_on",
+  "column_break_old_record",
+  "legacy_modified_by",
+  "legacy_modified_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "zone_code",
+   "fieldtype": "Data",
+   "label": "Zone Code",
+   "unique": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "inactive",
+   "fieldtype": "Check",
+   "label": "Inactive",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_zone",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "file_no_range_from",
+   "fieldtype": "Int",
+   "label": "File No Range From"
+  },
+  {
+   "fieldname": "file_no_range_to",
+   "fieldtype": "Int",
+   "label": "File No Range To"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "old_record_section",
+   "fieldtype": "Section Break",
+   "label": "Old System Record"
+  },
+  {
+   "fieldname": "legacy_created_by",
+   "fieldtype": "Data",
+   "label": "Created By (Old System)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On (Old System)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_old_record",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "legacy_modified_by",
+   "fieldtype": "Data",
+   "label": "Modified By (Old System)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "legacy_modified_on",
+   "fieldtype": "Datetime",
+   "label": "Modified On (Old System)",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-12 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Region Zone",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "zone_name",
+ "show_title_field_in_link": 1,
+ "sort_field": "zone_code",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "zone_name"
+}
