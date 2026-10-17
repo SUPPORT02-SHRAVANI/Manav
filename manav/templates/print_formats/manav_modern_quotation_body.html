@@ -34,7 +34,8 @@
 	   left; quotation number, date, Ref. No., Ref Dt., Sales Engg. and Cust ID on the right.
 	2. (The quotation box is part of the head of every page, see 1.)
 	3. The notes, at the start of the first page.
-	4. One "Equipment Specification" box for every machine, with the machine's picture on its
+	4. For every machine: its "Equipment Specification" box (below), followed at once by its
+	   lines (see 5.), then the next machine. The box shows the machine's picture on its
 	   left when the Item has one. The specification lines are shown as small name / value
 	   cells, four to a row (three beside a picture):
 	   - a line "label : a || b" under a heading "#Title || S.A.E. || Metric" shows "a / b";
@@ -46,8 +47,9 @@
 	   is written as a list ("Title; feature, feature" or six comma parts or more), each cell
 	   with a name worked out from its wording (see feature_rules below); as rows when it has
 	   several lines with "label : value"; otherwise as plain text.
-	5. Line table: every machine followed by its options, then the loose options. It is left
-	   out when the quotation has no lines (an old quotation loaded without its items).
+	5. Lines: under each machine's box, a line table of that machine and its options; after the
+	   last machine, the loose options. The lines are numbered 1, 2, 3 across all the tables.
+	   There are none when the quotation has no lines (an old quotation loaded without its items).
 	6. Payment info on the left; on the right the totals: subtotal, taxes ("As Applicable" when
 	   there are none, as the machine quotations leave taxes to the terms), grand total.
 	7. The terms as one bordered table across the page (No. / Term / Details), right after the
@@ -151,6 +153,15 @@
 	letter head carries the company.
 	Reason: The user showed a two-page quotation of the old system, whose header repeats on every
 	page, and asked for the information to be printed that way on all pages.
+
+	CHANGE NOTE
+	Date: 2026-10-17
+	Change: The lines are no longer one table after all the specification boxes: each machine's
+	box is followed by a table of that machine's line and its options, then comes the next
+	machine's box. The loose options follow the last machine. Numbering runs on across the
+	tables. The table is drawn by the macro lines_table.
+	Reason: The user asked for the first machine with its sub-items under it, then the second
+	machine with its sub-items, and so on.
 -#}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
 {%- macro plain(html) -%}
@@ -224,6 +235,38 @@
 		<td class="mm-qty">{{ line.qty }}</td>
 		<td class="mm-num mm-strong">{{ line.amount }}</td>
 	</tr>
+{%- endmacro -%}
+{#- A line table: entries is a list of [line, title], numbered from start + 1. Each line is a
+    piece of its own (a small table of one row, the first with the column headings), so that a
+    page can end between two lines. -#}
+{%- macro lines_table(entries, start) -%}
+	{% for entry in entries %}
+		{% if loop.first %}
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-lines{% if not loop.last %} mm-lines-open{% endif %}">
+		<thead>
+			<tr>
+				<th style="width: 6%; text-align: center;">No</th>
+				<th>Item Description</th>
+				<th style="width: 17%; text-align: right;">Price</th>
+				<th style="width: 11%; text-align: center;">Quantity</th>
+				<th style="width: 17%; text-align: right;">Total</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% else %}
+		</tbody>
+	</table>
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-lines mm-lines-more{% if not loop.last %} mm-lines-open{% endif %}">
+		<tbody>
+		{% endif %}
+			{{ line_row(start + loop.index, entry[0], entry[1]) }}
+		{% if loop.last %}
+		</tbody>
+	</table>
+		{% endif %}
+	{% endfor %}
 {%- endmacro -%}
 
 <style>
@@ -436,7 +479,8 @@
 	</table>
 	{% endif %}
 
-	{#- 4. one specification box for every machine -#}
+	{#- 4. every machine: its specification box, then its lines (5.) -#}
+	{% set numbered = namespace(count=0) %}
 	{% for machine in q.machines %}
 	{% set spec_lines = (machine.spec_text or "").split("\n") | map("trim") | select | list %}
 	{#- No specification lines: see whether the description is a list that can be shown as cells. -#}
@@ -569,44 +613,18 @@
 		{% endif %}
 		{% if machine.image %}</td></tr></table>{% endif %}
 	</div>
+
+	{#- 5. the machine's line and its options, right under its box -#}
+	{% set machine_lines = [[machine, machine.title]] %}
+	{% for option in machine.options %}{% set _ = machine_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
+	{{ lines_table(machine_lines, numbered.count) }}
+	{% set numbered.count = numbered.count + (machine_lines | length) %}
 	{% endfor %}
 
-	{#- 5. The lines: each machine, then its options, then the options whose machine is not on the
-	    quotation. Each line is a piece of its own (a small table of one row, the first with the
-	    column headings), so that a page can end between two lines. -#}
-	{% set all_lines = [] %}
-	{% for machine in q.machines %}
-		{% set _ = all_lines.append([machine, machine.title]) %}
-		{% for option in machine.options %}{% set _ = all_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
-	{% endfor %}
-	{% for option in q.loose_options %}{% set _ = all_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
-	{% for entry in all_lines %}
-		{% if loop.first %}
-	</div><!--mm-cut--><div class="mm">
-	<table class="mm-lines{% if not loop.last %} mm-lines-open{% endif %}">
-		<thead>
-			<tr>
-				<th style="width: 6%; text-align: center;">No</th>
-				<th>Item Description</th>
-				<th style="width: 17%; text-align: right;">Price</th>
-				<th style="width: 11%; text-align: center;">Quantity</th>
-				<th style="width: 17%; text-align: right;">Total</th>
-			</tr>
-		</thead>
-		<tbody>
-		{% else %}
-		</tbody>
-	</table>
-	</div><!--mm-cut--><div class="mm">
-	<table class="mm-lines mm-lines-more{% if not loop.last %} mm-lines-open{% endif %}">
-		<tbody>
-		{% endif %}
-			{{ line_row(loop.index, entry[0], entry[1]) }}
-		{% if loop.last %}
-		</tbody>
-	</table>
-		{% endif %}
-	{% endfor %}
+	{#- 5. the options whose machine is not on the quotation, after the last machine -#}
+	{% set loose_lines = [] %}
+	{% for option in q.loose_options %}{% set _ = loose_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
+	{{ lines_table(loose_lines, numbered.count) }}
 
 	{#- 6. payment info on the left, totals on the right -#}
 	</div><!--mm-cut--><div class="mm">

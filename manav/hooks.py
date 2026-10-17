@@ -123,6 +123,13 @@ after_migrate = [
 	"manav.manav.letter_heads.setup_letter_heads",
 ]
 
+# CHANGE NOTE
+# Date: 2026-10-15
+# Change: The same setup also runs right after the app is installed on a site.
+# Reason: Installing the app (e.g. on Frappe Cloud) does not run a migrate, so the custom fields,
+# letter heads and the Quotation settings were missing until the site was migrated by hand.
+after_install = list(after_migrate)
+
 # Manav's screen logic on ERPNext's Quotation form: principal defaults, item filter, Add Options.
 # Item: the "Format Pasted Specifications" button (added 2026-10-12, so that a specification table
 # copied from the manufacturer's site can be turned into the lines the quotation prints).

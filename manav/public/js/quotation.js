@@ -14,8 +14,8 @@
 //    group Options): the "+" button beside the edit pen of a machine's line lists that machine's
 //    sub-items, each with its price for that machine; those already on the quotation are ticked.
 //    Ticked ones are added as quotation lines marked "Sub-Item of", under the machine's line, and
-//    unticked ones are taken off. "Add Sub-Items" at the top of the form does the same for all
-//    machines on the quotation. Sub-Item Sr.No numbers the sub-items of each machine 1, 2, 3.
+//    unticked ones are taken off. A search box at the top of the dialog narrows the list by code
+//    or description. Sub-Item Sr.No numbers the sub-items of each machine 1, 2, 3.
 //
 // Totals, taxes and saving are ERPNext's own. The quotation number is given on the server
 // (autoname in manav/manav/quotation.py).
@@ -50,6 +50,13 @@
 // Change: ERPNext's frm.cscript.calculate_taxes_and_totals is only called when present; the
 // upgrade note above setup_sub_item_buttons lists every Frappe/ERPNext internal this file uses.
 // Reason: Upgrade-safe rule: internals are guarded and listed with the version they were checked on.
+//
+// CHANGE NOTE
+// Date: 2026-10-16
+// Change: The sub-items dialog has a Search box that shows only the sub-items whose code or
+// description has the typed text. The "Add Sub-Items" button at the top of the form is removed;
+// sub-items are added with the "+" on each machine's line.
+// Reason: The user asked to search the sub-items by code, and to remove the top button.
 
 const MANAV_QUOTATION = "manav.manav.quotation";
 
@@ -66,9 +73,6 @@ frappe.ui.form.on("Quotation", {
 
 	refresh(frm) {
 		set_item_query(frm);
-		if (frm.doc.docstatus === 0) {
-			frm.add_custom_button(__("Add Sub-Items"), () => show_options_dialog(frm));
-		}
 	},
 
 	custom_quotation_type(frm) {
@@ -230,11 +234,20 @@ function show_options_dialog(frm, only_code) {
 			}
 
 			const by_key = {};
-			const fields = [];
+			const fields = [
+				{
+					fieldtype: "Data",
+					fieldname: "search",
+					label: __("Search"),
+					placeholder: __("Type a code or description to find a sub-item"),
+				},
+			];
+			const multi_check_fields = [];
 			codes.forEach((code, index) => {
 				const of_item = options.filter((option) => option.main_item_code === code);
 				if (!of_item.length) return;
 				fields.push({ fieldtype: "Section Break", label: __("Sub-Items of {0}", [code]) });
+				multi_check_fields.push(`options_${index}`);
 				fields.push({
 					fieldtype: "MultiCheck",
 					fieldname: `options_${index}`,
@@ -259,7 +272,7 @@ function show_options_dialog(frm, only_code) {
 				fields: fields,
 				primary_action_label: __("Update"),
 				primary_action(values) {
-					const ticked = new Set(Object.values(values).flat());
+					const ticked = new Set(multi_check_fields.flatMap((fieldname) => values[fieldname] || []));
 					const shown = Object.values(by_key);
 					// Ticked and not yet on the quotation: add it under its machine.
 					shown
@@ -287,7 +300,23 @@ function show_options_dialog(frm, only_code) {
 					}
 				},
 			});
+			// Search: show only the sub-items whose code or description has the typed text (ticked
+			// ones that are hidden stay ticked), and hide a machine's block when none of its show.
+			dialog.fields_dict.search.$input.on("input", function () {
+				const text = ($(this).val() || "").trim().toLowerCase();
+				multi_check_fields.forEach((fieldname) => {
+					const field = dialog.fields_dict[fieldname];
+					let shown = 0;
+					field.$wrapper.find(".checkbox").each(function () {
+						const match = !text || $(this).text().toLowerCase().includes(text);
+						$(this).toggle(match);
+						if (match) shown++;
+					});
+					field.$wrapper.closest(".form-section").toggle(shown > 0);
+				});
+			});
 			dialog.show();
+			setTimeout(() => dialog.fields_dict.search.$input.trigger("focus"), 300);
 		},
 	});
 }

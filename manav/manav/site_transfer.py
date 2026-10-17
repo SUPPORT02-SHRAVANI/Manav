@@ -153,7 +153,29 @@ def export_names(doctype):
 			pluck="parent",
 			distinct=True,
 		)
+	if doctype == "Employee Master":
+		return bosses_first()
 	return frappe.get_all(doctype, pluck="name", order_by="creation")
+
+
+def bosses_first():
+	"""Employee Master names with each boss before the employees under them (Boss links to
+	Employee Master; the first transfer on 2026-10-15 failed 3 employees whose boss came later)."""
+	boss_of = dict(frappe.get_all("Employee Master", fields=["name", "boss"], as_list=True))
+	ordered, placed = [], set()
+
+	def place(name, seen=()):
+		if name in placed or name not in boss_of or name in seen:
+			return
+		boss = boss_of[name]
+		if boss and boss != name:
+			place(boss, (*seen, name))
+		placed.add(name)
+		ordered.append(name)
+
+	for name in sorted(boss_of):
+		place(name)
+	return ordered
 
 
 def root_names(doctype):

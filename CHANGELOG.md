@@ -2,7 +2,51 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-10-17
+
+**Quotation print: each machine's lines right under its specification box.**
+
+- Reason: the print showed all specification boxes first and one line table after them. The
+  user asked for the first machine with its sub-items under it, then the second machine with
+  its sub-items, and so on.
+- Change (`manav/templates/print_formats/manav_modern_quotation_body.html`, shared by Manav
+  Modern Quotation and Manav Modern Quotation Head): after each machine's box comes a line table
+  of that machine and its options (new macro `lines_table`); loose options follow the last
+  machine, then the totals. Line numbers run on across the tables; each table has its heading.
+- Testing: the whole layout was rendered locally with Jinja2 3.1.6 and mock data (two machines
+  with options plus a loose option); the order came out box VF-1, 1 VF-1, 2 HIL, box VF-10/40,
+  3 VF-10/40, 4 ACF, 5 TSC, 6 loose option, totals. Not run: printing or PDF on the server.
+- Pending: `bench restart` (or `bench clear-cache`) on the server so the changed template is
+  read.
+
+**Quotation print: each machine, then its options, also for options added as ordinary lines.**
+
+- Reason: on quotation 26QX000081 the option ACF had been added as an ordinary line (its
+  "Sub-Item of" empty), so it printed as a machine with its own specification box, above VF-1.
+  The user asked for each machine followed by its options, then the next machine.
+- Change (`manav/manav/print_format/manav_modern_quotation/manav_modern_quotation.json`): a line
+  with an empty "Sub-Item of" is treated as an option of another machine line on the quotation
+  when the Quotation Sub Item Master lists it as that machine's sub-item (and it is not itself a
+  machine there). Codes are compared without case. `modified` raised so migrate reloads it.
+- Testing: the gathering part of the print format was rendered locally with Jinja2 3.1.6 and
+  mock data: [ACF, VF-1] gives VF-1 with option ACF; mixed marked/unmarked lines and an option
+  whose machine is missing (loose option) group as expected. Not run: printing on the server.
+- Pending: `bench --site <site> migrate` on the Linux server (and on mmblr.frappe.cloud after
+  deploy) to load the changed print format. The "Sub-Item of" field of the saved line is not
+  filled in by this change; Manav Modern Quotation Head is unchanged.
+
 ## 2026-10-15
+
+**Setup also runs when the app is installed (after_install).**
+
+- Reason: after Manav was installed on mmblr.frappe.cloud, its print formats were there but none
+  of its custom fields: they are made by the `after_migrate` functions, and installing an app does
+  not run a migrate.
+- Change (`manav/hooks.py`): `after_install` runs the same functions as `after_migrate` (custom
+  fields of Customer, Item, Quotation and others; letter heads).
+- Testing: hooks.py compiles; Frappe's installer runs every entry of the `after_install` list
+  (frappe/installer.py). Not tested by an install. The cloud site still needs one migrate now,
+  because the app is already installed there.
 
 **Copy items, prices, quotation print setup and customers to another site (Frappe Cloud).**
 
@@ -27,9 +71,18 @@ Changes to the Manav app, newest first.
 - Testing: both files compile; the picture-url pattern was checked on sample HTML. Not run: the
   export needs the server, the receive side needs this version of the app deployed on the cloud
   site, and the push needs its API key.
-- Pending: deploy this version on mmblr.frappe.cloud (Manav installed there, migrate run), an API
-  key of a System Manager there, the export on manav.local, the push. The transfer file holds
-  customer details and should be deleted afterwards.
+- Run on 2026-10-15 to https://mmblr.frappe.cloud (Manav installed there and the site migrated
+  first): every exported record is on the site: Item 5348, Item Price 1750, Quotation Item Master
+  6527, Quotation Sub Item Master 6059, Customer 8432, Address 8426, Contact 18094, Customer
+  Contact Person 10907, CRM Organization 8432 (+7 already there), Sales Person 122, Employee
+  Master 122, Quotation Type 8, Terms and Conditions 6, Region Zone 6, plus the item groups,
+  territories, price list and files; 8428 customers got their primary address/contact. Counts on
+  the site were compared with the export afterwards: all present. 3 Employee Master records failed
+  at first ("Could not find Boss") because their boss came later in the file; sent again, created.
+- Fix after the run: `export_names` puts each Employee Master's boss before the employees under
+  them (`bosses_first`; tested on sample data including a self-boss and a loop).
+- Cleanup: the transfer file, its failure list and the file with the cloud site's API key were
+  deleted. The API key was posted in the chat; it should be regenerated on the cloud site.
 
 **GitHub CI: test bench on Frappe 16 with ERPNext.**
 
