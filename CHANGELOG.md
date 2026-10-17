@@ -4,6 +4,71 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-17
 
+**Manav workspace shows the dashboard itself: number cards and charts for sales, HR, payroll.**
+
+- Reason: after the workspace was loaded, the user asked for everything to be on the workspace
+  page, not only a link to /manav-dashboard.
+- Changes (standard records of module Manav, loaded by `bench migrate`):
+  - `manav/manav/number_card/*` (12): Quotations This Month, Quoted Value This Month, Open
+    Quotations, Ordered Quotations This Year; Active Employees, Present / On Leave / Absent
+    Today, Leaves To Approve; Net Pay Last Month, Gross Pay Last Month, Draft Salary Slips.
+  - `manav/manav/dashboard_chart/*` (6): Quotation Value by Month; Quotations by Status, Quoted
+    Value by Principal, Quotations by Sales Engineer, Top Customers by Quoted Value (rolling last
+    12 months through a dynamic filter, since Frappe's "last year" is the previous calendar
+    year); Attendance This Month. The workspace also uses three HRMS standard charts:
+    Department Wise Employee Count, Outgoing Salary, Department Wise Salary(Last Month).
+  - `manav/manav/workspace/manav/manav.json`: sections Quotations / Sales, HR & Attendance,
+    Payroll, each with its cards and charts; shortcuts at the top and the link cards at the foot.
+- Testing: on manav.local every card and chart was computed from its file without saving:
+  Active Employees 63, Quotations This Month 8 (value 10,18,65,962); value by month Apr–Aug
+  2026; principals by name (SPARES IN RUPEES, MACHINES, JAGDEEP); top engineer ARUN .V (416);
+  attendance and payroll empty (no records yet). Not run: `bench migrate` and the browser view.
+- Pending: `bench --site manav.local migrate`, then a hard reload of the desk. HR and payroll
+  cards need HRMS on the site (Manav itself only requires ERPNext).
+
+**"Manav" workspace, sidebar and desktop icon (Frappe v16 desk), with the dashboard link.**
+
+- Reason: the user asked for the dashboard to be in a workspace.
+- Changes (standard files of the app, loaded by every `bench migrate`, so they survive updates):
+  - `manav/manav/workspace/manav/manav.json`: Workspace "Manav" (module Manav, public).
+    Shortcuts: Manav Dashboard (/manav-dashboard), Quotation, Quotation Type, Quotation Head (Old),
+    Customer, Item. Cards: Quotations, Customers, Masters, Old Records.
+  - `manav/workspace_sidebar/manav.json`: sidebar "Manav": Home, Dashboard, Quotation, Customer,
+    Item, and folded groups Quotation Masters, Other Masters, Old Records.
+  - `manav/desktop_icon/manav.json`: "Manav" icon on the desk home, opening that sidebar.
+- Testing: on manav.local the three files were loaded as documents and checked for mandatory
+  fields, select options and links without saving: all linked DocTypes exist; the only unresolved
+  links are to the "Manav" workspace/sidebar themselves, which migrate creates (Frappe's file
+  import skips link checks, modules/import_file.py). Icon names are ones ERPNext/HRMS sidebars use.
+  Not run: `bench migrate`, and a look at the desk in the browser.
+- Pending: `bench --site manav.local migrate` on the server.
+
+**Manav dashboard page (/manav-dashboard): quotations / sales, HR & attendance, payroll.**
+
+- Reason: the user asked for a dashboard for Manav covering sales, HR & attendance and payroll,
+  as a separate web page.
+- Changes:
+  - `manav/manav/dashboard.py`: whitelisted `get_dashboard_data(from_date, to_date)` (default the
+    last 12 months). Reads with `frappe.get_list`, so each reader's permissions apply; a section
+    the reader may not read comes back empty and is hidden. Sales: quotation count and value
+    (company currency), won / open / lost, conversion, by month, status, principal (Quotation
+    Type description), sales engineer, top customers. HR: active employees, today's attendance,
+    this month's attendance, open leave applications, employees by department. Payroll (System
+    Manager, HR Manager/User, Accounts Manager only): submitted slips, gross / net by month, gross
+    by department for the latest month. HR and payroll are left out when HRMS is not installed.
+  - `manav/www/manav-dashboard.html`, `manav_dashboard.py`, `manav-dashboard.css`,
+    `manav-dashboard.js`: the page. Desk users only; guests are sent to the login page. Date
+    range with 3M / 6M / 12M / this-year buttons; number tiles; monthly column charts with hover
+    details and a table view; bar lists for categories; light and dark colours. No chart library.
+- Testing: both Python files compile; `node --check` passes on the JS. On the server (manav.local),
+  `get_dashboard_data` was called read-only as Administrator: 715 quotations in the last 12 months,
+  principals named (SPARES IN RUPEES, MACHINES, JAGDEEP), 63 active employees, no attendance or
+  salary slips yet; an 82-month range also worked. Guest request to /manav-dashboard gives 301 to
+  /login. Not tested: the page in a logged-in browser (charts, layout, dark mode).
+- Pending: data gaps the dashboard shows rather than fixes: 707 of the 715 quotations are
+  "Expired" (imported, past Valid Till), so conversion is 0%; 62 of 63 employees have no
+  Department; payroll is empty until salary slips are submitted.
+
 **Quotation print: each machine's lines right under its specification box.**
 
 - Reason: the print showed all specification boxes first and one line table after them. The

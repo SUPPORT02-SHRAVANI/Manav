@@ -1,0 +1,112 @@
+/*
+	Styles of the Manav dashboard page (/manav-dashboard), loaded by Frappe as the page's
+	colocated CSS. Colours are tokens on .md-root, with their own dark-mode values. The charts
+	use one series colour (blue): every chart shows one measure, so no categorical palette is
+	needed, and statuses are told apart by their labels, not by colour.
+
+	Created: 2026-10-17.
+*/
+.md-root {
+	color-scheme: light;
+	--md-surface: #fcfcfb;
+	--md-card: #ffffff;
+	--md-border: #e4e3df;
+	--md-grid: #eeede9;
+	--md-text: #0b0b0b;
+	--md-text-2: #52514e;
+	--md-muted: #7a7974;
+	--md-series: #2a78d6;
+	--md-series-soft: #cde2fb;
+	--md-focus: #2a78d6;
+	background: var(--md-surface);
+	color: var(--md-text);
+	padding: 16px 0 40px;
+	font-variant-numeric: tabular-nums;
+}
+@media (prefers-color-scheme: dark) {
+	:root:where(:not([data-theme="light"])) .md-root {
+		color-scheme: dark;
+		--md-surface: #1a1a19;
+		--md-card: #222221;
+		--md-border: #383835;
+		--md-grid: #2c2c2a;
+		--md-text: #f0efec;
+		--md-text-2: #c3c2b7;
+		--md-muted: #9a998f;
+		--md-series: #3987e5;
+		--md-series-soft: #184f95;
+	}
+}
+:root[data-theme="dark"] .md-root {
+	color-scheme: dark;
+	--md-surface: #1a1a19;
+	--md-card: #222221;
+	--md-border: #383835;
+	--md-grid: #2c2c2a;
+	--md-text: #f0efec;
+	--md-text-2: #c3c2b7;
+	--md-muted: #9a998f;
+	--md-series: #3987e5;
+	--md-series-soft: #184f95;
+}
+
+.md-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+.md-title { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.md-muted { color: var(--md-muted); font-weight: 400; font-size: 0.85rem; margin: 2px 0 0; }
+.md-filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.md-filters label { display: flex; gap: 6px; align-items: center; color: var(--md-text-2); font-size: 0.85rem; margin: 0; }
+.md-filters input { border: 1px solid var(--md-border); border-radius: 6px; padding: 4px 8px; background: var(--md-card); color: var(--md-text); }
+.md-filters button { border: 1px solid var(--md-border); border-radius: 6px; padding: 4px 10px; background: var(--md-card); color: var(--md-text); cursor: pointer; font-size: 0.85rem; }
+.md-filters button:hover { border-color: var(--md-series); }
+.md-filters button:focus-visible, .md-filters input:focus-visible { outline: 2px solid var(--md-focus); outline-offset: 1px; }
+.md-quick { display: flex; gap: 4px; }
+.md-filters .md-apply { background: var(--md-series); border-color: var(--md-series); color: #fff; }
+.md-link { font-size: 0.85rem; color: var(--md-series); }
+.md-status { color: var(--md-muted); margin: 8px 0; }
+.md-status.md-error { color: #d03b3b; }
+
+.md-section { margin-top: 28px; }
+.md-section > h2 { font-size: 1.15rem; font-weight: 700; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--md-border); }
+.md-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.md-tile { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 8px; padding: 12px 14px; }
+.md-tile-label { color: var(--md-text-2); font-size: 0.8rem; }
+.md-tile-value { font-size: 1.5rem; font-weight: 700; margin-top: 2px; line-height: 1.2; }
+.md-tile-sub { color: var(--md-muted); font-size: 0.78rem; margin-top: 2px; }
+.md-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+.md-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.md-card + .md-card { margin-top: 0; }
+.md-section > .md-card { margin-top: 12px; }
+.md-card h3 { font-size: 0.95rem; font-weight: 600; margin: 0 0 10px; }
+.md-card details { margin-top: 8px; font-size: 0.85rem; }
+.md-card summary { cursor: pointer; color: var(--md-text-2); }
+.md-empty { color: var(--md-muted); font-size: 0.85rem; padding: 8px 0; }
+
+/* column chart (months) */
+.md-chart { width: 100%; overflow-x: auto; }
+.md-chart svg { display: block; width: 100%; min-width: 480px; height: 240px; }
+.md-chart .md-gridline { stroke: var(--md-grid); stroke-width: 1; }
+.md-chart .md-axis-text { fill: var(--md-muted); font-size: 11px; }
+.md-chart .md-bar { fill: var(--md-series); }
+.md-chart .md-hit { fill: transparent; cursor: default; }
+.md-chart .md-hit:hover + .md-bar, .md-chart .md-col:hover .md-bar { opacity: 0.8; }
+.md-chart .md-label { fill: var(--md-text-2); font-size: 10.5px; }
+
+/* horizontal bar list (categories) */
+.md-bars { display: grid; grid-template-columns: minmax(90px, 38%) 1fr auto; gap: 6px 10px; align-items: center; font-size: 0.85rem; }
+.md-bars .md-bar-label { color: var(--md-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-bars .md-bar-track { height: 12px; }
+.md-bars .md-bar-fill { height: 100%; background: var(--md-series); border-radius: 0 4px 4px 0; min-width: 2px; }
+.md-bars .md-bar-value { color: var(--md-text-2); text-align: right; white-space: nowrap; }
+
+.md-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.md-table th, .md-table td { padding: 4px 8px; border-bottom: 1px solid var(--md-grid); text-align: right; }
+.md-table th:first-child, .md-table td:first-child { text-align: left; }
+.md-table th { color: var(--md-text-2); font-weight: 600; }
+
+.md-tooltip { position: fixed; z-index: 1000; pointer-events: none; background: var(--md-card); color: var(--md-text); border: 1px solid var(--md-border); border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); white-space: nowrap; }
+.md-tooltip b { display: block; margin-bottom: 2px; }
+
+@media (max-width: 600px) {
+	.md-grid { grid-template-columns: 1fr; }
+	.md-tile-value { font-size: 1.25rem; }
+}

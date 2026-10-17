@@ -1,0 +1,77 @@
+{#-
+	Page /manav-dashboard: the Manav dashboard. Three sections - Quotations / Sales, HR &
+	Attendance, Payroll - drawn by manav-dashboard.js from manav.manav.dashboard.get_dashboard_data.
+	A section the reader may not see is hidden (the API returns it as null). Styles are in
+	manav-dashboard.css. Both files sit next to this one and are loaded by Frappe automatically.
+
+	Created: 2026-10-17.
+-#}
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Manav Dashboard") }}{% endblock %}
+
+{% block page_content %}
+<div class="md-root" id="md-root">
+	<header class="md-head">
+		<div>
+			<h1 class="md-title">{{ _("Manav Dashboard") }}</h1>
+			<p class="md-muted" id="md-range-note"></p>
+		</div>
+		<form class="md-filters" id="md-filters">
+			<label>{{ _("From") }} <input type="date" name="from_date" id="md-from"></label>
+			<label>{{ _("To") }} <input type="date" name="to_date" id="md-to"></label>
+			<div class="md-quick" role="group" aria-label="{{ _('Quick ranges') }}">
+				<button type="button" data-months="3">3M</button>
+				<button type="button" data-months="6">6M</button>
+				<button type="button" data-months="12">12M</button>
+				<button type="button" data-ytd="1">{{ _("This year") }}</button>
+			</div>
+			<button type="submit" class="md-apply">{{ _("Apply") }}</button>
+			<a class="md-link" href="/app">{{ _("Open ERPNext") }} &rarr;</a>
+		</form>
+	</header>
+
+	<p class="md-status" id="md-status">{{ _("Loading…") }}</p>
+
+	<section class="md-section" id="md-sales" hidden>
+		<h2>{{ _("Quotations / Sales") }}</h2>
+		<div class="md-tiles" id="md-sales-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>{{ _("Quotation value by month") }} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-sales-month"></div>
+			<details><summary>{{ _("Show as table") }}</summary><div id="md-sales-month-table"></div></details>
+		</div>
+		<div class="md-grid">
+			<div class="md-card"><h3>{{ _("By status") }}</h3><div id="md-sales-status"></div></div>
+			<div class="md-card"><h3>{{ _("By principal") }}</h3><div id="md-sales-principal"></div></div>
+			<div class="md-card"><h3>{{ _("By sales engineer") }}</h3><div id="md-sales-engineer"></div></div>
+			<div class="md-card"><h3>{{ _("Top customers") }}</h3><div id="md-sales-customer"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-hr" hidden>
+		<h2>{{ _("HR & Attendance") }}</h2>
+		<div class="md-tiles" id="md-hr-tiles"></div>
+		<div class="md-grid">
+			<div class="md-card"><h3 id="md-hr-month-title">{{ _("Attendance this month") }}</h3><div id="md-hr-month"></div></div>
+			<div class="md-card"><h3>{{ _("Active employees by department") }}</h3><div id="md-hr-department"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-payroll" hidden>
+		<h2>{{ _("Payroll") }}</h2>
+		<div class="md-tiles" id="md-pay-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>{{ _("Net pay by month") }} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-pay-month"></div>
+			<details><summary>{{ _("Show as table") }}</summary><div id="md-pay-month-table"></div></details>
+		</div>
+		<div class="md-card">
+			<h3 id="md-pay-department-title">{{ _("Gross pay by department") }}</h3>
+			<div id="md-pay-department"></div>
+		</div>
+	</section>
+
+	<div class="md-tooltip" id="md-tooltip" role="tooltip" hidden></div>
+</div>
+{% endblock %}
