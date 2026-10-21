@@ -2,6 +2,57 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-10-21
+
+**Quotation agent: "Draft with AI" makes a draft Quotation from one typed line (OpenAI).**
+
+- Reason: the user found making a quotation by hand slow (principal, customer, each machine,
+  then each machine's sub-items) and asked for an agent using an OpenAI key. Chosen with the
+  user: input is a short typed request; the quotation is saved as a Draft automatically.
+- Changes:
+  - `manav/manav/quotation_agent.py` (new): `draft_quotation` (whitelisted, POST, needs Quotation
+    create permission) runs OpenAI's Chat Completions API (plain `requests`, no new package) with
+    tools `list_principals`, `find_customers`, `find_items`, `get_sub_items` and
+    `create_quotation`. The model only picks from existing records; `create_quotation` checks
+    every choice again (customer exists, machine in the principal's Item Group, sub-item belongs
+    to its machine) and builds the quotation as the form does (principal's currency, price list,
+    letter head, terms with text, Signed By; Haas Cust ID; sub-item prices from Quotation Sub
+    Item Master), then saves it, so the existing validate hooks number and price it as usual. The
+    typed request is kept as a comment on the quotation. When something is unclear (two
+    customers fit, item not found) no quotation is made and the model's question is shown.
+  - `manav/public/js/quotation_list.js`: "Draft with AI" button on the Quotation list (only for
+    users who may create quotations); a dialog for the request; the new draft opens.
+  - Key and settings in site_config.json, not in the code: `openai_api_key` (required),
+    `openai_model` (default gpt-5-mini), `openai_reasoning_effort` (default low).
+- Server: `bench --site manav.local clear-cache`. No migrate needed (no new fields or doctypes).
+- Testing: `node --check`, `py_compile` pass (ruff is not installed on the server, not run). On
+  manav.local, the tools without OpenAI: principals listed; "VF-2" finds the machine VF-2 first
+  ($60,000, MACHINES; spare parts rank lower); 69 sub-items of VF-2; a wrong sub-item is
+  refused; `create_quotation` for 2 x VF-2 + 10K-40T-GBX + 10K-40T-IN saved 26QX000083 in USD
+  (rate 94.83, Manav Selling USD, Haas letter head, Machines terms, specifications fetched,
+  sub-items 1.1 / 1.2 at master prices, total 143,800), then rolled back (not on the site). The
+  server reaches api.openai.com (HTTP 401 without key).
+  After the key was set on manav.local, two requests through the model (gpt-5-mini), both rolled
+  back: "VF-2 for A B" saved a draft for A B INDUSTRIES, 1 x VF-2, USD 60,000 (11 s, 4 model
+  calls); "3M India, 2 x VF-2 with the 10000 rpm gearbox spindle" found the customer and
+  10K-40T-GBX but asked whether VF-2 or the old duplicate "VF-2." was meant (14 s). A rule was
+  then added to the instructions: an exact code match is used without asking. Re-run, rolled
+  back: the 3M request now saved 2 x VF-2 + 2 x 10K-40T-GBX (sub-item 1.1), USD 152,400 (14 s);
+  "A B Industries, VF-2SS with HSM and LK" saved VF-2SS + HSM (1.1) + LK1 Lifting Kit (1.2, the
+  only LK of VF-2SS), USD 86,300 (17 s). Not run: the button and dialog in the browser.
+- Same day, after the user's first use (26QX000083 saved from the browser): the model's question
+  now comes with buttons. New tool `ask_user` (question + choices); `draft_quotation` returns
+  `choices`; the dialog shows one button per choice, and a click adds "Answer: <question>
+  <choice>" to the request and sends it again. The instructions forbid asking to confirm what is
+  clear, or for quantities / sub-items not mentioned (the model had asked "which JK TYRE"
+  together with machine, quantity and accessory questions). Tested on manav.local, rolled back:
+  "JK Tyre, VF-10/40" asked "Which customer did you mean?" with choices JK TYRE & INDUSTRIES /
+  JK TYRE & INDUSTRIES LTD; with the answer added, 1 x VF-10/40, USD 187,000 was saved, no extra
+  questions. `node --check`, `py_compile` pass. Not run: the buttons in the browser.
+- Pending: try real requests from the list in the browser and adjust the instructions if the
+  model picks wrongly. A run must finish within Frappe's 120-second request limit (stopped at
+  100 s). Duplicate items such as "VF-2." confuse the search; disabling unused ones would help.
+
 ## 2026-10-19
 
 **Appointment letter: print format "Manav Appointment Letter" on HRMS's Job Offer.**
