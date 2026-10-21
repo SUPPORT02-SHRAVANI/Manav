@@ -79,6 +79,12 @@
 // Date: 2026-10-15
 // Change: The call to Frappe's internal frm.attachments.attachment_uploaded is checked first.
 // Reason: Upgrade-safe rule: an internal that a later Frappe version drops must not stop the upload.
+//
+// CHANGE NOTE
+// Date: 2026-10-19
+// Change: A machine's form shows its sub-items as a tree in the section "Sub-Items" at the foot
+// of the Details tab (manav_show_sub_items_tree); the section is hidden for other items.
+// Reason: The user asked for the sub-items tree inside the Item form of that item.
 
 // Separates the cells of a line after the label (S.A.E. and Metric, or Units and value). Two bars,
 // because a single bar is used inside values on the maker's page (Taper: CT40 | BT40 | HSK-A63).
@@ -127,6 +133,7 @@ const MANAV_KEY_SPECIFICATIONS = {
 
 frappe.ui.form.on("Item", {
 	refresh(frm) {
+		manav_show_sub_items_tree(frm);
 		if (!frm.fields_dict.custom_specifications) return;
 		const group = __("Specifications");
 		frm.add_custom_button(__("Format: key specifications"), () => manav_apply_format(frm, true), group);
@@ -134,6 +141,87 @@ frappe.ui.form.on("Item", {
 		frm.add_custom_button(__("From screenshot"), () => manav_read_screenshot(frm), group);
 	},
 });
+
+// The machine's sub-items as a tree, in the HTML field custom_sub_items_tree (section "Sub-Items",
+// item_fields.py): the machine at the root, its sub-items under it with description, type and
+// price for this machine, in Sr No order. Uses Frappe's tree component (frappe.ui.Tree) with the
+// nodes of manav.manav.item_tree.get_tree_nodes, as the page Machine Sub-Items Tree does (whose
+// label code this follows). The section is hidden for an item without sub-items, for a new item,
+// and for a reader who may not read Quotation Sub Item Master (count_sub_items then gives 0).
+// Added 2026-10-19.
+function manav_show_sub_items_tree(frm) {
+	const field = frm.fields_dict.custom_sub_items_tree;
+	if (!field) return; // the field is created by `bench migrate`
+	frm.toggle_display("custom_sub_items_section", false);
+	if (frm.is_new()) return;
+	const code = frm.doc.name;
+	frappe
+		.call({ method: "manav.manav.item_tree.count_sub_items", args: { item_code: code } })
+		.then((r) => {
+			const count = r.message || 0;
+			// another item may have been opened meanwhile
+			if (frm.doc.name !== code || !count) return;
+			frm.toggle_display("custom_sub_items_section", true);
+			manav_add_sub_tree_style();
+			const esc = frappe.utils.escape_html;
+			const $wrapper = $(field.wrapper).empty();
+			$(`<div class="manav-item-tree-head">
+					<span class="text-muted">${esc(__("{0} sub-items, with their price for this machine", [count]))}</span>
+					<button type="button" class="btn btn-xs btn-default">${esc(__("Open full tree"))}</button>
+				</div>`)
+				.appendTo($wrapper)
+				.find("button")
+				.on("click", () => frappe.set_route("machine-sub-items", { search: code }));
+			const $tree = $('<div class="manav-sub-tree"></div>').appendTo($wrapper);
+			new frappe.ui.Tree({
+				parent: $tree,
+				label: code,
+				root_value: `machine::${code}`,
+				method: "manav.manav.item_tree.get_tree_nodes",
+				args: { search: "" },
+				get_label(node) {
+					if (node.is_root) {
+						const name = frm.doc.item_name && frm.doc.item_name !== code ? frm.doc.item_name : "";
+						return `<b>${esc(code)}</b>${name ? ` <span class="manav-tree-name">${esc(name)}</span>` : ""}`;
+					}
+					const d = node.data || {};
+					const description = (d.description || "").replace(/\s+/g, " ").trim();
+					return (
+						`<span class="manav-tree-code">${esc(d.title)}</span>` +
+						(description ? ` <span class="manav-tree-name">${esc(description)}</span>` : "") +
+						(d.sub_item_type ? ` <span class="manav-tree-type">${esc(d.sub_item_type)}</span>` : "") +
+						` <span class="manav-tree-rate">${esc(format_number(flt(d.rate), null, 2))}</span>`
+					);
+				},
+				toolbar: [
+					{
+						label: __("Open Item"),
+						condition: (node) => !node.is_root && (node.data || {}).item,
+						click: (node) => frappe.set_route("Form", "Item", node.data.item),
+					},
+				],
+			});
+		});
+}
+
+function manav_add_sub_tree_style() {
+	if (document.getElementById("manav-item-sub-tree-style")) return;
+	$(`<style id="manav-item-sub-tree-style">
+		.manav-item-tree-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+		.manav-sub-tree .tree-label { white-space: normal; }
+		.manav-sub-tree .manav-tree-name { color: var(--text-muted); }
+		.manav-sub-tree .manav-tree-type {
+			display: inline-block;
+			font-size: var(--text-xs);
+			padding: 0 6px;
+			border-radius: 8px;
+			background: var(--bg-gray);
+			color: var(--text-color);
+		}
+		.manav-sub-tree .manav-tree-code { font-weight: 600; }
+		.manav-sub-tree .manav-tree-rate { font-variant-numeric: tabular-nums; margin-left: 4px; }
+	</style>`).appendTo("head");
+}
 
 // Fill Specifications from a screenshot of the maker's table, for pages whose table cannot be
 // copied as text. The picture is uploaded as an attachment of the Item (so it stays there to

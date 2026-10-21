@@ -5,6 +5,14 @@
 	manav-dashboard.css. Both files sit next to this one and are loaded by Frappe automatically.
 
 	Created: 2026-10-17.
+
+	CHANGE NOTE
+	Date: 2026-10-19
+	Change: The sections are tabs instead of one long page: My Dashboard (the reader's own
+	quotations, for everyone), and for management only Team Performance, HR & Attendance and
+	Payroll. A tab whose data the API does not return is not shown.
+	Reason: The user asked for tabs instead of scrolling, for everyone to see their own dashboard
+	after login, and for only the admin, Milind and Naveen to see all employees' performance.
 -#}
 {% extends "templates/web.html" %}
 
@@ -27,14 +35,38 @@
 				<button type="button" data-ytd="1">{{ _("This year") }}</button>
 			</div>
 			<button type="submit" class="md-apply">{{ _("Apply") }}</button>
-			<a class="md-link" href="/app">{{ _("Open ERPNext") }} &rarr;</a>
+			<a class="md-link" href="/desk/manav">{{ _("Open Manav") }} &rarr;</a>
 		</form>
 	</header>
 
+	{#- One tab per section; the script shows only the tabs whose data came back. -#}
+	<nav class="md-tabs" role="tablist" id="md-tabs" aria-label="{{ _('Dashboard sections') }}">
+		<button type="button" role="tab" id="md-tab-mine" data-panel="md-mine" aria-controls="md-mine" aria-selected="true">{{ _("My Dashboard") }}</button>
+		<button type="button" role="tab" id="md-tab-sales" data-panel="md-sales" aria-controls="md-sales" aria-selected="false" hidden>{{ _("Team Performance") }}</button>
+		<button type="button" role="tab" id="md-tab-hr" data-panel="md-hr" aria-controls="md-hr" aria-selected="false" hidden>{{ _("HR & Attendance") }}</button>
+		<button type="button" role="tab" id="md-tab-payroll" data-panel="md-payroll" aria-controls="md-payroll" aria-selected="false" hidden>{{ _("Payroll") }}</button>
+	</nav>
+
 	<p class="md-status" id="md-status">{{ _("Loading…") }}</p>
 
-	<section class="md-section" id="md-sales" hidden>
-		<h2>{{ _("Quotations / Sales") }}</h2>
+	<section class="md-section" id="md-mine" role="tabpanel" aria-labelledby="md-tab-mine" hidden>
+		<h2>{{ _("My Quotations") }}</h2>
+		<p class="md-muted md-section-note">{{ _("Quotations you created or are Account Manager of") }}</p>
+		<div class="md-tiles" id="md-mine-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>{{ _("My quotation value by month") }} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-mine-month"></div>
+			<details><summary>{{ _("Show as table") }}</summary><div id="md-mine-month-table"></div></details>
+		</div>
+		<div class="md-grid">
+			<div class="md-card"><h3>{{ _("By status") }}</h3><div id="md-mine-status"></div></div>
+			<div class="md-card"><h3>{{ _("By principal") }}</h3><div id="md-mine-principal"></div></div>
+			<div class="md-card"><h3>{{ _("My top customers") }}</h3><div id="md-mine-customer"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-sales" role="tabpanel" aria-labelledby="md-tab-sales" hidden>
+		<h2>{{ _("Team Performance: all quotations") }}</h2>
 		<div class="md-tiles" id="md-sales-tiles"></div>
 		<div class="md-card md-wide">
 			<h3>{{ _("Quotation value by month") }} <span class="md-muted" data-unit></span></h3>
@@ -49,7 +81,7 @@
 		</div>
 	</section>
 
-	<section class="md-section" id="md-hr" hidden>
+	<section class="md-section" id="md-hr" role="tabpanel" aria-labelledby="md-tab-hr" hidden>
 		<h2>{{ _("HR & Attendance") }}</h2>
 		<div class="md-tiles" id="md-hr-tiles"></div>
 		<div class="md-grid">
@@ -58,7 +90,7 @@
 		</div>
 	</section>
 
-	<section class="md-section" id="md-payroll" hidden>
+	<section class="md-section" id="md-payroll" role="tabpanel" aria-labelledby="md-tab-payroll" hidden>
 		<h2>{{ _("Payroll") }}</h2>
 		<div class="md-tiles" id="md-pay-tiles"></div>
 		<div class="md-card md-wide">

@@ -1,0 +1,125 @@
+{#-
+	Layout of the print format "Manav Appointment Letter" (HRMS Job Offer), following the offer
+	letter of Manav Marketing Pvt. Ltd. of May 2026 that the user supplied:
+
+	  Ref: <Letter Ref.>                                   <Offer Date, e.g. May 14, 2026>
+	  <Salutation> <Applicant Name>
+	  <Address (for the letter), line by line>
+	  We refer to the Interview you had with us on <11th May 2026> at our <Location> office.
+	  We are pleased to confirm our offer in brief as follows:
+	  Designation - ...   Location - ...   Reporting - ...
+	  1. Emoluments in brief per month: table of the salary rows; the rows ticked "In Sub Total",
+	     then Sub Total, then the other rows with "(Payable Monthly / Annually)", then Grand Total.
+	  2. Probation of <n> months, then confirmation and Gratuity.
+	  3. Local Conveyance at Rs. <rate>/- km (left out when the rate is empty or 0).
+	  Further points: the Job Offer Terms rows ("term: value") and the Terms and Conditions text.
+	  Please confirm your acceptance ... for <Signed for (Company)>, the two signatories.
+
+	The letter head chosen on the Job Offer (Printing Details) is printed at the top. Every value is
+	a field of the Job Offer (HRMS's own, or a Manav custom field, job_offer_fields.py). The sentence
+	about the interview is left out when there is no Interview Date. Amounts are printed with two
+	decimals in the system's number format.
+
+	Created: 2026-10-19.
+-#}
+{%- macro ordinal(day) -%}
+	{#- the suffix raised, as on the letter: 11<sup>th</sup> -#}
+	{{- day -}}<sup>{{- "th" if 10 <= day % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th") -}}</sup>
+{%- endmacro -%}
+{%- macro money(value) -%}{{ frappe.utils.fmt_money(value or 0, 2) }}{%- endmacro -%}
+{%- set offer_date = frappe.utils.getdate(doc.offer_date) if doc.offer_date else None -%}
+{%- set interview = frappe.utils.getdate(doc.custom_interview_date) if doc.custom_interview_date else None -%}
+{%- set rows = doc.get("custom_salary_lines") or [] -%}
+{%- set monthly = rows | selectattr("in_sub_total") | list -%}
+{%- set others = rows | rejectattr("in_sub_total") | list -%}
+{%- set sub_total = monthly | sum(attribute="amount") -%}
+{%- set grand_total = rows | sum(attribute="amount") -%}
+{%- set point = namespace(n=0) -%}
+
+<style>
+	.mal { font-family: "Comic Sans MS", "Comic Neue", "Segoe Print", Arial, sans-serif; font-size: 10.5pt; color: #000; line-height: 1.45; }
+	.print-format .mal p { margin: 0 0 10px !important; }
+	.mal table { border-collapse: collapse; }
+	.print-format .mal td { padding: 0 !important; vertical-align: top; }
+	.mal .head { width: 100%; margin-bottom: 14px; }
+	.mal .facts td { padding: 1px 0 !important; }
+	.mal .facts .k { width: 110px; }
+	.mal .points { margin: 4px 0 10px 0; padding-left: 26px; }
+	.mal .points li { margin-bottom: 10px; text-align: justify; }
+	.mal .salary { margin-top: 2px; width: 70%; border: 1px solid #000; }
+	.print-format .mal .salary td { border: 1px solid #000; padding: 1px 6px !important; }
+	.mal .salary .amt { text-align: right; width: 34%; }
+	.mal .salary .b td { font-weight: bold; }
+	.mal .sign { width: 100%; margin-top: 54px; }
+	.print-format .mal .sign td { width: 50%; text-align: center; }
+</style>
+
+<div class="mal">
+	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+
+	<table class="head">
+		<tr>
+			<td>Ref: {{ doc.custom_reference_no or "" }}</td>
+			<td style="text-align: right;">{{ offer_date.strftime("%B %d, %Y").replace(" 0", " ") if offer_date else "" }}</td>
+		</tr>
+	</table>
+
+	<p>
+		{{ ((doc.custom_salutation or "") ~ " " ~ (doc.applicant_name or "")) | trim }}<br>
+		{%- for line in (doc.custom_candidate_address or "").split("\n") | map("trim") | select %}
+		{{ line }}<br>
+		{%- endfor %}
+	</p>
+
+	<p>
+		{% if interview %}We refer to the Interview you had with us on {{ ordinal(interview.day) }} {{ interview.strftime("%B %Y") }}{% if doc.custom_location %} at our {{ doc.custom_location }} office{% endif %}.<br>{% endif %}
+		We are pleased to confirm our offer in brief as follows:
+	</p>
+
+	<table class="facts">
+		<tr><td class="k">Designation</td><td>– {{ doc.designation or "" }}</td></tr>
+		<tr><td class="k">Location</td><td>- {{ doc.custom_location or "" }}</td></tr>
+		{% if doc.custom_reporting_to %}<tr><td class="k">Reporting</td><td>- {{ doc.custom_reporting_to }}</td></tr>{% endif %}
+	</table>
+
+	<ol class="points">
+		{% if rows %}
+		{% set point.n = point.n + 1 %}
+		<li>Emoluments in brief per month:
+			<table class="salary">
+				<tr class="b"><td>Details</td><td class="amt">Salary PM in Rs.</td></tr>
+				{% for row in monthly %}<tr><td>{{ row.component }}</td><td class="amt">{{ money(row.amount) }}</td></tr>{% endfor %}
+				{% if monthly %}<tr class="b"><td>Sub Total</td><td class="amt">{{ money(sub_total) }}</td></tr>{% endif %}
+				{% for row in others %}<tr><td>{{ row.component }}{% if row.payable %} (Payable {{ row.payable }}){% endif %}</td><td class="amt">{{ money(row.amount) }}</td></tr>{% endfor %}
+				<tr class="b"><td>Grand Total</td><td class="amt">{{ money(grand_total) }}</td></tr>
+			</table>
+		</li>
+		{% endif %}
+		{% if doc.custom_probation_months %}
+		<li>You will be on probation for {{ doc.custom_probation_months }} months, based on your performance further service shall be confirmed and you will be eligible for Gratuity.</li>
+		{% endif %}
+		{% if frappe.utils.flt(doc.custom_conveyance_rate) %}
+		<li>You will get the reimbursement of Local Conveyance for official visit at Rs. {{ "%g" | format(doc.custom_conveyance_rate) }}/- km for two-wheeler and you must maintain the logbook.</li>
+		{% endif %}
+		{#- further points: the Job Offer Terms of HRMS, then its Terms and Conditions text -#}
+		{% for term in doc.get("offer_terms") or [] %}
+		<li>{% if term.offer_term %}{{ term.offer_term }}: {% endif %}{{ term.value or "" }}</li>
+		{% endfor %}
+		{% if doc.terms %}<li>{{ doc.terms }}</li>{% endif %}
+	</ol>
+
+	<p>Please confirm your acceptance of the above.</p>
+
+	<p>
+		Thank you,<br>
+		Yours faithfully,<br>
+		for {{ doc.custom_letter_company or doc.company or "" }},
+	</p>
+
+	<table class="sign">
+		<tr>
+			<td>({{ doc.custom_signatory_1 or "" }})<br>{{ doc.custom_signatory_1_designation or "" }}</td>
+			<td>({{ doc.custom_signatory_2 or "" }})<br>{{ doc.custom_signatory_2_designation or "" }}</td>
+		</tr>
+	</table>
+</div>

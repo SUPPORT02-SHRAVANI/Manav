@@ -9,6 +9,7 @@
  "field_order": [
   "quotation_type",
   "description",
+  "list_color",
   "column_break_main",
   "signed_by_code",
   "currency_code",
@@ -20,6 +21,7 @@
   "column_break_erpnext",
   "item_group",
   "terms_template",
+  "price_basis",
   "terms_section",
   "terms",
   "counters_section",
@@ -45,6 +47,13 @@
    "in_list_view": 1,
    "label": "Description",
    "reqd": 1
+  },
+  {
+   "fieldname": "list_color",
+   "fieldtype": "Select",
+   "label": "List Colour",
+   "options": "\nblue\ngreen\norange\npurple\npink\ncyan\nyellow\nred\ngray",
+   "description": "Colour of this principal in the Quotation list. Empty: a colour is picked by the list itself."
   },
   {
    "fieldname": "column_break_main",
@@ -111,6 +120,12 @@
    "options": "Terms and Conditions"
   },
   {
+   "fieldname": "price_basis",
+   "fieldtype": "Data",
+   "label": "Price Basis",
+   "description": "Printed before a machine's price on the Classic quotation: \"Prices : <this>\", e.g. Ex-Works, Oxnard, USA. Empty: \"Price :\"."
+  },
+  {
    "description": "Copied into a new quotation of this type",
    "fieldname": "terms_section",
    "fieldtype": "Section Break",
@@ -167,7 +182,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-12 21:00:00.000000",
+ "modified": "2026-10-19 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Quotation Type",

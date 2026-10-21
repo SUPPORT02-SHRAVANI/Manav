@@ -15,6 +15,28 @@ app_license = "mit"
 # a site without ERPNext (e.g. through Frappe Cloud) must be refused rather than half work.
 required_apps = ["frappe/erpnext"]
 
+# CHANGE NOTE
+# Date: 2026-10-19
+# Change: Manav is an app on the apps screen, opening the Manav workspace; it is made the Default
+# App in System Settings (manav.manav.desk_home.set_default_app in after_migrate below).
+# Reason: The user asked for the Manav page to be the page shown after login.
+#
+# CHANGE NOTE
+# Date: 2026-10-19
+# Change: The route is the Manav dashboard (/manav-dashboard), which shows each user their own
+# figures, instead of the Manav workspace.
+# Reason: The user asked that everyone sees their own dashboard after login.
+add_to_apps_screen = [
+	{
+		"name": "manav",
+		"logo": "/assets/manav/images/manav_logo.svg",
+		"title": "Manav",
+		# 2026-10-19: the user's own dashboard after login (was the workspace, /desk/manav)
+		"route": "/manav-dashboard",
+		"has_permission": "manav.manav.desk_home.has_app_permission",
+	}
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
@@ -121,6 +143,14 @@ after_migrate = [
 	"manav.manav.item_fields.setup_item_fields",
 	"manav.manav.erpnext_fields.setup_erpnext_fields",
 	"manav.manav.letter_heads.setup_letter_heads",
+	# 2026-10-19: Manav as the Default App, so users land on the Manav workspace after login.
+	"manav.manav.desk_home.set_default_app",
+	# 2026-10-19: the role that sees all employees' figures (dashboard tabs, workspace team charts)
+	"manav.manav.desk_home.setup_management_role",
+	# 2026-10-19: the tab bar of the Manav workspace (Custom HTML Block, see workspace_tabs.py)
+	"manav.manav.workspace_tabs.setup_workspace_tabs",
+	# 2026-10-19: Job Offer fields for the print format Manav Appointment Letter (HRMS only)
+	"manav.manav.job_offer_fields.setup_job_offer_fields",
 ]
 
 # CHANGE NOTE
@@ -133,17 +163,48 @@ after_install = list(after_migrate)
 # Manav's screen logic on ERPNext's Quotation form: principal defaults, item filter, Add Options.
 # Item: the "Format Pasted Specifications" button (added 2026-10-12, so that a specification table
 # copied from the manufacturer's site can be turned into the lines the quotation prints).
-doctype_js = {"Quotation": "public/js/quotation.js", "Item": "public/js/item.js"}
+# CHANGE NOTE
+# Date: 2026-10-19
+# Change: Job Offer (HRMS): a new offer starts with the salary rows of the appointment letter
+# (public/js/job_offer.js).
+# Reason: The user asked for an appointment letter like the May 2026 offer letter.
+doctype_js = {
+	"Quotation": "public/js/quotation.js",
+	"Item": "public/js/item.js",
+	"Job Offer": "public/js/job_offer.js",
+}
+
+# CHANGE NOTE
+# Date: 2026-10-17
+# Change: Quotation list: the principal is shown as a coloured label (public/js/quotation_list.js).
+# Reason: The user asked for colour on the quotation type in the list view.
+# CHANGE NOTE
+# Date: 2026-10-19
+# Change: Item list: "Sub-Items Tree" button (public/js/item_list.js) opening the page
+# machine-sub-items.
+# Reason: The user asked for a tree of the machines' sub-items in the Items list.
+doctype_list_js = {"Quotation": "public/js/quotation_list.js", "Item": "public/js/item_list.js"}
 
 # The Manav quotation number (e.g. 26QP000639) for a Quotation that has a principal.
 # CHANGE NOTE
 # Date: 2026-10-15
 # Change: validate numbers the sub-items of each machine (Sub-Item Sr.No).
 # Reason: The user asked for a column numbering the sub-items in the Items table.
+# CHANGE NOTE
+# Date: 2026-10-19
+# Change: validate also fills the Account Manager from the Customer (fill_account_manager).
+# Reason: The user asked for the Customer's Account Manager to be filled in on the quotation.
 doc_events = {
 	"Quotation": {
 		"autoname": "manav.manav.quotation.autoname",
-		"validate": "manav.manav.quotation.number_sub_items",
+		"validate": [
+			# 2026-10-19: sub-item lines keep their machine's price (ERPNext re-prices from the price list)
+			"manav.manav.quotation.keep_sub_item_rates",
+			"manav.manav.quotation.number_sub_items",
+			"manav.manav.quotation.fill_account_manager",
+			# 2026-10-19: warn when the currency is not the principal's (e.g. MACHINES in INR)
+			"manav.manav.quotation.warn_principal_currency",
+		],
 	}
 }
 

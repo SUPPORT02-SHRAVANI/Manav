@@ -40,6 +40,30 @@ Date: 2026-10-15
 Change: Added Quotation Item's "Sub-Item Sr.No" (custom_sub_item_sr_no), shown in the Items table
 right after No. (place_sub_item_no_first); Quantity is one column wide there instead of two.
 Reason: The user asked for a column numbering the sub-items beside the row number.
+
+CHANGE NOTE
+Date: 2026-10-17
+Change: Quotation's custom_quotation_type is shown in the list view (in_list_view).
+Reason: The user asked for the principal to be shown in colour in the Quotation list.
+
+CHANGE NOTE
+Date: 2026-10-19
+Change: The description of Sub-Item Sr.No gives the new numbers (1.1, 1.2 ... under machine 1).
+Reason: Sub-items are now numbered with their machine's number (quotation.number_sub_items).
+
+CHANGE NOTE
+Date: 2026-10-19
+Change: Added Quotation's "Account Manager" (custom_account_manager, Link to User), filled from
+the Customer's Account Manager (quotation.js party_name, and quotation.fill_account_manager on
+validate).
+Reason: The user asked for the Account Manager set on the Customer to appear on the quotation.
+ERPNext's Quotation has no such field, and fetch_from cannot follow party_name (a Dynamic Link).
+
+CHANGE NOTE
+Date: 2026-10-19
+Change: Added Sales Person's "Login User" (custom_user, Link to User, unique).
+Reason: The user asked for the Account Manager to be put in Signed By too; Signed By is a Sales
+Person, the Account Manager a User, and nothing on the site linked the two.
 """
 
 import json
@@ -60,6 +84,8 @@ ERPNEXT_FIELDS = {
 			"options": "Quotation Type",
 			"insert_after": "order_type",
 			"in_standard_filter": 1,
+			# a column of the Quotation list, drawn in the principal's colour (quotation_list.js)
+			"in_list_view": 1,
 			"description": "Decides the currency, price list, letter head, terms, items and quotation number",
 		},
 		# A section of its own, between the customer block and "Currency and Price List".
@@ -104,9 +130,19 @@ ERPNEXT_FIELDS = {
 			"description": "Printed as Sales Engg.",
 		},
 		{
+			# Filled from the Customer's Account Manager (a User), see quotation.fill_account_manager.
+			"fieldname": "custom_account_manager",
+			"label": "Account Manager",
+			"fieldtype": "Link",
+			"options": "User",
+			"insert_after": "custom_sales_engineer",
+			"in_standard_filter": 1,
+			"description": "Taken from the Customer's Account Manager; can be changed here",
+		},
+		{
 			"fieldname": "custom_manav_column_2",
 			"fieldtype": "Column Break",
-			"insert_after": "custom_sales_engineer",
+			"insert_after": "custom_account_manager",
 		},
 		{
 			"fieldname": "custom_haas_customer_id",
@@ -141,7 +177,7 @@ ERPNEXT_FIELDS = {
 			"in_list_view": 1,
 			"columns": 1,
 			"no_copy": 1,
-			"description": "Number of a sub-item under its machine (1, 2, 3 ...); set on saving",
+			"description": "Number of a sub-item under its machine: 1.1, 1.2 ... under machine 1; set on saving",
 		},
 		{
 			"fieldname": "custom_specifications",
@@ -169,6 +205,18 @@ ERPNEXT_FIELDS = {
 			"in_list_view": 1,
 			"in_standard_filter": 1,
 			"description": "Employee code of the old system, e.g. M-02",
+		},
+		{
+			# The login of this sales person: a quotation whose Account Manager is this user gets
+			# this sales person in Signed By (quotation.sales_person_for_user).
+			"fieldname": "custom_user",
+			"label": "Login User",
+			"fieldtype": "Link",
+			"options": "User",
+			"insert_after": "custom_employee_code",
+			"unique": 1,
+			"in_standard_filter": 1,
+			"description": "The user who logs in as this sales person; fills Signed By on quotations",
 		},
 	],
 	"Contact": [

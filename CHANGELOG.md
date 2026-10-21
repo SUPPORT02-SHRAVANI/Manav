@@ -2,7 +2,441 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-10-19
+
+**Appointment letter: print format "Manav Appointment Letter" on HRMS's Job Offer.**
+
+- Reason: the user supplied the offer letter of Manav Marketing Pvt. Ltd. (May 2026) and asked
+  for an appointment letter like it.
+- Changes:
+  - `manav/manav/doctype/manav_offer_salary_line/` (new child DocType "Manav Offer Salary
+    Line": Component, Amount per Month, In Sub Total, Payable Monthly / Annually).
+  - `manav/manav/job_offer_fields.py` (new; `after_migrate`/`after_install` in
+    `manav/hooks.py`): Job Offer custom fields Salutation, Address (for the letter), Letter Ref.
+    (default MM/Office/Gen), Interview Date, Location (default Bangalore), Reporting To, the
+    salary table, Probation (Months) (default 6), Conveyance Rate per km (default 4.5), Signed
+    for (Company) (default MANAV MARKETING PVT. LTD.; the company record is named "Manav"),
+    Signatory 1 / 2 and their designations (defaults from the sample letter). Nothing when HRMS
+    is not installed.
+  - `manav/public/js/job_offer.js` (new; `doctype_js`): a new Job Offer starts with the seven
+    salary components of the sample (amounts 0).
+  - `manav/manav/print_format/manav_appointment_letter/` + layout
+    `manav/templates/print_formats/manav_appointment_letter.html`: the letter as in the sample;
+    Sub Total and Grand Total are summed by the print; probation and conveyance points only when
+    filled; HRMS's Job Offer Terms and Terms and Conditions follow as further points; the letter
+    head chosen on the Job Offer is printed on top.
+- Server: backup `20261019_151758-manav_local`, `bench --site manav.local migrate` (table,
+  fields and print format on the site).
+- Testing: `node --check`, `py_compile`, JSON load pass. On manav.local the Job Offer
+  HR-OFF-2026-00001-1 was filled in memory with the sample's values (not saved, rolled back) and
+  printed: 58,500.00 Sub Total, 68,842.00 Grand Total, "11th May 2026", "May 14, 2026",
+  "(Payable Annually)", "4.5/- km" present; looked at as a screenshot, matching the sample.
+  (HR-OFF-2026-00001 is cancelled; Frappe does not print cancelled documents.) Not run: the
+  form and print view in the browser, the PDF (server wkhtmltopdf error, see below).
+  The letter's fields and the salary rows are "Allow on Submit", because Job Offer is
+  submittable and an offer is usually submitted before its letter is printed (HR-OFF-2026-00001-1
+  is submitted); checked on the site after a second migrate.
+- Pending: fill the new fields on Roopa D V's Job Offer (HR-OFF-2026-00001-1) and print it.
+
+**Fix: sub-item prices on a USD (MACHINES) quotation; colour on one print format only; bold rate.**
+
+- Reasons: (1) the user reported that after choosing MACHINES "dollar is not applied". The
+  currency was USD (26QX000082, re-saved 15:09), but the sub-item lines had converted INR
+  prices: ERPNext re-prices every line from the price list when the currency / price list
+  changes, and a sub-item has no USD list price (its price depends on the machine), so its old
+  INR price was converted (10K-40T-GBX 146.47 USD instead of 10,000; LK 2.11 instead of 200).
+  (2) The user asked for colour on one quotation format only. (3) The user asked for the rate
+  in the Item Code drop-down in bold.
+- Changes:
+  - `manav/manav/quotation.py` `keep_sub_item_rates` (+ first in Quotation `validate` in
+    `manav/hooks.py`): on saving a draft, every sub-item line gets its price for its machine
+    from Quotation Sub Item Master (price list rate and rate; discount and margin cleared) and
+    the totals are worked out again. A master price of 0 is not applied, so a typed price stays.
+  - `manav/public/js/quotation.js` `restore_sub_item_rates`: the same on the form, after
+    ERPNext's re-pricing calls have finished (`frappe.after_ajax`), when the principal's
+    currency / price list was put back.
+  - Print formats: "Manav Banded Quotation Blue" became "Manav Colour Quotation" (the only
+    coloured format); "Manav Banded Quotation Green" became "Manav Banded Quotation" in black
+    and white (grey banding); "Manav Banded Quotation Red" removed; "Manav Classic Quotation"
+    now black and white. Folders under `manav/manav/print_format/` accordingly; comments in the
+    shared templates updated. The three old records were deleted on manav.local
+    (`frappe.delete_doc`), the new ones loaded by migrate.
+  - Bold rate: `item_query_with_rate` sends the rate as the first line of the description;
+    `add_rate_style` (quotation.js) shows that line bold, only in the Item Code field of the
+    Quotation form's Items rows (Frappe prints the description as plain text, so it is styled,
+    not marked up).
+- Server: backup `20261019_151005-manav_local`; old formats deleted; `bench --site manav.local
+  migrate`; `clear-cache`.
+- Testing: `node --check`, `py_compile` pass. On manav.local without saving: 26QX000082 after
+  `keep_sub_item_rates`: 10K-40T-GBX 13,900 (VF-1) / 10,000 (VF-10/40), 10K-40T-GREASE-IN
+  8,500, HSM 3,500, LK 200, P-COOL kept at 2,600 (master 0); total 274,700 (was 242,884.62).
+  The three formats render; only Manav Colour Quotation holds colour values. The search gives
+  "Rate for VF-2SS-I: $ 3,000.00" + line break + description. Not run: the form in the browser
+  (the order of ERPNext's re-pricing and the restore is to be checked there).
+- Pending: open 26QX000082 and save it once to correct its sub-item prices (the server fix
+  applies on saving). Check in the browser that, after choosing MACHINES, the sub-items keep
+  their machine prices.
+
+**Quotation Items table: the rate in the Item Code drop-down.**
+
+- Reason: the user asked for the rate to show in the Item Code search of a quotation line.
+- Changes:
+  - `manav/manav/quotation.py` `item_query_with_rate` (whitelisted search): runs ERPNext's
+    `item_query` unchanged and puts the rate first in each result's description: for a sub-item
+    of a machine on the quotation its price for that machine ("Rate for VF-2SS-I: $ 3,000.00",
+    Quotation Sub Item Master), otherwise the rate in the quotation's price list ("Rate: $
+    60,000.00", Item Price, a price for no particular customer preferred); nothing when neither.
+  - `manav/public/js/quotation.js` `set_item_query`: uses it; passes the price list, the
+    machines on the quotation and the currency as extra filter keys, which the server removes
+    before ERPNext's search.
+- Testing: `node --check`, `py_compile` pass. On manav.local through Frappe's link search
+  (`frappe.desk.search.search_link`, as the drop-down calls it): ACF with VF-2SS-I on the
+  quotation "Rate for VF-2SS-I: $ 3,000.00"; 18K-HSK-A63 "$ 24,000.00" for VF-2SS-I; VF-2,
+  VF-2. and VF-2SS-I with their USD price list rates; 32GB (no machine) its price list rate.
+  Not run: the drop-down in the browser.
+- Pending: hard reload of the browser.
+
+**Four coloured quotation print formats; the old layout with the description as bullets.**
+
+- Reason: the user asked for a print format that shows an item's description like the old
+  quotation (two columns of "*" lines, "Prices : Ex-Works, Oxnard, USA.", "CIF Charges -
+  Chennai Sea Port ... US$"), and for 3-4 quotation formats with colour, formatting and row
+  banding.
+- Changes:
+  - `manav/manav/print_format/manav_classic_quotation/` "Manav Classic Quotation": the old
+    layout (Sr.No | Item Code | Particulars | Price in US$) in navy; per machine "01 CODE name",
+    bullets in two columns, "Prices : <price basis>" and the amount, options in a banded table
+    (1.1, 1.2 ...); charges from Taxes and Charges as dotted-leader lines and a Total bar; payment,
+    banded terms, signature, FMT: QUOT-11 footer.
+  - `manav_banded_quotation_blue/`, `_green/`, `_red/` "Manav Banded Quotation Blue / Green /
+    Red": title band, tinted customer and reference cards, one items table per machine with a
+    coloured head, tinted machine row with its features, sub-items 1.1 ... indented and banded,
+    totals with charges and a coloured Grand Total bar, amount in words, banded terms.
+  - `manav/templates/print_formats/manav_quotation_data.html` (shared): gathers the quotation
+    (machines and options as in Manav Modern Quotation) and a machine's bullets: the features of
+    a "Title; a, b, c" description, the lines of a multi-line description, else the key
+    Specifications lines (air, electrical, dimensions/shipping and axis-motor blocks and bare
+    "... specifications" labels left out); "!" lines bold.
+    `manav_classic_quotation_body.html`, `manav_banded_quotation_body.html`: the two layouts.
+    Each machine after the first starts a new page in all four.
+  - `manav/manav/doctype/quotation_type/quotation_type.json` (+ note in .py): field Price Basis
+    (`price_basis`), printed as "Prices : <price basis>"; empty: "Price :".
+  - CIF charges are entered as a row of the quotation's Taxes and Charges (charge type Actual,
+    description e.g. "CIF Charges - Chennai Sea Port"); no new field.
+- Server: backup `20261019_150004-manav_local`, `bench --site manav.local migrate` (the four
+  formats and the field are on the site).
+- Testing: on manav.local, an unsaved copy of 26QX000081 with VF-10/40 (description bullets),
+  two of its sub-items, UMC-1000 (specification bullets) and a CIF charge of US$ 10,500 (Price
+  Basis set in a transaction rolled back afterwards) was printed with all four formats
+  (`frappe.get_print`): Prices line, CIF line, 2.1 / 2.2 present; grand total US$ 4,91,900.
+  The Classic, Blue and Red pages were looked at as screenshots (Edge on the Windows PC, with
+  the site's print styles). Not run: the PDF from the server (wkhtmltopdf HostNotFoundError,
+  see below), the print view in Frappe.
+- Pending: fill Price Basis on the Quotation Types (e.g. MACHINES: "Ex-Works, Oxnard, USA.");
+  it is empty on all now. The default print format of Quotation is still Manav Modern Quotation.
+
+**Item form: the machine's sub-items as a tree, in the item itself.**
+
+- Reason: the user looked for the tree inside the Item form ("for that particular item"); the
+  page from the entry below was only reachable from the Items list and sidebar.
+- Changes:
+  - `manav/manav/item_fields.py`: Item custom fields "Sub-Items" (`custom_sub_items_section`,
+    Section Break, the last section of the Details tab, before Accounting) and
+    `custom_sub_items_tree` (HTML).
+  - `manav/public/js/item.js` `manav_show_sub_items_tree`: draws the tree (machine at the root,
+    its sub-items with description, type and price, Sr No order; "Open Item" on a sub-item;
+    "Open full tree" opens the page searched for this machine). Hidden for new items, items
+    without sub-items, and readers without access to Quotation Sub Item Master.
+  - `manav/manav/item_tree.py`: a "machine::<code>" root gives that machine's sub-items;
+    `count_sub_items` (0 instead of an error without permission).
+- Server: `setup_item_fields` run and `bench --site manav.local clear-cache`.
+- Testing: `node --check`, `py_compile` pass. On manav.local: the section sits after Old System
+  Data and before the Accounting tab; VF-10/40 has 55 sub-items and its tree root gives 55
+  nodes; TSC (not a machine) 0; emily.demo 0. Not run: the form in the browser.
+- Pending: hard reload and a look at a machine's Item form.
+
+**Machine Sub-Items Tree: the machines and their sub-items as a tree, from the Items list.**
+
+- Reason: the user asked for a tree chart of the sub-items in the Items list. Frappe's tree view
+  only works for tree doctypes (Item is not one), so a page with Frappe's own tree component
+  (frappe.ui.Tree) is used.
+- Changes:
+  - `manav/manav/page/machine_sub_items/` (new standard Page "Machine Sub-Items Tree",
+    /desk/machine-sub-items, module Manav): tree Item Group -> machine (code, name, number of
+    sub-items) -> sub-items (code, description, type, price for that machine, in Sr No order);
+    "Find a machine" search (code or name) opens the matching groups; node buttons "Open Item"
+    and "Sub-Item Prices" (the machine's rows in Quotation Sub Item Master).
+  - `manav/manav/item_tree.py` (new): whitelisted `get_tree_nodes`, children loaded when a node
+    is opened; read permission on Quotation Sub Item Master required; unique node values,
+    because a sub-item sits under many machines.
+  - `manav/public/js/item_list.js` (new) + `doctype_list_js` in `manav/hooks.py`: "Sub-Items
+    Tree" button on the Items list (extends ERPNext's list settings, its onload still runs).
+  - `manav/workspace_sidebar/manav.json`: link to the page under Item & Price Masters.
+- Server: backup `20261019_144239-manav_local`, then `bench --site manav.local migrate` (loaded
+  the page and the sidebar); the page, sidebar link and list hook were then found on the site.
+- Testing: `node --check`, `py_compile` pass. On manav.local `get_tree_nodes`: groups Machines
+  139, Jagdeep 22, Chmer 3, Spares 2, Options 1, "(Item not found)" 1; VF-2SS-I 56 sub-items with
+  unique values; search "vf-2" 9 machines; emily.demo (Sales User, no read on Quotation Sub Item
+  Master) refused. Not run: the page in the browser.
+- Pending: hard reload and a look at the page. Users without read access to Quotation Sub Item
+  Master (e.g. Sales User) cannot open the tree, as with the Sub-Items dialog.
+
+**Fix: choosing MACHINES did not keep the quotation in USD.**
+
+- Reason: the user chose the principal MACHINES and the currency stayed INR. The Quotation Type
+  itself is right (USD, Manav Selling USD). ERPNext sets the customer's default currency and
+  price list when the customer (or company) is chosen; MERRITRONIX LIMITED has none, so the
+  company's INR and Standard Selling replaced the principal's values. 26QX000082 (MACHINES,
+  made 2026-10-19 14:25) was saved so.
+- Changes:
+  - `manav/public/js/quotation.js`: `keep_type_values` puts the principal's currency and price
+    list back after ERPNext changes them (on customer, company, currency or price list change;
+    waits 400 ms until ERPNext's changes have settled) and fills an emptied letter head / terms
+    template; the principal's values are set one after another (`set_type_values`), and fetched
+    once per principal (`load_type_defaults`).
+  - `manav/manav/quotation.py` `warn_principal_currency` + `manav/hooks.py` (validate): an orange
+    warning when a draft is saved in another currency than its principal's; saving is not
+    stopped.
+- Server: `bench --site manav.local clear-cache` (new validate hook).
+- Testing: `node --check`, `py_compile` pass; Frappe lists the three validate hooks. On
+  manav.local without saving: 26QX000082 (INR, MACHINES) gets the warning, 26QX000081 (USD) none.
+  Not run: the form in the browser (the order customer -> principal and principal -> customer).
+- Pending: 26QX000082 is still INR: open it, choose the principal again (or set USD and Manav
+  Selling USD) and check the item rates, then save.
+
+**Quotation: Signed By follows the Account Manager.**
+
+- Reason: the user asked for the same person in Signed By as in Account Manager. Signed By is a
+  Sales Person, the Account Manager a User, and nothing on the site linked the two.
+- Changes:
+  - `manav/manav/erpnext_fields.py`: Sales Person gets "Login User" (`custom_user`, Link to
+    User, unique).
+  - `manav/manav/quotation.py`: `sales_person_for_user` (enabled Sales Person by Login User,
+    else ERPNext's Sales Person -> Employee -> User ID); whitelisted `get_signed_by` for the
+    form; `fill_account_manager` (validate) also fills an empty Signed By.
+  - `manav/public/js/quotation.js`: when the Account Manager is set (from the customer or by
+    hand), Signed By becomes that user's Sales Person; with none linked, Signed By is left and
+    an orange note says so.
+- Server: `setup_erpnext_fields` run on manav.local (created the field) and `bench --site
+  manav.local clear-cache` (Frappe's cached field list did not have it yet).
+- Testing: `node --check`, `py_compile` pass. On manav.local in a rolled-back transaction:
+  with K. KATHIRAVAN's Login User set to support02, the lookup and `get_signed_by` gave
+  K. KATHIRAVAN; an empty Signed By was filled on validate; a hand-set one kept; an unlinked
+  user gave none; nothing stayed after the rollback. Not run: the form in the browser.
+- Pending: fill "Login User" on the Sales Persons who use the system (none is set yet).
+
+**Quotation pop-ups: Back and Save buttons (for use on the phone).**
+
+- Reason: the user asked for a Back and a Save button on the quotation's pop-ups (the Sub-Items
+  dialog and the "Editing Row" panel of an Items line), so they are easy to use in the app view.
+- Changes (`manav/public/js/quotation.js`):
+  - Sub-Items dialog: "Back" closes it without changes; the main button is "Save" (was
+    "Update"): it applies the ticks as before and then saves the quotation (`frm.save()`).
+  - Items line panel (`form_render` of Quotation Item -> `add_row_form_buttons`): Back (closes
+    the panel, the typed values stay) and Save (closes it and saves the quotation), beside Delete
+    at the top and in a bar at the foot that stays visible while scrolling. Save is left out for
+    a submitted quotation or a table that cannot be edited. Uses Frappe grid internals, guarded
+    and noted with the version (16.33.1); missing internals mean no buttons, not an error.
+- Testing: `node --check` passes; Frappe's Dialog supports `secondary_action_label` (checked in
+  frappe/public/js/frappe/ui/dialog.js). Not run: the form in the browser or on a phone.
+- Pending: hard reload of the browser / app and a try on the phone.
+
+**`bench migrate` run on manav.local; tabs on the Manav workspace; Account Manager error fixed.**
+
+- Reason: the user asked for tabs on the Manav workspace (desk page) as well, and reported
+  "Field custom_account_manager not found" on the Quotation form (the field did not exist yet,
+  migrate had not been run).
+- Changes:
+  - `manav/manav/workspace_tabs.py` (new) + `manav/manav/workspace_tabs_block/tabs.html`,
+    `tabs.css`, `tabs.js` (new): Custom HTML Block "Manav Dashboard Tabs", written from these
+    files by `setup_workspace_tabs` (in `after_migrate`/`after_install`, `manav/hooks.py`). Its
+    script shows one section of the workspace at a time (Quotations / Sales, HR & Attendance,
+    Payroll, Masters & Records), skips sections the user has nothing to see in, shows all in
+    edit mode, remembers the tab in the browser, supports arrow keys, and fires a window resize
+    so charts drawn in a hidden tab get their width. It uses the workspace's Editor.js DOM
+    (.ce-block, .ce-header, .widget, .edit-mode), checked on Frappe 16.33.1; it does nothing
+    if these change.
+  - `manav/manav/workspace/manav/manav.json`: the block under the shortcuts.
+  - `manav/public/js/quotation.js`: the Account Manager is set only when the field exists.
+- Server: site backup `20261019_140858-manav_local` taken, then `bench --site manav.local
+  migrate` run (2026-10-19 14:09) without errors. This also applied the earlier entries of
+  today (Account Manager field, Manav Management role, chart roles, sidebar, Default App).
+  Checked afterwards: the custom field and its column exist; role exists; Default App = manav;
+  the tab block exists (public) and is on the workspace; the six charts carry the role
+  (emily.demo may not see "Quotations by Sales Engineer", Administrator may); sidebar 36 items.
+  The site runs `bench serve`, which reloads Python changes, so no restart was done.
+- Testing: `node --check` and `py_compile` pass. Not run: the workspace tabs and the form in the
+  browser (no browser login from here).
+- Pending: hard reload of the browser and a look at the workspace tabs; Milind/Naveen users and
+  the role, as in the entry below.
+
+**Dashboard: tabs, each user's own dashboard after login, team figures for management only.**
+
+- Reason: the user asked for tabs instead of scrolling, for everyone to see their own dashboard
+  after login, and for only the admin, Milind and Naveen to see all employees' performance.
+  Decisions taken with the user: a role instead of fixed names; "own" quotations are those the
+  user created or is Account Manager of (no login user is linked to a Sales Person on the site);
+  the landing page is the dashboard page.
+- Changes:
+  - `manav/manav/desk_home.py`: role "Manav Management" (`setup_management_role`, in
+    `after_migrate`/`after_install`) and `is_management()` (Administrator, System Manager, or the
+    role). The role gives no doctype permissions.
+  - `manav/hooks.py`: the apps-screen route, and so the page after login, is `/manav-dashboard`
+    (was `/desk/manav`, set earlier today).
+  - `manav/manav/dashboard.py`: `my_sales` (own quotations) for every reader; `sales` (all
+    quotations, by sales engineer), `hr` and `payroll` only for management; still read with
+    `frappe.get_list`, so doctype permissions apply as well.
+  - `manav/www/manav-dashboard.html`, `.js`, `.css`: tab bar (My Dashboard, Team Performance,
+    HR & Attendance, Payroll); a tab shows only when its data came back; keyboard arrows move
+    between tabs; the chosen tab is remembered in the browser. New "My Quotations" panel. The
+    header link goes to the Manav workspace (was /app).
+  - `manav/manav/dashboard_chart/*.json` (6): role Manav Management on every Manav chart, so
+    the workspace shows the company-wide charts only to management (Frappe hides a chart from a
+    user without its roles; System Managers always see them).
+- Testing: `node --check` and `py_compile` pass. On manav.local, `get_dashboard_data` as
+  Administrator: own 715, team 715, HR 63 employees, payroll 1 slip; as emily.demo and
+  sarah.demo (Sales User / Sales Manager): own 0, team/HR/payroll none; as support02 (HR, no
+  Quotation access): nothing. In a rolled-back transaction: the role was created (twice, no
+  error), emily.demo with the role got the team figures (715) but no HR/payroll (she has no read
+  access to Employee / Salary Slip). The apps route is /manav-dashboard. Not run: `bench migrate`
+  (creates the role, loads the chart roles), the page in the browser, a real login.
+- Pending: `bench --site manav.local migrate` and `bench restart`. Create users for Milind and
+  Naveen (the site has none; there are two Naveens in Sales Person / Employee Master: M-02 and
+  M-18) and give them "Manav Management"; for the HR & Attendance and Payroll tabs they also need
+  read access there (e.g. HR User; Payroll also one of HR Manager, HR User, Accounts Manager).
+  Roopa (support02, HR Manager) no longer sees the HR/Payroll tabs unless given the role. The
+  workspace's number cards (totals such as Quotations This Month) are not limited by role;
+  Frappe has no role setting for them.
+
+**Quotation: Account Manager filled from the Customer.**
+
+- Reason: the user asked for the Account Manager set on the Customer (Sales Team tab) to be
+  filled in automatically on the quotation.
+- Changes:
+  - `manav/manav/erpnext_fields.py`: new Quotation custom field "Account Manager"
+    (`custom_account_manager`, Link to User) in Manav Details, after the Sales Engineer.
+    ERPNext's Quotation has no such field; `fetch_from` cannot be used because `party_name` is
+    a Dynamic Link.
+  - `manav/public/js/quotation.js`: choosing the customer sets the Account Manager (with the
+    Haas Cust ID, in one call); another customer replaces it.
+  - `manav/manav/quotation.py` `fill_account_manager` + `manav/hooks.py` (validate is now a
+    list): on saving, an empty Account Manager is taken from the Customer (covers imports and
+    copies); one set by hand is kept; quotations to a Lead/Prospect are left alone.
+- Testing: `node --check` and `py_compile` pass. On manav.local, inside a transaction rolled
+  back afterwards: Frappe lists both validate hooks; a customer given an Account Manager filled
+  an empty quotation value, a hand-set value was kept, a Lead quotation stayed empty; the
+  customer's value was empty again after the rollback. Not run: `bench migrate` (creates the
+  field), the form in the browser.
+- Pending: `bench --site manav.local migrate` (new field) and a hard reload. No Customer has an
+  Account Manager on the site yet. The Account Manager is a User, while "Discussion With (Sales
+  Engineer)" is a Sales Person; no Sales Person is linked to an Employee/User on the site, so
+  the Sales Engineer is not filled from it.
+
+**Quotation Items table: blue machine rows, sub-items numbered 1.1, 1.2 and indented.**
+
+- Reason: the user asked for the machine rows in blue, for the sub-items of machine 1 to be
+  numbered 1.1, 1.2 ..., and for the sub-items to be indented in the table.
+- Changes:
+  - `manav/public/js/quotation.js`: machine rows are `--blue-300` (dark theme `--blue-900`) with
+    blue bold text and a `--blue-500` bar at the left; before they were `--bg-blue` (#edf6fd),
+    which could hardly be told from white. Sub-item rows get the class `manav-sub-item-row`: Sub-Item
+    Sr.No and Item Code are indented (no arrow). `number_sub_items` gives
+    "<machine No.>.<n>"; lines dragged to another place are numbered again (`items_move`).
+  - `manav/manav/quotation.py`: `number_sub_items` (on validate) numbers the same way. A
+    sub-item belongs to the nearest line of its machine above it (else the first line of its
+    machine); a sub-item whose machine is not on the quotation keeps a plain 1, 2, 3.
+  - `manav/manav/erpnext_fields.py`: description of Sub-Item Sr.No updated.
+- Testing: `node --check` on the JS and `py_compile` on the Python pass. On manav.local,
+  `number_sub_items` on an unsaved test document (machine, 2 sub-items, 2nd machine, 1 sub-item,
+  the 1st machine again with 1 sub-item, a sub-item of a missing machine) gave 1.1, 1.2, 2.1, 3.1
+  and 1. Not run: the form in the browser.
+- Pending: hard reload of the browser (no build needed; `doctype_js` is served from the app).
+  Quotations already saved keep their old 1, 2, 3 until they are saved again.
+
+**Print (Manav Modern Quotation / Manav Modern Quotation Head): the same numbering, blue and indent.**
+
+- Reason: the user's print still showed 1., 2. in black and white ("STILL SAME"); the change
+  above had covered only the form.
+- Changes: `manav/templates/print_formats/manav_modern_quotation_body.html` (shared by both
+  print formats): `lines_table` takes the machine's number; the machine's row is light blue with
+  a blue bar at its No. and numbered "1.", its options "1.1", "1.2" ... with the number and the
+  description moved a little to the right (an arrow "↳" in front was removed at the user's
+  request). Loose options (machine not on the quotation) continue the machines'
+  numbers, without colour. The numbers are worked out in the print, so saved quotations print
+  correctly without being saved again.
+- Testing: on manav.local, `frappe.get_print` of 26QX000081 (VF-1 with ACF) gave a blue row
+  "1. VF-1" and an indented row "1.1 ACF". Making the PDF failed on the server with
+  wkhtmltopdf "HostNotFoundError" (it cannot reach the site's host name; not caused by this
+  change). Not run: the print preview in the browser, the PDF.
+- Pending: check the print preview and the PDF; the PDF error on the server needs the site's
+  host name to resolve there (e.g. `host_name` in site_config or an /etc/hosts entry).
+
+**Print: every machine after the first starts a new page.**
+
+- Reason: the user asked for a newly added item to go to the second page of the print.
+- Changes: `manav/templates/print_formats/manav_modern_quotation_body.html`: the piece of each
+  machine after the first carries the marker `mm-new-page`; in the browser's copy its row of the
+  sheet table gets `page-break-before`, in the PDF's copy (wkhtmltopdf) its block. Machine 1
+  stays under the quotation box on page 1; each further machine, with its specification box and
+  sub-items, begins a page. Totals, terms and signature follow the last machine as before.
+  Applies to both Manav Modern print formats (Quotation and Quotation Head).
+- Testing: on manav.local an unsaved copy of 26QX000081 with a second machine (VF-3) added was
+  rendered with `frappe.get_print` (nothing saved, rolled back): one break marker in each copy,
+  numbers 1. VF-1 / 1.1 ACF / 2. VF-3. That HTML printed to PDF with headless Edge on the
+  Windows PC gave 2 pages: page 1 VF-1 and ACF, page 2 VF-3 and the totals. Not run: the
+  server's PDF (wkhtmltopdf HostNotFoundError, see above) and the print view in Frappe.
+- Pending: check a real quotation with two machines in the print view and, once the server's
+  PDF works, in the PDF.
+
+**After login users land on the Manav workspace; the Manav sidebar lists all masters.**
+
+- Reason: the user asked for only the Manav page to be shown after login, and for the masters and
+  other needed links in the left menu.
+- Changes:
+  - `manav/hooks.py`: `add_to_apps_screen` entry for Manav (route `/desk/manav`, the Manav
+    workspace); `manav.manav.desk_home.set_default_app` added to `after_migrate` (and so to
+    `after_install`).
+  - `manav/manav/desk_home.py` (new): `has_app_permission` (desk users who may read Quotation;
+    not website users) and `set_default_app`, which sets System Settings > Default App to Manav
+    when it is empty (an administrator's later choice is kept). Frappe's login then redirects to
+    the Default App's route (frappe/apps.py `get_default_path`, Frappe 16.33.1).
+  - `manav/public/images/manav_logo.svg` (new): the app's logo on the /apps screen.
+  - `manav/workspace_sidebar/manav.json`: besides Home, Dashboard, Quotation, Customer and Item,
+    folded groups Quotation Masters (Quotation Type, Quotation Item / Sub Item Master, Terms and
+    Conditions, Letter Head, Print Format), Customer Masters (Customer Contact Person, Contact,
+    Address, Customer Group, Territory, Region Zone), Item & Price Masters (Item Group, Item Price,
+    Price List, UOM, Currency, Currency Exchange), Sales Team (Sales Person, Employee Master),
+    Reports (Quotation Trends, Sales Person-wise Transaction Summary), Settings (Selling Settings,
+    Print Settings) and Old Records (Quotation Head).
+- Testing: `py_compile` passes. On manav.local: every DocType and Report the sidebar links to
+  exists; Frappe reads the new hook and `get_apps()` lists Manav with route `/desk/manav`; the
+  logo is reachable through `sites/assets/manav`. System Settings > Default App is empty there
+  now. Not run: `bench migrate` and a real login in the browser.
+- Pending: `bench --site manav.local migrate` (loads the sidebar, sets the Default App), then
+  `bench restart` so the new hook is read, and a log in to check. A user whose own Default App
+  (User form) is set to another app still lands there. Other apps' workspaces (ERPNext, HR, CRM)
+  stay reachable from the desk; they are not hidden.
+
 ## 2026-10-17
+
+**Quotation list: the principal (Quotation Type) as a coloured label.**
+
+- Reason: the user asked for colour on the quotation type in the list view.
+- Changes:
+  - `manav/manav/doctype/quotation_type/quotation_type.json` (+ note in `quotation_type.py`):
+    new Select field List Colour (`list_color`: blue, green, orange, purple, pink, cyan, yellow,
+    red, gray).
+  - `manav/manav/erpnext_fields.py`: Quotation's `custom_quotation_type` is shown in the list view.
+  - `manav/public/js/quotation_list.js` + `doctype_list_js` in `manav/hooks.py`: the column shows
+    the principal's description (MACHINES, SPARES IN RUPEES ...) as a Frappe indicator pill in its
+    List Colour; without one, a fixed colour by code order. Extends ERPNext's list settings (its
+    onload is still called).
+- Testing: `node --check` on the JS and `py_compile` on the Python pass. On the server: Frappe
+  adds `doctype_list_js` after the doctype's own list JS (frappe/desk/form/meta.py), and all nine
+  colours are in Frappe's indicator colours. Not run: `bench migrate` and the list in the browser.
+- Pending: `bench --site manav.local migrate` (new field and the list column), then a hard reload.
+  Users who saved their own list columns may need to add "Principal (Quotation Type)" via List
+  Settings.
 
 **Manav workspace shows the dashboard itself: number cards and charts for sales, HR, payroll.**
 

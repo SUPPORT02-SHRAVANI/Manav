@@ -29,6 +29,13 @@ Change: The help text of Specifications describes the lines "label : value || va
 "#Title || Column 2 || Column 3".
 Reason: The quotation now prints the specifications as a table of three columns, whose titles come
 from the heading line (S.A.E. and Metric for Haas, Units and the model for Jagdeep).
+
+CHANGE NOTE
+Date: 2026-10-19
+Change: Added the section "Sub-Items" (custom_sub_items_section) with an HTML field
+(custom_sub_items_tree) at the foot of the Details tab, in which the Item form draws the
+machine's sub-items as a tree (public/js/item.js; hidden for items without sub-items).
+Reason: The user asked for the sub-items tree inside the Item form of that item.
 """
 
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
@@ -85,6 +92,20 @@ ITEM_FIELDS = [
 		"insert_after": "custom_old_rate",
 		"read_only": 1,
 		"no_copy": 1,
+	},
+	# A machine's sub-items, drawn as a tree by public/js/item.js (the section is hidden for items
+	# without sub-items). After the last field of the Details tab, so it is the tab's last section.
+	{
+		"fieldname": "custom_sub_items_section",
+		"label": "Sub-Items",
+		"fieldtype": "Section Break",
+		"insert_after": "custom_old_rate_currency",
+	},
+	{
+		"fieldname": "custom_sub_items_tree",
+		"label": "Sub-Items Tree",
+		"fieldtype": "HTML",
+		"insert_after": "custom_sub_items_section",
 	},
 ]
 

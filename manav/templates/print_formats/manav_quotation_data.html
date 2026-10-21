@@ -1,0 +1,210 @@
+{#-
+	Gathers the values of an ERPNext Quotation for the print formats Manav Classic Quotation,
+	Manav Banded Quotation (both black and white) and Manav Colour Quotation into the variable `q`,
+	then draws the
+	page with the layout file named in `body_template`. The print format sets `theme` (colours)
+	and `body_template` and includes this file; a variable set here is only seen by a file
+	included from here, which is why this file includes the layout at its end.
+
+	Created: 2026-10-19, when the user asked for 3-4 quotation print formats with colour and row
+	banding, and for a machine's description to print as a two-column list as on the old
+	quotation (FMT: QUOT-11). The same day the user asked for colour on one format only: Classic
+	and Banded are now black and white, Manav Colour Quotation (the former Banded Blue) is in colour.
+
+	What `q` holds (amounts already as printable text):
+	  company, number, date (text), customer_name, address (HTML), attn, phone
+	  refs        [[name, value]]: Ref. No., Ref Dt., Sales Engg., Cust ID (always all four)
+	  currency, currency_label (US$ for USD, Rs. for INR), price_basis (of the principal)
+	  machines    [{no, code, name, image, bullets, rate, qty, uom, amount, amount_plain,
+	                 show_qty, options}]
+	              bullets: [{text, bold}] - the machine's description as a list (see 2. below)
+	              options: [{no, code, description, rate, qty, amount, amount_plain}]
+	  loose_options  options whose machine is not on the quotation (same keys, no "no" prefix)
+	  subtotal, taxes [[label, amount, amount_plain]], grand_total, grand_total_plain, in_words
+	  payment     [HTML lines], terms (HTML), signer, designation, sales_engineer
+
+	Working:
+	1. Machines and options as in Manav Modern Quotation: a line marked "Sub-Item of" is an
+	   option; an unmarked line is an option too when the Quotation Sub Item Master lists it as a
+	   sub-item of another unmarked line on the quotation. Machines are numbered 1, 2 ...; their
+	   options 1.1, 1.2 ...; loose options continue the machines' numbers.
+	2. A machine's bullets (the old print's two columns of "*" lines):
+	   - a description "Title; feature, feature, ..." (the Haas machines): the features;
+	   - a description of several lines (the Chmer machines): every line after the first;
+	   - a one-line description of six comma parts or more: the parts after the first;
+	   - otherwise the key Specifications lines (of the line, else of the Item; blocks on air,
+	     electrics, dimensions / shipping and axis motors left out): a heading "#Title" is a bold
+	     bullet, "label : a || b" reads "label : a (b)", "label : a" as is.
+	   A line starting with ! is bold (the old print's highlighted line).
+-#}
+{%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
+{#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
+{%- macro plain(html) -%}
+	{{- frappe.utils.strip_html((html or "") | replace("</p>", "\n") | replace("</div>", "\n") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n")) | replace("&nbsp;", " ") | replace("&amp;", "&") | trim -}}
+{%- endmacro -%}
+{%- set currency = doc.currency or "" -%}
+{%- set currency_label = {"USD": "US$", "INR": "Rs."}.get(currency, currency) -%}
+{%- macro amount_plain(value) -%}{{ currency_label }} {{ frappe.utils.fmt_money(value or 0, 2) }}{%- endmacro -%}
+
+{%- set lines = doc.get("items") or [] -%}
+{%- set unmarked = lines | rejectattr("custom_main_item_code") | list -%}
+{%- set unmarked_codes = unmarked | map(attribute="item_code") | select | list -%}
+{%- set sub_links = frappe.get_all("Quotation Sub Item Master", filters={"main_item_code": ["in", unmarked_codes]}, fields=["main_item_code", "sub_item_code"]) if unmarked_codes else [] -%}
+{%- set link_keys = [] -%}
+{%- set machine_keys = [] -%}
+{%- for link in sub_links -%}
+	{%- set _ = link_keys.append((link.main_item_code or "") | lower ~ "::" ~ (link.sub_item_code or "") | lower) -%}
+	{%- set _ = machine_keys.append((link.main_item_code or "") | lower) -%}
+{%- endfor -%}
+{%- set parent_of = {} -%}
+{%- for line in unmarked -%}
+	{%- set code = (line.item_code or "") | lower -%}
+	{%- if code and code not in machine_keys -%}
+		{%- for machine in unmarked -%}
+			{%- if line.idx not in parent_of and machine.idx != line.idx and ((machine.item_code or "") | lower ~ "::" ~ code) in link_keys -%}
+				{%- set _ = parent_of.update({line.idx: machine.item_code}) -%}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+{%- endfor -%}
+{%- set main_items = unmarked | rejectattr("idx", "in", parent_of.keys() | list) | list -%}
+{%- set main_codes = main_items | map(attribute="item_code") | list -%}
+{%- set signer_code = frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_employee_code") if doc.custom_signed_by else None -%}
+{%- set contact_designation = frappe.db.get_value("Contact", doc.contact_person, "designation") if doc.contact_person else None -%}
+
+{%- set q = {
+	"company": doc.company,
+	"number": doc.name,
+	"date": frappe.utils.formatdate(doc.transaction_date, "dd/mm/yyyy") if doc.transaction_date else "",
+	"customer_name": doc.customer_name or doc.party_name,
+	"address": doc.address_display,
+	"attn": (doc.contact_display ~ ((", " ~ contact_designation) if contact_designation else "")) if doc.contact_display else "",
+	"phone": doc.contact_mobile,
+	"refs": [
+		["Ref. No.", doc.custom_your_reference or ""],
+		["Ref Dt.", frappe.utils.formatdate(doc.custom_your_reference_date, "dd/mm/yy") if doc.custom_your_reference_date else ""],
+		["Sales Engg.", person(doc.custom_sales_engineer)],
+		["Cust ID", doc.custom_haas_customer_id or ""],
+	],
+	"currency": currency,
+	"currency_label": currency_label,
+	"price_basis": frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None,
+	"machines": [],
+	"loose_options": [],
+	"subtotal": doc.get_formatted("net_total"),
+	"taxes": [],
+	"grand_total": doc.get_formatted("grand_total"),
+	"grand_total_plain": amount_plain(doc.grand_total),
+	"in_words": doc.in_words,
+	"payment": [],
+	"terms": doc.terms,
+	"signer": person(doc.custom_signed_by),
+	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
+	"sales_engineer": person(doc.custom_sales_engineer),
+} -%}
+
+{#- 1. and 2.: machines with their bullets and options -#}
+{%- for item in main_items -%}
+	{%- set machine_no = loop.index -%}
+	{%- set bullets = [] -%}
+	{%- set description_lines = plain(item.description).split("\n") | map("trim") | select | list -%}
+	{%- set sentence = description_lines | join(" ") -%}
+	{%- set halves = sentence.split("; ", 1) -%}
+	{%- set parts = (halves | last | replace("; ", ", ")).split(", ") | map("trim") | select | list -%}
+	{%- set features = [] -%}
+	{%- if description_lines | length > 1 -%}
+		{%- set features = description_lines[1:] -%}
+	{%- elif halves | length > 1 and parts | length >= 3 -%}
+		{%- set features = parts -%}
+	{%- elif parts | length >= 6 -%}
+		{%- set features = parts[1:] -%}
+	{%- endif -%}
+	{%- for feature in features -%}
+		{%- set text = feature.lstrip("*-• ") | trim -%}
+		{%- set bold = text.startswith("!") -%}
+		{%- if text -%}{%- set _ = bullets.append({"text": (text[1:] if bold else text) | trim, "bold": bold}) -%}{%- endif -%}
+	{%- endfor -%}
+	{%- if not bullets -%}
+		{%- set spec_text = item.custom_specifications or (frappe.db.get_value("Item", item.item_code, "custom_specifications") if item.item_code else None) -%}
+		{#- Only the key blocks, as "Format: key specifications" on the Item keeps them
+		    (MANAV_KEY_SPECIFICATIONS in public/js/item.js): blocks about air, electrics,
+		    dimensions / shipping and axis motors are left out, and so are the bare labels
+		    "... specifications" that the maker's page puts between blocks. -#}
+		{%- set block = namespace(dropped=False) -%}
+		{%- for spec in (spec_text or "").split("\n") | map("trim") | select -%}
+			{%- set words = spec | lower -%}
+			{%- if spec.startswith("#") -%}
+				{%- set block.dropped = ("air requirement" in words or "electrical" in words or "dimension" in words or "shipping" in words or "axis motor" in words) -%}
+			{%- endif -%}
+			{%- if block.dropped or (" : " not in spec and not spec.startswith("#") and words.endswith("specifications")) -%}
+				{#- left out -#}
+			{%- elif spec.startswith("#") -%}
+				{%- set _ = bullets.append({"text": (spec[1:].split(" || ") | first) | trim, "bold": True}) -%}
+			{%- else -%}
+				{%- set bold = spec.startswith("!") -%}
+				{%- set text = (spec[1:] if bold else spec) | trim -%}
+				{%- set cells = text.split(" : ", 1) -%}
+				{%- if cells | length == 2 -%}
+					{%- set values = cells[1].split(" || ") | map("trim") | list -%}
+					{%- set text = cells[0] | trim ~ " : " ~ values[0] ~ ((" (" ~ values[1] ~ ")") if values | length > 1 and values[1] else "") -%}
+				{%- endif -%}
+				{%- set _ = bullets.append({"text": text, "bold": bold}) -%}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+
+	{%- set options = [] -%}
+	{%- for option in lines if option.custom_main_item_code == item.item_code or parent_of.get(option.idx) == item.item_code -%}
+		{%- set _ = options.append({
+			"no": machine_no ~ "." ~ (options | length + 1),
+			"code": option.item_code,
+			"description": plain(option.description) or option.item_name,
+			"rate": option.get_formatted("rate", doc),
+			"qty": option.get_formatted("qty", doc),
+			"amount": option.get_formatted("amount", doc),
+			"amount_plain": amount_plain(option.amount),
+		}) -%}
+	{%- endfor -%}
+	{%- set _ = q.machines.append({
+		"no": machine_no,
+		"code": item.item_code,
+		"name": item.item_name or item.item_code,
+		"image": item.image or (frappe.db.get_value("Item", item.item_code, "image") if item.item_code else None),
+		"bullets": bullets,
+		"rate": item.get_formatted("rate", doc),
+		"qty": item.get_formatted("qty", doc),
+		"uom": item.uom,
+		"show_qty": frappe.utils.flt(item.qty) != 1,
+		"amount": item.get_formatted("amount", doc),
+		"amount_plain": amount_plain(item.amount),
+		"options": options,
+	}) -%}
+{%- endfor -%}
+{%- for option in lines | selectattr("custom_main_item_code") | rejectattr("custom_main_item_code", "in", main_codes) -%}
+	{%- set _ = q.loose_options.append({
+		"no": (q.machines | length) + loop.index,
+		"code": option.item_code,
+		"description": plain(option.description) or option.item_name,
+		"rate": option.get_formatted("rate", doc),
+		"qty": option.get_formatted("qty", doc),
+		"amount": option.get_formatted("amount", doc),
+		"amount_plain": amount_plain(option.amount),
+	}) -%}
+{%- endfor -%}
+
+{#- taxes and charges with an amount (CIF charges are entered here as an "Actual" charge row) -#}
+{%- for tax in (doc.get("taxes") or []) | selectattr("tax_amount") -%}
+	{%- set _ = q.taxes.append([
+		(tax.description or tax.account_head or "Tax") ~ ((" @ " ~ ("%g" | format(tax.rate)) ~ "%") if frappe.utils.flt(tax.rate) else ""),
+		tax.get_formatted("tax_amount", doc),
+		amount_plain(tax.tax_amount),
+	]) -%}
+{%- endfor -%}
+
+{#- payment schedule and validity -#}
+{%- for row in doc.get("payment_schedule") or [] -%}
+	{%- set _ = q.payment.append("<b>" ~ (row.payment_term or row.description or "Payment") ~ ":</b>" ~ ((" " ~ ("%g" | format(row.invoice_portion)) ~ "%") if frappe.utils.flt(row.invoice_portion) else "")) -%}
+{%- endfor -%}
+{%- if doc.valid_till -%}{%- set _ = q.payment.append("<b>Valid till:</b> " ~ frappe.utils.formatdate(doc.valid_till, "dd.mm.yyyy")) -%}{%- endif -%}
+
+{% include body_template %}

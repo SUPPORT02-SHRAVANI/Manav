@@ -1,0 +1,195 @@
+{#-
+	Layout of "Manav Classic Quotation": the old system's quotation (FMT: QUOT-11) as the user
+	showed it, in black and white (the colours come from `theme`; the user asked for colour on one
+	format only, Manav Colour Quotation). Drawn from `q` (manav_quotation_data.html) and `theme`.
+
+	Top to bottom: letter head; title QUOTATION; the box with the customer, address and Kind Attn
+	on the left and number, date, Ref. No., Ref Dt., Sales Engg., Cust ID on the right; the column
+	heads Sr.No | Item Code | Particulars | Price in <currency> (a coloured band). For each machine:
+	"01  CODE  machine name" in bold, its bullets in two columns ("*", bold ones bold), then
+	"Prices : <price basis of the principal>  US$ <amount>" (just "Price :" without a basis), then
+	its options in a table with banded rows (1.1, 1.2 ...). Each machine after the first starts a
+	new page, as on the other Manav formats. After the machines: the charges entered in Taxes and
+	Charges (e.g. "CIF Charges - Chennai Sea Port") as dotted-leader lines, and the total when
+	there are charges; payment info; the terms; the signature; the footer line.
+
+	Created: 2026-10-19.
+-#}
+<style>
+	.mcq { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	.mcq table { width: 100%; border-collapse: collapse; }
+	/* Frappe's print style forces 6px padding on every cell and a margin on every paragraph */
+	.print-format .mcq td, .print-format .mcq th { padding: 2px 5px !important; vertical-align: top; line-height: 1.35; }
+	.print-format .mcq p { margin: 0 !important; }
+	.mcq .title { text-align: center; font-family: "Times New Roman", serif; font-size: 15pt; font-weight: bold; letter-spacing: 0.08em; color: {{ theme.dark }}; margin: 4px 0 6px; }
+	.mcq .serif { font-family: "Times New Roman", serif; font-weight: bold; font-size: 11pt; }
+	.mcq .box { border: 1.5px solid {{ theme.dark }}; }
+	.mcq .box > tbody > tr > td { border: 1px solid {{ theme.dark }}; }
+	.mcq .box .key { color: {{ theme.dark }}; font-family: "Times New Roman", serif; font-weight: bold; width: 36%; }
+	.mcq .heads th { background: {{ theme.primary }}; color: #fff; border: 1px solid {{ theme.dark }}; font-family: "Times New Roman", serif; font-size: 11pt; text-align: center; padding: 4px 5px !important; }
+	.mcq .machine { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 4px 6px 6px; page-break-inside: auto; }
+	.mcq .machine.new-page { page-break-before: always; border-top: 1.5px solid {{ theme.dark }}; }
+	.mcq .machine-head td { padding-top: 4px !important; }
+	.mcq .machine-name { color: {{ theme.dark }}; }
+	.mcq .bullets { margin: 4px 0 6px 7%; width: 93%; }
+	.print-format .mcq .bullets td { padding: 1px 3px !important; }
+	.mcq .bullets .star { width: 3%; color: {{ theme.primary }}; font-weight: bold; }
+	.mcq .bullets .text { width: 47%; }
+	.mcq .price-row td { border-top: 1px dashed {{ theme.primary }}; padding-top: 5px !important; font-weight: bold; }
+	.mcq .price-row .amount { color: {{ theme.dark }}; font-size: 10.5pt; }
+	.mcq .options { margin-top: 6px; border: 1px solid {{ theme.border }}; }
+	.mcq .options th { background: {{ theme.tint }}; color: {{ theme.dark }}; border-bottom: 1px solid {{ theme.border }}; font-size: 8.5pt; text-align: left; }
+	.mcq .options td { border-bottom: 1px solid {{ theme.border }}; font-size: 8.5pt; }
+	.mcq .options tr.band td { background: {{ theme.band }}; }
+	.mcq .right { text-align: right; }
+	.mcq .charges { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 4px 6px; page-break-inside: avoid; }
+	/* fixed layout: the dots after a charge's name are cut at the cell's edge instead of widening it */
+	.mcq .charges table { table-layout: fixed; }
+	.mcq .leader { overflow: hidden; white-space: nowrap; }
+	.mcq .leader:after { content: " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."; color: #888; }
+	.mcq .grand td { background: {{ theme.primary }}; color: #fff; font-weight: bold; font-size: 10.5pt; padding: 4px 5px !important; }
+	.mcq .block { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 5px 6px; page-break-inside: avoid; }
+	.mcq .caps { font-weight: bold; font-size: 8.5pt; letter-spacing: 0.06em; color: {{ theme.dark }}; text-transform: uppercase; margin-bottom: 3px; }
+	.print-format .mcq .terms table td { padding: 2px 4px !important; border-bottom: 1px solid {{ theme.border }}; }
+	.mcq .terms table tr:nth-child(even) td { background: {{ theme.band }}; }
+	.mcq .small { font-size: 8pt; }
+</style>
+
+<div class="mcq">
+	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+	<div class="title">QUOTATION</div>
+
+	<table class="box">
+		<tr>
+			<td style="width: 52%;">
+				<div class="serif">To</div>
+				<div class="serif">{{ q.customer_name or "" }}</div>
+				<div>{{ q.address or "" }}</div>
+				<div style="margin-top: 5px;"><b>Kind Attn :</b> &nbsp;{{ q.attn or "" }}</div>
+				{% if q.phone %}<div><b>Phone :</b> &nbsp;{{ q.phone }}</div>{% endif %}
+			</td>
+			<td>
+				<table>
+					<tr><td class="key">Document No.</td><td style="width: 4%;">:</td><td><b>{{ q.number }}</b></td></tr>
+					<tr><td class="key">Date</td><td>:</td><td>{{ q.date }}</td></tr>
+					{% for ref in q.refs %}<tr><td class="key">{{ ref[0] }}</td><td>:</td><td>{{ ref[1] }}</td></tr>{% endfor %}
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	<table class="heads" style="margin-top: -1px;">
+		<tr>
+			<th style="width: 8%;">Sr.No</th>
+			<th style="width: 16%;">Item Code</th>
+			<th>Particulars</th>
+			<th style="width: 20%;">Price in {{ q.currency_label }}</th>
+		</tr>
+	</table>
+
+	{% for machine in q.machines %}
+	<div class="machine{% if not loop.first %} new-page{% endif %}">
+		<table class="machine-head">
+			<tr>
+				<td style="width: 8%;" class="right serif">{{ "%02d" | format(machine.no) }}</td>
+				<td style="width: 16%;" class="serif">{{ machine.code or "" }}</td>
+				<td class="serif machine-name">{{ machine.name }}
+					{%- if machine.show_qty %} &nbsp;<span class="small">({{ machine.qty }} {{ machine.uom or "" }} x {{ machine.rate }})</span>{% endif %}</td>
+			</tr>
+		</table>
+
+		{% if machine.bullets %}
+		<table class="bullets">
+			{% for pair in machine.bullets | batch(2) %}
+			<tr>
+				{% for bullet in pair %}
+				<td class="star">*</td>
+				<td class="text">{% if bullet.bold %}<b>{{ bullet.text }}</b>{% else %}{{ bullet.text }}{% endif %}</td>
+				{% endfor %}
+				{% if pair | length == 1 %}<td class="star"></td><td class="text"></td>{% endif %}
+			</tr>
+			{% endfor %}
+		</table>
+		{% endif %}
+
+		<table class="price-row">
+			<tr>
+				<td style="padding-left: 6%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
+				<td class="right amount" style="width: 30%;">{{ machine.amount_plain }}</td>
+			</tr>
+		</table>
+
+		{% if machine.options %}
+		<table class="options">
+			<tr><th style="width: 8%;">No.</th><th style="width: 18%;">Option</th><th>Description</th><th style="width: 20%;" class="right">Price</th></tr>
+			{% for option in machine.options %}
+			<tr{% if loop.index is even %} class="band"{% endif %}>
+				<td>{{ option.no }}</td>
+				<td><b>{{ option.code or "" }}</b></td>
+				<td>{{ option.description or "" }}</td>
+				<td class="right">{{ option.amount_plain }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+		{% endif %}
+	</div>
+	{% endfor %}
+
+	{% if q.loose_options %}
+	<div class="block">
+		<div class="caps">Options</div>
+		<table class="options">
+			<tr><th style="width: 8%;">No.</th><th style="width: 18%;">Option</th><th>Description</th><th style="width: 20%;" class="right">Price</th></tr>
+			{% for option in q.loose_options %}
+			<tr{% if loop.index is even %} class="band"{% endif %}>
+				<td>{{ option.no }}</td><td><b>{{ option.code or "" }}</b></td><td>{{ option.description or "" }}</td><td class="right">{{ option.amount_plain }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	{% endif %}
+
+	{#- charges (CIF and so on) as dotted-leader lines, then the total -#}
+	{% if q.taxes %}
+	<div class="charges">
+		<table>
+			{% for tax in q.taxes %}
+			<tr>
+				<td class="leader" style="padding-left: 6%;"><b>{{ tax[0] }}</b></td>
+				<td class="right" style="width: 30%;"><b>{{ tax[2] }}</b></td>
+			</tr>
+			{% endfor %}
+			<tr class="grand"><td style="padding-left: 6%;">Total</td><td class="right">{{ q.grand_total_plain }}</td></tr>
+		</table>
+		{% if q.in_words %}<div class="small" style="padding: 3px 0 0 6%;">{{ q.in_words }}</div>{% endif %}
+	</div>
+	{% endif %}
+
+	{% if q.payment %}
+	<div class="block">
+		<div class="caps">Payment</div>
+		{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
+	</div>
+	{% endif %}
+
+	{% if q.terms %}
+	<div class="block terms">
+		<div class="caps">Terms and Conditions</div>
+		{{ q.terms }}
+	</div>
+	{% endif %}
+
+	<div class="block">
+		<div class="caps">For {{ q.company or "" }}</div>
+		<div style="height: 40px;"></div>
+		<div><b>{{ q.signer }}</b></div>
+		<div>{{ q.designation or "" }}</div>
+	</div>
+	<table class="box" style="margin-top: -1px;">
+		<tr>
+			<td style="width: 16%;" class="small">FMT: QUOT-11</td>
+			<td class="small">CC : &nbsp;{{ q.sales_engineer }}</td>
+			<td style="width: 28%;" class="small right">E &amp; O.E</td>
+		</tr>
+	</table>
+</div>

@@ -5,6 +5,11 @@
 	needed, and statuses are told apart by their labels, not by colour.
 
 	Created: 2026-10-17.
+
+	CHANGE NOTE
+	Date: 2026-10-19
+	Change: Styles of the tab bar (.md-tabs) and the note under a section's heading.
+	Reason: The sections are tabs now (see manav-dashboard.html).
 */
 .md-root {
 	color-scheme: light;
@@ -65,7 +70,17 @@
 .md-status { color: var(--md-muted); margin: 8px 0; }
 .md-status.md-error { color: #d03b3b; }
 
-.md-section { margin-top: 28px; }
+/* tabs (2026-10-19): one section at a time instead of one long page */
+.md-tabs { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--md-border); overflow-x: auto; }
+.md-tabs[hidden] { display: none; }
+.md-tabs [role="tab"] { flex: none; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--md-text-2); padding: 8px 14px; font-size: 0.9rem; font-weight: 500; cursor: pointer; margin-bottom: -1px; }
+.md-tabs [role="tab"]:hover { color: var(--md-text); }
+.md-tabs [role="tab"][aria-selected="true"] { color: var(--md-series); border-bottom-color: var(--md-series); font-weight: 600; }
+.md-tabs [role="tab"]:focus-visible { outline: 2px solid var(--md-focus); outline-offset: -2px; }
+.md-tabs [role="tab"][hidden] { display: none; }
+.md-section-note { margin: -8px 0 12px; }
+
+.md-section { margin-top: 20px; }
 .md-section > h2 { font-size: 1.15rem; font-weight: 700; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--md-border); }
 .md-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
 .md-tile { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 8px; padding: 12px 14px; }

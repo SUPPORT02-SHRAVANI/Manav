@@ -1,0 +1,23 @@
+/*
+	Custom HTML Block "Manav Dashboard Tabs" (CSS part). The block is drawn in a shadow root that
+	links Frappe's desk CSS, so Frappe's colour variables apply (light and dark theme).
+	Written into the block by manav/manav/workspace_tabs.py on every migrate. Created: 2026-10-19.
+*/
+.mwt-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+.mwt-bar:empty { display: none; }
+.mwt-tab {
+	flex: none;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	background: none;
+	padding: 8px 14px;
+	font-size: var(--text-base, 14px);
+	font-weight: 500;
+	color: var(--text-muted);
+	white-space: nowrap;
+	cursor: pointer;
+}
+.mwt-tab:hover { color: var(--text-color); }
+.mwt-tab[aria-selected="true"] { color: var(--text-color); border-bottom-color: var(--primary); font-weight: 600; }
+.mwt-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }

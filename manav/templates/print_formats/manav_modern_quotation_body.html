@@ -48,7 +48,9 @@
 	   with a name worked out from its wording (see feature_rules below); as rows when it has
 	   several lines with "label : value"; otherwise as plain text.
 	5. Lines: under each machine's box, a line table of that machine and its options; after the
-	   last machine, the loose options. The lines are numbered 1, 2, 3 across all the tables.
+	   last machine, the loose options. The machines are numbered 1, 2, 3 on a blue row; the
+	   options of machine 1 are 1.1, 1.2 ..., indented under it; loose options continue the
+	   machines' numbers. Each machine after the first (box and lines) starts a new page.
 	   There are none when the quotation has no lines (an old quotation loaded without its items).
 	6. Payment info on the left; on the right the totals: subtotal, taxes ("As Applicable" when
 	   there are none, as the machine quotations leave taxes to the terms), grand total.
@@ -162,6 +164,23 @@
 	tables. The table is drawn by the macro lines_table.
 	Reason: The user asked for the first machine with its sub-items under it, then the second
 	machine with its sub-items, and so on.
+
+	CHANGE NOTE
+	Date: 2026-10-19
+	Change: In the line tables a machine's row is blue (with a blue bar at its No.) and numbered
+	1., 2. ...; its options are numbered 1.1, 1.2 ... and indented (number and description moved
+	right; a "↳" in front was removed the same day at the user's request). Before, all lines
+	were numbered 1, 2, 3 in a row, in black and white. Loose options continue the machines'
+	numbers.
+	Reason: The user asked for blue machine rows, sub-items numbered 1.1, 1.2 under machine 1 and
+	indented; the form had it, the print ("STILL SAME") did not.
+
+	CHANGE NOTE
+	Date: 2026-10-19
+	Change: Every machine after the first starts a new page: machine 1 under the quotation box,
+	machine 2 with its sub-items on page 2, and so on (marker mm-new-page, see 8.). The totals,
+	terms and signature still follow the last machine.
+	Reason: The user asked for a newly added item to go to the second page of the print.
 -#}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
 {%- macro plain(html) -%}
@@ -224,9 +243,11 @@
 	{{- found.name -}}
 {%- endmacro -%}
 
-{%- macro line_row(number, line, title) -%}
-	<tr>
-		<td class="mm-no">{{ number }}.</td>
+{#- kind: "machine" (blue row, "1."), "option" (indented under its machine, "1.1") or "" (a loose
+    option, "3.") -#}
+{%- macro line_row(number, line, title, kind="") -%}
+	<tr{% if kind %} class="mm-{{ kind }}-row"{% endif %}>
+		<td class="mm-no">{{ number }}{% if kind != "option" %}.{% endif %}</td>
 		<td class="mm-desc">
 			<div class="mm-code">{{ line.code or "" }}</div>
 			{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}
@@ -236,10 +257,14 @@
 		<td class="mm-num mm-strong">{{ line.amount }}</td>
 	</tr>
 {%- endmacro -%}
-{#- A line table: entries is a list of [line, title], numbered from start + 1. Each line is a
-    piece of its own (a small table of one row, the first with the column headings), so that a
-    page can end between two lines. -#}
-{%- macro lines_table(entries, start) -%}
+{#- A line table: entries is a list of [line, title]. Each line is a piece of its own (a small
+    table of one row, the first with the column headings), so that a page can end between two
+    lines.
+    machine_no given: the first entry is machine number machine_no ("1.", a blue row) and the
+    others are its options, numbered machine_no.1, machine_no.2 ... and indented.
+    machine_no empty: loose options, numbered start + 1, start + 2 ... as before.
+    (2026-10-19: machine_no added; before every line was numbered start + n.) -#}
+{%- macro lines_table(entries, start, machine_no=None) -%}
 	{% for entry in entries %}
 		{% if loop.first %}
 	</div><!--mm-cut--><div class="mm">
@@ -261,7 +286,13 @@
 	<table class="mm-lines mm-lines-more{% if not loop.last %} mm-lines-open{% endif %}">
 		<tbody>
 		{% endif %}
+			{% if not machine_no %}
 			{{ line_row(start + loop.index, entry[0], entry[1]) }}
+			{% elif loop.first %}
+			{{ line_row(machine_no, entry[0], entry[1], "machine") }}
+			{% else %}
+			{{ line_row(machine_no ~ "." ~ (loop.index - 1), entry[0], entry[1], "option") }}
+			{% endif %}
 		{% if loop.last %}
 		</tbody>
 	</table>
@@ -313,6 +344,14 @@
 	.print-format .mm .mm-lines .mm-qty { width: 11%; text-align: center; color: #374151; }
 	.mm .mm-code { font-weight: 700; color: #111827; }
 	.mm .mm-sub { font-size: 8pt; color: #6b7280; }
+	/* 2026-10-19: a machine's line is blue; its options are indented under it: the number moved a
+	   little to the right of the machine's, and the description moved right (no arrow, the user
+	   asked for it to be removed). */
+	.print-format .mm .mm-lines .mm-machine-row td { background-color: #c9e7fc; border-bottom: 1px solid #70b6f0; }
+	.print-format .mm .mm-lines .mm-machine-row td.mm-no { border-left: 4px solid #0289f7; color: #005ca3; }
+	.mm .mm-machine-row .mm-code { color: #005ca3; }
+	.print-format .mm .mm-lines .mm-option-row td.mm-no { padding-left: 16px !important; }
+	.print-format .mm .mm-lines .mm-option-row td.mm-desc { padding-left: 22px !important; }
 	.mm .mm-strong { font-weight: 700; color: #111827 !important; }
 
 	.mm .mm-sum { margin-top: 14px; page-break-inside: avoid; }
@@ -357,6 +396,11 @@
 	   the browsers keep the room for the footer only where a page ends between rows, and inside
 	   a row the text ran under the footer (Chrome and Firefox both, tried on 2026-10-14). */
 	.print-format table.mm-sheet > tbody > tr { page-break-inside: avoid; break-inside: avoid; }
+	/* 2026-10-19: each machine after the first starts a new page. In the browser's copy the break
+	   is on its row of the sheet; in the PDF's copy (plain blocks, wkhtmltopdf) on its block. The
+	   block rule is limited to the PDF's copy, so that the browser does not break twice. */
+	.print-format table.mm-sheet > tbody > tr.mm-sheet-new-page { page-break-before: always; break-before: page; }
+	.visible-pdf .mm.mm-new-page { page-break-before: always; break-before: page; }
 	/* Frappe's standard.css makes every tfoot a header group ("hack for webkit specific browser",
 	   thead, tfoot { display: table-header-group }). The foot row of this table must stay a foot
 	   row: it is what keeps the room for the footer free at the bottom of every page. As a head
@@ -516,7 +560,9 @@
 	{% if short_title == machine.code %}{% set short_title = "" %}{% endif %}
 	{% set _ = machine.update({"title": short_title or machine_name}) %}
 
-	</div><!--mm-cut--><div class="mm">
+	{#- Every machine after the first starts a new page (2026-10-19): its piece carries the marker
+	    mm-new-page, which section 8 turns into a page break in each copy. -#}
+	</div><!--mm-cut--><div class="mm{% if not loop.first %} mm-new-page{% endif %}">{% if not loop.first %}<!--mm-new-page-->{% endif %}
 	<div class="mm-spec">
 		<table class="mm-spec-head">
 			<tr>
@@ -617,8 +663,9 @@
 	{#- 5. the machine's line and its options, right under its box -#}
 	{% set machine_lines = [[machine, machine.title]] %}
 	{% for option in machine.options %}{% set _ = machine_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
-	{{ lines_table(machine_lines, numbered.count) }}
-	{% set numbered.count = numbered.count + (machine_lines | length) %}
+	{#- machine 1 is "1.", its options "1.1", "1.2"; numbered.count counts the machines -#}
+	{% set numbered.count = numbered.count + 1 %}
+	{{ lines_table(machine_lines, 0, numbered.count) }}
 	{% endfor %}
 
 	{#- 5. the options whose machine is not on the quotation, after the last machine -#}
@@ -747,7 +794,7 @@
 		<tbody>
 			{#- a piece that holds nothing (no notes, for example) gets no row -#}
 			{% for piece in page.split("<!--mm-cut-->") %}{% if (frappe.utils.strip_html(piece) | trim) or "<img" in piece %}
-			<tr><td class="mm-sheet-body">{{ piece }}</td></tr>
+			<tr{% if "<!--mm-new-page-->" in piece %} class="mm-sheet-new-page"{% endif %}><td class="mm-sheet-body">{{ piece }}</td></tr>
 			{% endif %}{% endfor %}
 		</tbody>
 		<tfoot><tr><td class="mm-sheet-bottom">{% if page_footer %}<div class="mm-sheet-room">{{ page_footer }}</div>{% endif %}</td></tr></tfoot>

@@ -1,0 +1,208 @@
+{#-
+	Layout of "Manav Banded Quotation" (black and white) and "Manav Colour Quotation" (blue): a
+	modern quotation drawn from `q` (manav_quotation_data.html); the two formats differ only in
+	`theme` (colours). (Until a change the same day there were Blue, Green and Red; the user asked
+	for colour on one format only.)
+
+	Top to bottom: letter head; a band in the theme colour with the title QUOTATION, the number and
+	the date; two tinted cards: "Quotation to" (customer, address, Kind Attn, phone) and
+	"Reference" (Ref. No., Ref Dt., Sales Engg., Cust ID); then one items table per machine:
+	head row in the theme colour, the machine's row tinted (No. 1, code, name and its features
+	in two columns), its sub-items below it numbered 1.1, 1.2 ... and indented, every second row
+	banded. Each machine after the first starts a new page. Loose options in a table of their own.
+	Then payment info beside the totals (subtotal, charges such as CIF, the grand total on a bar
+	in the theme colour, amount in words); terms with banded rows; the signature.
+	Tables only (no flexbox / grid), because the PDF maker (wkhtmltopdf) knows neither.
+
+	Created: 2026-10-19.
+-#}
+<style>
+	.mbq { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1f2937; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	.mbq table { width: 100%; border-collapse: collapse; }
+	.print-format .mbq td, .print-format .mbq th { padding: 0 !important; vertical-align: top; line-height: 1.4; border: 0; }
+	.print-format .mbq p { margin: 0 !important; }
+
+	/* title band */
+	.mbq .band-head { background: {{ theme.primary }}; color: #fff; }
+	.print-format .mbq .band-head td { padding: 10px 14px !important; vertical-align: middle; }
+	.mbq .band-head .title { font-size: 18pt; font-weight: 800; letter-spacing: 0.12em; }
+	.mbq .band-head .meta { text-align: right; font-size: 9pt; }
+	.mbq .band-head .meta b { font-size: 11pt; }
+	.mbq .accent-line { height: 4px; background: {{ theme.accent }}; }
+
+	/* the two cards */
+	.mbq .cards { margin-top: 10px; border-collapse: separate; border-spacing: 0; }
+	.print-format .mbq .cards > tbody > tr > td.card { background: {{ theme.tint }}; border-left: 4px solid {{ theme.primary }}; padding: 8px 10px !important; }
+	.mbq .card-title { font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: {{ theme.primary }}; margin-bottom: 3px; }
+	.mbq .customer { font-size: 11pt; font-weight: 700; color: {{ theme.dark }}; }
+	.print-format .mbq .refs td { padding: 1px 0 !important; }
+	.mbq .refs .k { color: #6b7280; width: 38%; }
+
+	/* items */
+	.mbq .items { margin-top: 12px; border: 1px solid {{ theme.border }}; }
+	.mbq .items.new-page { page-break-before: always; }
+	.print-format .mbq .items th { background: {{ theme.primary }}; color: #fff; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 8px !important; text-align: left; }
+	.print-format .mbq .items td { padding: 5px 8px !important; border-bottom: 1px solid {{ theme.border }}; }
+	.mbq .items tr { page-break-inside: avoid; }
+	.mbq .items .num { text-align: right; white-space: nowrap; }
+	.mbq .items .no { width: 7%; text-align: center; font-weight: 700; color: {{ theme.dark }}; }
+	.mbq .items tr.machine td { background: {{ theme.tint }}; }
+	.mbq .items tr.machine .code { font-weight: 800; color: {{ theme.dark }}; font-size: 10pt; }
+	.mbq .items tr.machine .name { font-weight: 600; color: {{ theme.dark }}; }
+	.mbq .items tr.machine td.no { border-left: 4px solid {{ theme.primary }}; }
+	.mbq .items tr.band td { background: {{ theme.band }}; }
+	.print-format .mbq .items tr.option td.desc { padding-left: 22px !important; }
+	.mbq .items tr.option .code { font-weight: 700; }
+	.mbq .items tr.option td.no { font-weight: 500; color: #4b5563; }
+	.mbq .features { margin-top: 4px; }
+	.print-format .mbq .features td { padding: 1px 4px 1px 0 !important; border: 0 !important; background: transparent !important; font-size: 8pt; color: #374151; width: 50%; }
+	.mbq .features .dot { color: {{ theme.primary }}; font-weight: 800; }
+
+	/* totals */
+	.mbq .bottom { margin-top: 12px; page-break-inside: avoid; }
+	.mbq .label { font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: {{ theme.primary }}; margin-bottom: 3px; }
+	.mbq .totals { border: 1px solid {{ theme.border }}; }
+	.print-format .mbq .totals td { padding: 5px 10px !important; border-bottom: 1px solid {{ theme.border }}; }
+	.mbq .totals .k { color: #4b5563; }
+	.mbq .totals .v { text-align: right; font-weight: 600; white-space: nowrap; }
+	.mbq .totals tr.grand td { background: {{ theme.primary }}; color: #fff; font-size: 11pt; font-weight: 800; }
+	.mbq .words { font-size: 8pt; color: #4b5563; margin-top: 4px; text-align: right; }
+
+	/* terms */
+	.mbq .terms { margin-top: 14px; }
+	.mbq .terms h3 { font-size: 10pt; font-weight: 800; color: {{ theme.dark }}; border-bottom: 2px solid {{ theme.primary }}; padding-bottom: 3px; margin: 0 0 4px; }
+	.print-format .mbq .terms table td { padding: 4px 6px !important; border-bottom: 1px solid {{ theme.border }}; font-size: 8.5pt; }
+	.mbq .terms table tr:nth-child(even) td { background: {{ theme.band }}; }
+	.mbq .terms table td:nth-child(2) { font-weight: 700; color: {{ theme.dark }}; }
+	.mbq .sign { margin-top: 18px; text-align: right; page-break-inside: avoid; }
+	.mbq .sign .for { font-weight: 700; color: {{ theme.dark }}; }
+</style>
+
+<div class="mbq">
+	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
+
+	<table class="band-head">
+		<tr>
+			<td class="title">QUOTATION</td>
+			<td class="meta"><b>{{ q.number }}</b><br>{{ q.date }}</td>
+		</tr>
+	</table>
+	<div class="accent-line"></div>
+
+	<table class="cards">
+		<tr>
+			<td class="card" style="width: 56%;">
+				<div class="card-title">Quotation to</div>
+				<div class="customer">{{ q.customer_name or "" }}</div>
+				<div>{{ q.address or "" }}</div>
+				{% if q.attn %}<div style="margin-top: 4px;"><b>Kind Attn:</b> {{ q.attn }}</div>{% endif %}
+				{% if q.phone %}<div><b>Phone:</b> {{ q.phone }}</div>{% endif %}
+			</td>
+			<td style="width: 2%;"></td>
+			<td class="card">
+				<div class="card-title">Reference</div>
+				<table class="refs">
+					{% for ref in q.refs %}<tr><td class="k">{{ ref[0] }}</td><td>{{ ref[1] or "–" }}</td></tr>{% endfor %}
+				</table>
+			</td>
+		</tr>
+	</table>
+
+	{% macro head_row() %}
+		<tr>
+			<th style="width: 7%; text-align: center;">No.</th>
+			<th>Item &amp; Description</th>
+			<th style="width: 8%; text-align: right;">Qty</th>
+			<th style="width: 16%; text-align: right;">Rate</th>
+			<th style="width: 17%; text-align: right;">Amount</th>
+		</tr>
+	{% endmacro %}
+
+	{% for machine in q.machines %}
+	<table class="items{% if not loop.first %} new-page{% endif %}">
+		<thead>{{ head_row() }}</thead>
+		<tbody>
+			<tr class="machine">
+				<td class="no">{{ machine.no }}</td>
+				<td class="desc">
+					<span class="code">{{ machine.code or "" }}</span>
+					{% if machine.name and machine.name != machine.code %}&nbsp; <span class="name">{{ machine.name }}</span>{% endif %}
+					{% if machine.bullets %}
+					<table class="features">
+						{% for pair in machine.bullets | batch(2) %}
+						<tr>
+							{% for bullet in pair %}<td><span class="dot">&#8226;</span> {% if bullet.bold %}<b>{{ bullet.text }}</b>{% else %}{{ bullet.text }}{% endif %}</td>{% endfor %}
+							{% if pair | length == 1 %}<td></td>{% endif %}
+						</tr>
+						{% endfor %}
+					</table>
+					{% endif %}
+				</td>
+				<td class="num">{{ machine.qty }}</td>
+				<td class="num">{{ machine.rate }}</td>
+				<td class="num"><b>{{ machine.amount }}</b></td>
+			</tr>
+			{% for option in machine.options %}
+			<tr class="option{% if loop.index is even %} band{% endif %}">
+				<td class="no">{{ option.no }}</td>
+				<td class="desc"><span class="code">{{ option.code or "" }}</span> &nbsp;{{ option.description or "" }}</td>
+				<td class="num">{{ option.qty }}</td>
+				<td class="num">{{ option.rate }}</td>
+				<td class="num">{{ option.amount }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% endfor %}
+
+	{% if q.loose_options %}
+	<table class="items">
+		<thead>{{ head_row() }}</thead>
+		<tbody>
+			{% for option in q.loose_options %}
+			<tr class="{% if loop.index is even %}band{% endif %}">
+				<td class="no">{{ option.no }}</td>
+				<td class="desc"><b>{{ option.code or "" }}</b> &nbsp;{{ option.description or "" }}</td>
+				<td class="num">{{ option.qty }}</td>
+				<td class="num">{{ option.rate }}</td>
+				<td class="num">{{ option.amount }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% endif %}
+
+	<table class="bottom">
+		<tr>
+			<td style="width: 48%; padding-right: 12px !important;">
+				{% if q.payment %}
+				<div class="label">Payment</div>
+				{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
+				{% endif %}
+			</td>
+			<td>
+				<table class="totals">
+					<tr><td class="k">Subtotal</td><td class="v">{{ q.subtotal }}</td></tr>
+					{% for tax in q.taxes %}<tr><td class="k">{{ tax[0] }}</td><td class="v">{{ tax[1] }}</td></tr>{% endfor %}
+					{% if not q.taxes %}<tr><td class="k">Tax / Duties</td><td class="v">As Applicable</td></tr>{% endif %}
+					<tr class="grand"><td>Grand Total</td><td class="v">{{ q.grand_total }}</td></tr>
+				</table>
+				{% if q.in_words %}<div class="words">{{ q.in_words }}</div>{% endif %}
+			</td>
+		</tr>
+	</table>
+
+	{% if q.terms %}
+	<div class="terms">
+		<h3>Terms &amp; Conditions</h3>
+		{{ q.terms }}
+	</div>
+	{% endif %}
+
+	<div class="sign">
+		<div class="for">For {{ q.company or "" }}</div>
+		<div style="height: 38px;"></div>
+		<div><b>{{ q.signer }}</b></div>
+		<div>{{ q.designation or "" }}</div>
+	</div>
+</div>

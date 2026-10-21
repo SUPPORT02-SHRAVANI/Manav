@@ -38,9 +38,14 @@
    "label": "Department Wise Salary(Last Month)"
   }
  ],
- "content": "[{\"id\": \"mnvBlk001\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Manav</b></span>\", \"col\": 12}}, {\"id\": \"mnvShort00\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Manav Dashboard\", \"col\": 3}}, {\"id\": \"mnvShort01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation\", \"col\": 3}}, {\"id\": \"mnvShort02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation Type\", \"col\": 3}}, {\"id\": \"mnvShort03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation Head (Old)\", \"col\": 3}}, {\"id\": \"mnvShort04\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Customer\", \"col\": 3}}, {\"id\": \"mnvShort05\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Item\", \"col\": 3}}, {\"id\": \"mnvBlk002\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk003\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Quotations / Sales</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk004\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Quotations This Month\", \"col\": 3}}, {\"id\": \"mnvBlk005\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Quoted Value This Month\", \"col\": 3}}, {\"id\": \"mnvBlk006\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Quotations\", \"col\": 3}}, {\"id\": \"mnvBlk007\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Ordered Quotations This Year\", \"col\": 3}}, {\"id\": \"mnvBlk008\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotation Value by Month\", \"col\": 12}}, {\"id\": \"mnvBlk009\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotations by Status\", \"col\": 6}}, {\"id\": \"mnvBlk010\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quoted Value by Principal\", \"col\": 6}}, {\"id\": \"mnvBlk011\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotations by Sales Engineer\", \"col\": 6}}, {\"id\": \"mnvBlk012\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Top Customers by Quoted Value\", \"col\": 6}}, {\"id\": \"mnvBlk013\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk014\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>HR &amp; Attendance</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk015\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Employees\", \"col\": 3}}, {\"id\": \"mnvBlk016\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Present Today\", \"col\": 3}}, {\"id\": \"mnvBlk017\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"On Leave Today\", \"col\": 3}}, {\"id\": \"mnvBlk018\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Absent Today\", \"col\": 3}}, {\"id\": \"mnvBlk019\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Leaves To Approve\", \"col\": 3}}, {\"id\": \"mnvBlk020\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Attendance This Month\", \"col\": 6}}, {\"id\": \"mnvBlk021\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Department Wise Employee Count\", \"col\": 6}}, {\"id\": \"mnvBlk022\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk023\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Payroll</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk024\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Net Pay Last Month\", \"col\": 3}}, {\"id\": \"mnvBlk025\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Gross Pay Last Month\", \"col\": 3}}, {\"id\": \"mnvBlk026\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Draft Salary Slips\", \"col\": 3}}, {\"id\": \"mnvBlk027\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Outgoing Salary\", \"col\": 6}}, {\"id\": \"mnvBlk028\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Department Wise Salary(Last Month)\", \"col\": 6}}, {\"id\": \"mnvBlk029\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk030\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Records</b></span>\", \"col\": 12}}, {\"id\": \"mnvCard00\", \"type\": \"card\", \"data\": {\"card_name\": \"Quotations\", \"col\": 4}}, {\"id\": \"mnvCard01\", \"type\": \"card\", \"data\": {\"card_name\": \"Customers\", \"col\": 4}}, {\"id\": \"mnvCard02\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"mnvCard03\", \"type\": \"card\", \"data\": {\"card_name\": \"Old Records\", \"col\": 4}}]",
+ "content": "[{\"id\": \"mnvBlk001\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Manav</b></span>\", \"col\": 12}}, {\"id\": \"mnvShort00\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Manav Dashboard\", \"col\": 3}}, {\"id\": \"mnvShort01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation\", \"col\": 3}}, {\"id\": \"mnvShort02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation Type\", \"col\": 3}}, {\"id\": \"mnvShort03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Quotation Head (Old)\", \"col\": 3}}, {\"id\": \"mnvShort04\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Customer\", \"col\": 3}}, {\"id\": \"mnvShort05\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Item\", \"col\": 3}}, {\"id\": \"mnvBlk002\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"manavTabs01\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Manav Dashboard Tabs\", \"col\": 12}}, {\"id\": \"mnvBlk003\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Quotations / Sales</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk004\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Quotations This Month\", \"col\": 3}}, {\"id\": \"mnvBlk005\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Quoted Value This Month\", \"col\": 3}}, {\"id\": \"mnvBlk006\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Open Quotations\", \"col\": 3}}, {\"id\": \"mnvBlk007\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Ordered Quotations This Year\", \"col\": 3}}, {\"id\": \"mnvBlk008\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotation Value by Month\", \"col\": 12}}, {\"id\": \"mnvBlk009\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotations by Status\", \"col\": 6}}, {\"id\": \"mnvBlk010\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quoted Value by Principal\", \"col\": 6}}, {\"id\": \"mnvBlk011\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Quotations by Sales Engineer\", \"col\": 6}}, {\"id\": \"mnvBlk012\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Top Customers by Quoted Value\", \"col\": 6}}, {\"id\": \"mnvBlk013\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk014\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>HR &amp; Attendance</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk015\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Employees\", \"col\": 3}}, {\"id\": \"mnvBlk016\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Present Today\", \"col\": 3}}, {\"id\": \"mnvBlk017\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"On Leave Today\", \"col\": 3}}, {\"id\": \"mnvBlk018\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Absent Today\", \"col\": 3}}, {\"id\": \"mnvBlk019\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Leaves To Approve\", \"col\": 3}}, {\"id\": \"mnvBlk020\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Attendance This Month\", \"col\": 6}}, {\"id\": \"mnvBlk021\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Department Wise Employee Count\", \"col\": 6}}, {\"id\": \"mnvBlk022\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk023\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Payroll</b></span>\", \"col\": 12}}, {\"id\": \"mnvBlk024\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Net Pay Last Month\", \"col\": 3}}, {\"id\": \"mnvBlk025\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Gross Pay Last Month\", \"col\": 3}}, {\"id\": \"mnvBlk026\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Draft Salary Slips\", \"col\": 3}}, {\"id\": \"mnvBlk027\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Outgoing Salary\", \"col\": 6}}, {\"id\": \"mnvBlk028\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Department Wise Salary(Last Month)\", \"col\": 6}}, {\"id\": \"mnvBlk029\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"mnvBlk030\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Records</b></span>\", \"col\": 12}}, {\"id\": \"mnvCard00\", \"type\": \"card\", \"data\": {\"card_name\": \"Quotations\", \"col\": 4}}, {\"id\": \"mnvCard01\", \"type\": \"card\", \"data\": {\"card_name\": \"Customers\", \"col\": 4}}, {\"id\": \"mnvCard02\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"mnvCard03\", \"type\": \"card\", \"data\": {\"card_name\": \"Old Records\", \"col\": 4}}]",
  "creation": "2026-10-17 14:00:00.000000",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Manav Dashboard Tabs",
+   "label": "Manav Dashboard Tabs"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
@@ -233,58 +238,58 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-17 16:00:00.000000",
+ "modified": "2026-10-19 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav",
  "number_cards": [
   {
-   "number_card_name": "Quotations This Month",
-   "label": "Quotations This Month"
+   "label": "Quotations This Month",
+   "number_card_name": "Quotations This Month"
   },
   {
-   "number_card_name": "Quoted Value This Month",
-   "label": "Quoted Value This Month"
+   "label": "Quoted Value This Month",
+   "number_card_name": "Quoted Value This Month"
   },
   {
-   "number_card_name": "Open Quotations",
-   "label": "Open Quotations"
+   "label": "Open Quotations",
+   "number_card_name": "Open Quotations"
   },
   {
-   "number_card_name": "Ordered Quotations This Year",
-   "label": "Ordered Quotations This Year"
+   "label": "Ordered Quotations This Year",
+   "number_card_name": "Ordered Quotations This Year"
   },
   {
-   "number_card_name": "Active Employees",
-   "label": "Active Employees"
+   "label": "Active Employees",
+   "number_card_name": "Active Employees"
   },
   {
-   "number_card_name": "Present Today",
-   "label": "Present Today"
+   "label": "Present Today",
+   "number_card_name": "Present Today"
   },
   {
-   "number_card_name": "On Leave Today",
-   "label": "On Leave Today"
+   "label": "On Leave Today",
+   "number_card_name": "On Leave Today"
   },
   {
-   "number_card_name": "Absent Today",
-   "label": "Absent Today"
+   "label": "Absent Today",
+   "number_card_name": "Absent Today"
   },
   {
-   "number_card_name": "Leaves To Approve",
-   "label": "Leaves To Approve"
+   "label": "Leaves To Approve",
+   "number_card_name": "Leaves To Approve"
   },
   {
-   "number_card_name": "Net Pay Last Month",
-   "label": "Net Pay Last Month"
+   "label": "Net Pay Last Month",
+   "number_card_name": "Net Pay Last Month"
   },
   {
-   "number_card_name": "Gross Pay Last Month",
-   "label": "Gross Pay Last Month"
+   "label": "Gross Pay Last Month",
+   "number_card_name": "Gross Pay Last Month"
   },
   {
-   "number_card_name": "Draft Salary Slips",
-   "label": "Draft Salary Slips"
+   "label": "Draft Salary Slips",
+   "number_card_name": "Draft Salary Slips"
   }
  ],
  "owner": "Administrator",
@@ -295,52 +300,52 @@
  "sequence_id": 50.0,
  "shortcuts": [
   {
-   "label": "Manav Dashboard",
-   "type": "URL",
-   "url": "/manav-dashboard",
    "color": "Blue",
    "doc_view": "",
-   "stats_filter": "[]"
+   "label": "Manav Dashboard",
+   "stats_filter": "[]",
+   "type": "URL",
+   "url": "/manav-dashboard"
   },
   {
+   "color": "Grey",
+   "doc_view": "",
    "label": "Quotation",
-   "type": "DocType",
    "link_to": "Quotation",
-   "color": "Grey",
-   "doc_view": "",
-   "stats_filter": "[]"
+   "stats_filter": "[]",
+   "type": "DocType"
   },
   {
+   "color": "Grey",
+   "doc_view": "",
    "label": "Quotation Type",
-   "type": "DocType",
    "link_to": "Quotation Type",
-   "color": "Grey",
-   "doc_view": "",
-   "stats_filter": "[]"
+   "stats_filter": "[]",
+   "type": "DocType"
   },
   {
+   "color": "Grey",
+   "doc_view": "",
    "label": "Quotation Head (Old)",
-   "type": "DocType",
    "link_to": "Quotation Head",
-   "color": "Grey",
-   "doc_view": "",
-   "stats_filter": "[]"
+   "stats_filter": "[]",
+   "type": "DocType"
   },
   {
+   "color": "Grey",
+   "doc_view": "",
    "label": "Customer",
-   "type": "DocType",
    "link_to": "Customer",
-   "color": "Grey",
-   "doc_view": "",
-   "stats_filter": "[]"
+   "stats_filter": "[]",
+   "type": "DocType"
   },
   {
-   "label": "Item",
-   "type": "DocType",
-   "link_to": "Item",
    "color": "Grey",
    "doc_view": "",
-   "stats_filter": "[]"
+   "label": "Item",
+   "link_to": "Item",
+   "stats_filter": "[]",
+   "type": "DocType"
   }
  ],
  "title": "Manav",

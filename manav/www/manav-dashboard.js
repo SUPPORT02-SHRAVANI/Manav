@@ -5,6 +5,15 @@
 // extra has to be built or loaded from the internet.
 //
 // Created: 2026-10-17.
+//
+// CHANGE NOTE
+// Date: 2026-10-19
+// Change: The sections are tabs (showTab): My Dashboard for everyone (my_sales: the reader's own
+// quotations), and Team Performance, HR & Attendance, Payroll only when the API returns their
+// data (management). The sales tiles/charts are drawn by one function for both the reader's own
+// and the team's quotations. The chosen tab is remembered in this browser.
+// Reason: The user asked for tabs instead of scrolling, for everyone to see their own dashboard,
+// and for only the admin, Milind and Naveen to see all employees' performance.
 
 (function () {
 	const API = "/api/method/manav.manav.dashboard.get_dashboard_data";
@@ -124,10 +133,12 @@
 	}
 
 	// ---------- sections ----------
-	function renderSales(s) {
-		$("md-sales").hidden = !s;
+	// Sales tiles and charts into the elements md-<prefix>-...: "mine" (the reader's own
+	// quotations, no sales engineer list) or "sales" (all quotations, with the sales engineers).
+	function renderSales(s, prefix) {
 		if (!s) return;
-		tiles($("md-sales-tiles"), [
+		const el = (part) => $(`md-${prefix}-${part}`);
+		tiles(el("tiles"), [
 			{ label: t("Quotations"), value: fmtInt(s.count), sub: t("drafts + submitted") },
 			{ label: t("Quoted value"), value: fmtShort(s.value), sub: fmtMoney(s.value) },
 			{ label: t("Won (ordered)"), value: fmtInt(s.won_count), sub: fmtMoney(s.won_value) },
@@ -135,17 +146,16 @@
 			{ label: t("Lost"), value: fmtInt(s.lost_count) },
 			{ label: t("Conversion"), value: s.conversion == null ? "–" : s.conversion + "%", sub: t("won ÷ submitted") },
 		]);
-		columnChart($("md-sales-month"), s.by_month, (r) => r.value, (r) => `<b>${esc(monthName(r.month))}</b>${esc(fmtMoney(r.value))}<br>${esc(fmtInt(r.count))} ${esc(t("quotations"))}`);
-		table($("md-sales-month-table"), [t("Month"), t("Quotations"), t("Value")], s.by_month.map((r) => [monthName(r.month), fmtInt(r.count), fmtMoney(r.value)]));
+		columnChart(el("month"), s.by_month, (r) => r.value, (r) => `<b>${esc(monthName(r.month))}</b>${esc(fmtMoney(r.value))}<br>${esc(fmtInt(r.count))} ${esc(t("quotations"))}`);
+		table(el("month-table"), [t("Month"), t("Quotations"), t("Value")], s.by_month.map((r) => [monthName(r.month), fmtInt(r.count), fmtMoney(r.value)]));
 		const countSub = (r) => `(${fmtInt(r.count)})`;
-		barList($("md-sales-status"), s.by_status, fmtShort, countSub);
-		barList($("md-sales-principal"), s.by_principal, fmtShort, countSub);
-		barList($("md-sales-engineer"), s.by_engineer, fmtShort, countSub);
-		barList($("md-sales-customer"), s.by_customer, fmtShort, countSub);
+		barList(el("status"), s.by_status, fmtShort, countSub);
+		barList(el("principal"), s.by_principal, fmtShort, countSub);
+		if (el("engineer")) barList(el("engineer"), s.by_engineer, fmtShort, countSub);
+		barList(el("customer"), s.by_customer, fmtShort, countSub);
 	}
 
 	function renderHr(h) {
-		$("md-hr").hidden = !h;
 		if (!h) return;
 		const today = (h.today && h.today.by_status) || {};
 		const items = [{ label: t("Active employees"), value: fmtInt(h.active) }];
@@ -173,7 +183,6 @@
 	}
 
 	function renderPayroll(p) {
-		$("md-payroll").hidden = !p;
 		if (!p) return;
 		tiles($("md-pay-tiles"), [
 			{ label: t("Salary slips (submitted)"), value: fmtInt(p.slips), sub: p.draft_slips ? `${fmtInt(p.draft_slips)} ${t("still draft")}` : "" },
@@ -190,6 +199,53 @@
 		$("md-pay-department-title").textContent = p.latest_month ? `${t("Gross pay by department")} – ${monthName(p.latest_month)}` : t("Gross pay by department");
 		barList($("md-pay-department"), p.by_department, fmtShort, (r) => `(${fmtInt(r.count)})`);
 	}
+
+	// ---------- tabs ----------
+	// Only one section is shown at a time. A tab is shown only when its data came back from the
+	// server (the server leaves out what the reader may not see). The chosen tab is kept in this
+	// browser's storage, which may be unavailable (private window): then the first tab is used.
+	const TAB_KEY = "manav-dashboard-tab";
+	const tabs = Array.from(document.querySelectorAll("#md-tabs [role=tab]"));
+	function showTab(panelId) {
+		tabs.forEach((tab) => {
+			const on = tab.dataset.panel === panelId;
+			tab.setAttribute("aria-selected", on ? "true" : "false");
+			tab.tabIndex = on ? 0 : -1;
+			$(tab.dataset.panel).hidden = !on;
+		});
+		try {
+			localStorage.setItem(TAB_KEY, panelId);
+		} catch (e) {
+			/* storage blocked: the choice is simply not remembered */
+		}
+	}
+	function setTabs(available) {
+		tabs.forEach((tab) => (tab.hidden = !available[tab.dataset.panel]));
+		const visible = tabs.filter((tab) => !tab.hidden).map((tab) => tab.dataset.panel);
+		$("md-tabs").hidden = visible.length < 2;
+		let wanted = null;
+		try {
+			wanted = localStorage.getItem(TAB_KEY);
+		} catch (e) {
+			wanted = null;
+		}
+		const current = tabs.find((tab) => tab.getAttribute("aria-selected") === "true");
+		const pick = [current && current.dataset.panel, wanted, visible[0]].find((id) => id && visible.includes(id));
+		if (pick) showTab(pick);
+		else tabs.forEach((tab) => ($(tab.dataset.panel).hidden = true));
+	}
+	tabs.forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.panel)));
+	// arrow keys move between the visible tabs (WAI-ARIA tabs pattern)
+	$("md-tabs").addEventListener("keydown", (ev) => {
+		if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+		const visible = tabs.filter((tab) => !tab.hidden);
+		const i = visible.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+		const next = visible[(i + (ev.key === "ArrowRight" ? 1 : visible.length - 1)) % visible.length];
+		if (next) {
+			showTab(next.dataset.panel);
+			next.focus();
+		}
+	});
 
 	// ---------- loading ----------
 	const status = $("md-status");
@@ -210,11 +266,13 @@
 			$("md-from").value = d.from_date;
 			$("md-to").value = d.to_date;
 			document.querySelectorAll("[data-unit]").forEach((e) => (e.textContent = `(${currency})`));
-			$("md-range-note").textContent = `${d.from_date} → ${d.to_date} · ${t("amounts in")} ${currency}`;
-			renderSales(d.sales);
+			$("md-range-note").textContent = `${d.user_name ? d.user_name + " · " : ""}${d.from_date} → ${d.to_date} · ${t("amounts in")} ${currency}`;
+			renderSales(d.my_sales, "mine");
+			renderSales(d.sales, "sales");
 			renderHr(d.hr);
 			renderPayroll(d.payroll);
-			const none = !d.sales && !d.hr && !d.payroll;
+			setTabs({ "md-mine": !!d.my_sales, "md-sales": !!d.sales, "md-hr": !!d.hr, "md-payroll": !!d.payroll });
+			const none = !d.my_sales && !d.sales && !d.hr && !d.payroll;
 			status.textContent = none ? t("You have no permission to see any section of this dashboard.") : "";
 			status.hidden = !none;
 		} catch (e) {

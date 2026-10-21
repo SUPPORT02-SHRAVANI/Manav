@@ -23,6 +23,17 @@ size are small.
   "payroll".
 
 Created: 2026-10-17.
+
+CHANGE NOTE
+Date: 2026-10-19
+Change: Every reader gets "my_sales": the same sales figures for only their own quotations (those
+they created or are Account Manager of). The figures of all employees - "sales" (team
+performance, with the sales engineers), "hr" and "payroll" - are returned only to management
+(desk_home.is_management: Administrator, System Manager, role Manav Management), otherwise None.
+"is_management" and "user_name" are returned for the page's tabs and greeting.
+Reason: The user asked that everyone sees their own dashboard, and that only the admin, Milind and
+Naveen see all employees' performance. Own quotations are matched by creator and Account Manager
+because no login user is linked to a Sales Person on the site (user's choice, 2026-10-19).
 """
 
 from collections import defaultdict
@@ -30,6 +41,8 @@ from collections import defaultdict
 import frappe
 from frappe import _
 from frappe.utils import add_months, flt, get_first_day, get_last_day, getdate, nowdate
+
+from manav.manav.desk_home import is_management
 
 PAYROLL_ROLES = {"System Manager", "HR Manager", "HR User", "Accounts Manager"}
 # Quotation statuses that count as won for the conversion rate
@@ -49,14 +62,19 @@ def get_dashboard_data(from_date=None, to_date=None):
 		frappe.throw(_("From Date must be on or before To Date"))
 
 	months = month_keys(from_date, to_date)
+	management = is_management()
 	return {
 		"from_date": str(from_date),
 		"to_date": str(to_date),
 		"currency": frappe.db.get_default("currency") or "INR",
 		"months": months,
-		"sales": sales_data(from_date, to_date, months) if can_read("Quotation") else None,
-		"hr": hr_data() if hrms_installed() and can_read("Employee") else None,
-		"payroll": payroll_data(from_date, to_date, months) if can_see_payroll() else None,
+		"is_management": management,
+		"user_name": frappe.utils.get_fullname(frappe.session.user),
+		"my_sales": sales_data(from_date, to_date, months, own=True) if can_read("Quotation") else None,
+		# all employees' figures: management only
+		"sales": sales_data(from_date, to_date, months) if management and can_read("Quotation") else None,
+		"hr": hr_data() if management and hrms_installed() and can_read("Employee") else None,
+		"payroll": payroll_data(from_date, to_date, months) if management and can_see_payroll() else None,
 	}
 
 
@@ -103,10 +121,24 @@ def top(totals, n=TOP_N):
 	return result
 
 
-def sales_data(from_date, to_date, months):
+def own_quotation_filters():
+	"""or_filters for the logged-in user's own quotations: created by them, or with them as Account
+	Manager. The Account Manager field is a Manav custom field; until `bench migrate` has created
+	it, only the creator is used."""
+	user = frappe.session.user
+	or_filters = {"owner": user}
+	if frappe.get_meta("Quotation").has_field("custom_account_manager"):
+		or_filters["custom_account_manager"] = user
+	return or_filters
+
+
+def sales_data(from_date, to_date, months, own=False):
+	"""Sales figures of the quotations in the range: all the reader may read, or with own=True
+	only the reader's own (own_quotation_filters)."""
 	rows = frappe.get_list(
 		"Quotation",
 		filters={"docstatus": ["<", 2], "transaction_date": ["between", [from_date, to_date]]},
+		or_filters=own_quotation_filters() if own else None,
 		fields=[
 			"status",
 			"transaction_date",
