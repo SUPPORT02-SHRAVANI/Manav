@@ -49,6 +49,17 @@ Changes to the Manav app, newest first.
   "JK Tyre, VF-10/40" asked "Which customer did you mean?" with choices JK TYRE & INDUSTRIES /
   JK TYRE & INDUSTRIES LTD; with the answer added, 1 x VF-10/40, USD 187,000 was saved, no extra
   questions. `node --check`, `py_compile` pass. Not run: the buttons in the browser.
+- Same day: **Manav AI Settings** (new single DocType, `manav/manav/doctype/manav_ai_settings/`,
+  System Manager only): OpenAI API Key (Password, stored encrypted), Model, Reasoning Effort.
+  `quotation_agent.get_ai_settings` reads it first and falls back to site_config; the "key
+  missing" message points to it. Reason: on manav.mymagicerp.com (Frappe Cloud) the user has no
+  Site Config screen to enter the key. Server: backup `20261021_161535-manav_local`,
+  `bench --site manav.local migrate`. Testing on manav.local: with the page empty the site_config
+  key is used (gpt-5-mini, low); with a test key, model and "none" saved on the page, those are
+  used and no effort is sent (rolled back). Found while testing: the OpenAI account answers 429
+  "no credits remaining", so Draft with AI fails on every site until credit is added.
+- Pending: push to GitHub so Frappe Cloud deploys it; then on manav.mymagicerp.com enter the key
+  in Manav AI Settings. Draft with AI leaves Valid Till empty (the form fills it); not fixed yet.
 - Pending: try real requests from the list in the browser and adjust the instructions if the
   model picks wrongly. A run must finish within Frappe's 120-second request limit (stopped at
   100 s). Duplicate items such as "VF-2." confuse the search; disabling unused ones would help.

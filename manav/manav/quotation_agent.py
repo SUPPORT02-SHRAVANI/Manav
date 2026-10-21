@@ -24,10 +24,11 @@ price or a code of its own:
   then run on saving, exactly as for a quotation saved from the form.
 The quotation is saved as a Draft, and the typed request is kept as a comment on it.
 
-Setup, once per site (the key is kept in the site's site_config.json, never in the code):
+Setup, once per site (the key is never in the code): a System Manager enters it in Manav AI
+Settings (stored encrypted), or, on a server with bench, in site_config.json:
     bench --site <site> set-config openai_api_key <the key>
-Optional: openai_model (default DEFAULT_MODEL) and openai_reasoning_effort (default "low"; set
-it to "" for a model that has no reasoning effort, such as gpt-4.1).
+Optional: model (default DEFAULT_MODEL) and reasoning effort (default "low"; "none" for a model
+that has no reasoning effort, such as gpt-4.1). Manav AI Settings wins over site_config.
 The server must be able to reach api.openai.com. Every request is paid for on that key. The typed
 request and the names, codes and descriptions of the customers and items looked up are sent to
 OpenAI.
@@ -42,6 +43,13 @@ request ("Answer: ...") and the request is sent again. The model may no longer a
 what is clear, nor ask for quantities or sub-items not mentioned.
 Reason: The user asked for selectable options instead of typing the answer; the model had asked
 "which JK TYRE customer" together with needless questions on machine, quantity and accessories.
+
+CHANGE NOTE
+Date: 2026-10-21
+Change: The OpenAI key, model and reasoning effort are read from the new single DocType Manav AI
+Settings (get_ai_settings), falling back to site_config. The "key missing" message points there.
+Reason: On manav.mymagicerp.com (Frappe Cloud) the user had no Site Config screen to enter the
+key; a settings page in the site works on any hosting.
 """
 
 import json
@@ -224,17 +232,17 @@ def draft_quotation(request: str):
 	if len(request) > 2000:
 		frappe.throw(_("The request is too long; keep it to a few lines."))
 
-	api_key = frappe.conf.get("openai_api_key")
-	if not api_key:
+	settings = get_ai_settings()
+	if not settings["api_key"]:
 		frappe.throw(
 			_(
-				"The OpenAI key is not set for this site. On the server run:"
-				" bench --site {0} set-config openai_api_key (the key)"
-			).format(frappe.local.site),
+				"The OpenAI key is not set for this site. A System Manager can enter it in"
+				" Manav AI Settings (search for it in the awesome bar)."
+			),
 			title=_("OpenAI key missing"),
 		)
 
-	agent = QuotationAgent(api_key, request)
+	agent = QuotationAgent(settings["api_key"], request, settings["model"], settings["effort"])
 	message = agent.run()
 	# 2026-10-21: "choices" are the buttons of the AI's question (ask_user); the dialog adds the
 	# one clicked to the request as an "Answer:" line and sends it again.
@@ -245,9 +253,11 @@ class QuotationAgent:
 	"""One run of the model on one request. `quotation` holds the name of the saved quotation;
 	`choices` the answers offered when the model asked a question instead (ask_user)."""
 
-	def __init__(self, api_key, request):
+	def __init__(self, api_key, request, model=None, effort="low"):
 		self.api_key = api_key
 		self.request = request
+		self.model = model or DEFAULT_MODEL
+		self.effort = effort
 		self.quotation = None
 		self.question = None
 		self.choices = []
@@ -289,13 +299,12 @@ class QuotationAgent:
 		"""One Chat Completions call; returns the assistant message. API errors are shown to the
 		user with OpenAI's own message (never the key)."""
 		body = {
-			"model": frappe.conf.get("openai_model") or DEFAULT_MODEL,
+			"model": self.model,
 			"messages": self.messages,
 			"tools": TOOLS,
 		}
-		effort = frappe.conf.get("openai_reasoning_effort", "low")
-		if effort:
-			body["reasoning_effort"] = effort
+		if self.effort:
+			body["reasoning_effort"] = self.effort
 		try:
 			response = requests.post(
 				OPENAI_URL,
@@ -361,6 +370,26 @@ class QuotationAgent:
 			# Frappe's msgprint of the error would also pop up on the form; the model gets it instead.
 			frappe.clear_last_message()
 			return {"error": str(e) or e.__class__.__name__}
+
+
+def get_ai_settings():
+	"""The OpenAI key, model and reasoning effort: from Manav AI Settings when filled there,
+	else from site_config (openai_api_key, openai_model, openai_reasoning_effort). Added
+	2026-10-21, because the site config cannot always be edited on Frappe Cloud."""
+	api_key = model = effort = None
+	if frappe.db.exists("DocType", "Manav AI Settings"):
+		settings = frappe.get_cached_doc("Manav AI Settings")
+		# get_password reads the encrypted value; raise_exception=False: empty when not set
+		api_key = settings.get_password("openai_api_key", raise_exception=False)
+		model = settings.openai_model
+		effort = settings.openai_reasoning_effort
+	effort = effort or frappe.conf.get("openai_reasoning_effort", "low")
+	return {
+		"api_key": api_key or frappe.conf.get("openai_api_key"),
+		"model": model or frappe.conf.get("openai_model") or DEFAULT_MODEL,
+		# "none" (or an empty site_config value) = do not send reasoning_effort
+		"effort": None if effort in ("none", "") else effort,
+	}
 
 
 # Tools ------------------------------------------------------------------------------------------

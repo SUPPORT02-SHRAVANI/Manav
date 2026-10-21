@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "creation": "2026-10-21 16:00:00.000000",
+ "description": "Settings of Draft with AI on the Quotation list (manav/manav/quotation_agent.py)",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "openai_api_key",
+  "openai_model",
+  "openai_reasoning_effort"
+ ],
+ "fields": [
+  {
+   "description": "The secret key from platform.openai.com (API keys). Stored encrypted; every Draft with AI request is paid for on this key.",
+   "fieldname": "openai_api_key",
+   "fieldtype": "Password",
+   "label": "OpenAI API Key",
+   "length": 300
+  },
+  {
+   "description": "Empty = gpt-5-mini",
+   "fieldname": "openai_model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "default": "low",
+   "description": "How long the model thinks before answering. Choose none for a model without reasoning (e.g. gpt-4.1).",
+   "fieldname": "openai_reasoning_effort",
+   "fieldtype": "Select",
+   "label": "Reasoning Effort",
+   "options": "low\nminimal\nmedium\nhigh\nnone"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-21 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Manav AI Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
