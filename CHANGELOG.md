@@ -4,6 +4,23 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-22
 
+**Fix: "Insufficient Permission for Quotation Type" for sales users.**
+
+- Reason: on manav.mymagicerp.com a user who is not a System Manager got "Insufficient
+  Permission for Quotation Type". Manav's own masters gave permissions to System Manager only,
+  while the Quotation form and list read them for the user (Principal link and its search,
+  `frappe.db.get_value("Quotation Type")` in quotation.js, the principal labels in
+  quotation_list.js), as does the Region Zone link on Customer.
+- Change: Sales User and Sales Manager may read (also select, report, print, export, e-mail)
+  Quotation Type, Quotation Item Master, Quotation Sub Item Master, Customer Contact Person,
+  Region Zone and Quotation Head (old records). Read only: changing the masters stays with System
+  Manager. Files: the six DocType JSONs in `manav/manav/doctype/` (`modified` raised so migrate
+  applies them).
+- Testing: the JSONs parse. Not run on a bench (none on Windows).
+- Pending: users with other roles (e.g. only Employee) still cannot read these masters. If the
+  site has its own permissions for these DocTypes (Role Permission Manager), those win over the
+  JSON and need the same rows added there.
+
 **Fix: installing / migrating no longer fails without an outgoing e-mail account.**
 
 - Reason: the install of manav (CI) stopped with `OutgoingEmailError: Please setup default
