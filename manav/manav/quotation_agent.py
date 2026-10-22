@@ -50,6 +50,14 @@ Change: The OpenAI key, model and reasoning effort are read from the new single 
 Settings (get_ai_settings), falling back to site_config. The "key missing" message points there.
 Reason: On manav.mymagicerp.com (Frappe Cloud) the user had no Site Config screen to enter the
 key; a settings page in the site works on any hosting.
+
+CHANGE NOTE
+Date: 2026-10-22
+Change: The party can be a Prospect (ERPNext CRM) as well as a Customer: find_customers also
+returns the Prospects whose name matches (each row has party_type), leaving out a Prospect that
+already has a Customer (that Customer is returned instead), and create_quotation takes the
+party_type and makes the quotation "To" that Prospect (quotation_to = Prospect).
+Reason: The user asked that Draft with AI also takes the customer name from Prospects.
 """
 
 import json
@@ -84,12 +92,12 @@ INSTRUCTIONS = """You prepare draft sales quotations in ERPNext for Manav Market
 
 A quotation has:
 - one principal (the "Quotation Type", e.g. MACHINES): it decides the currency and which items may be quoted;
-- one customer;
+- one customer: an existing Customer, or a Prospect (a company not yet a customer);
 - one or more machines (items of the principal), each with a quantity;
 - under each machine, optional sub-items (accessories / options of that machine, e.g. HSM, LK). A sub-item's price depends on its machine.
 
 The user types a short request. Work as follows:
-1. Find the customer with find_customers. Try a shorter part of the name if nothing is found.
+1. Find the customer with find_customers; it returns Customers and Prospects, each with its party_type. Try a shorter part of the name if nothing is found. When the same company is both, take the Customer.
 2. Find each machine with find_items. When the user named the principal, pass it; otherwise search without it and take the principal of the items found.
 3. When sub-items are asked for, call get_sub_items for the machines and match the user's words to the sub-item codes or descriptions.
 4. Call create_quotation once everything is clear. If it returns errors, correct them and call it again.
@@ -116,7 +124,7 @@ TOOLS = [
 		"type": "function",
 		"function": {
 			"name": "find_customers",
-			"description": "Find customers whose name or ID contains the text (not case sensitive).",
+			"description": "Find customers and prospects whose name or ID contains the text (not case sensitive). Each row has party_type: Customer or Prospect.",
 			"parameters": {
 				"type": "object",
 				"properties": {"search": {"type": "string", "description": "Part of the customer's name."}},
@@ -183,7 +191,12 @@ TOOLS = [
 			"parameters": {
 				"type": "object",
 				"properties": {
-					"customer": {"type": "string", "description": "Customer ID from find_customers."},
+					"customer": {"type": "string", "description": "Customer or Prospect ID (name) from find_customers."},
+					"party_type": {
+						"type": "string",
+						"enum": ["Customer", "Prospect"],
+						"description": "The party_type of that row in find_customers.",
+					},
 					"principal": {"type": "string", "description": "Principal code."},
 					"machines": {
 						"type": "array",
@@ -210,7 +223,7 @@ TOOLS = [
 						},
 					},
 				},
-				"required": ["customer", "principal", "machines"],
+				"required": ["customer", "party_type", "principal", "machines"],
 				"additionalProperties": False,
 			},
 		},
@@ -358,7 +371,11 @@ class QuotationAgent:
 				if self.quotation:
 					return {"error": f"Quotation {self.quotation} was already created."}
 				result = create_quotation(
-					args.get("customer"), args.get("principal"), args.get("machines"), self.request
+					args.get("customer"),
+					args.get("principal"),
+					args.get("machines"),
+					self.request,
+					party_type=args.get("party_type") or "Customer",
 				)
 				self.quotation = result.get("quotation")
 				return result
@@ -407,17 +424,50 @@ def list_principals():
 
 
 def find_customers(search):
+	"""Customers and Prospects matching the text, each with its party_type (2026-10-22: Prospects
+	too). Both are read with the user's permissions; a user who may not read Prospects gets only
+	Customers. A Prospect already made into a Customer (Customer.prospect_name) is left out, as
+	that Customer is the one to quote."""
 	search = (search or "").strip()
 	if not search:
 		return {"error": "Give part of the customer's name."}
-	return frappe.get_list(
-		"Customer",
-		filters={"disabled": 0},
-		or_filters={"name": ["like", f"%{search}%"], "customer_name": ["like", f"%{search}%"]},
-		fields=["name", "customer_name", "territory"],
-		limit_page_length=MAX_CUSTOMERS,
-		order_by="customer_name asc",
-	)
+	rows = [
+		{"party_type": "Customer", **row}
+		for row in frappe.get_list(
+			"Customer",
+			filters={"disabled": 0},
+			or_filters={"name": ["like", f"%{search}%"], "customer_name": ["like", f"%{search}%"]},
+			fields=["name", "customer_name", "territory"],
+			limit_page_length=MAX_CUSTOMERS,
+			order_by="customer_name asc",
+		)
+	]
+	try:
+		# Prospect is named by its company name (autoname field:company_name)
+		prospects = frappe.get_list(
+			"Prospect",
+			filters={"company_name": ["like", f"%{search}%"]},
+			fields=["name", "company_name", "territory"],
+			limit_page_length=MAX_CUSTOMERS,
+			order_by="company_name asc",
+		)
+	except frappe.PermissionError:
+		frappe.clear_last_message()
+		prospects = []
+	if prospects:
+		converted = set(
+			frappe.get_all(
+				"Customer",
+				filters={"prospect_name": ["in", [p.name for p in prospects]]},
+				pluck="prospect_name",
+			)
+		)
+		rows += [
+			{"party_type": "Prospect", "name": p.name, "customer_name": p.company_name, "territory": p.territory}
+			for p in prospects
+			if p.name not in converted
+		]
+	return rows
 
 
 def find_items(search, principal=None):
@@ -528,12 +578,15 @@ def get_sub_items(machine_item_codes):
 	return result or {"error": "These machines have no sub-items."}
 
 
-def create_quotation(customer, principal, machines, request):
+def create_quotation(customer, principal, machines, request, party_type="Customer"):
 	"""Check the model's choices and save the draft quotation. Returns {"quotation": name} or
-	{"errors": [...]} for the model to correct (nothing is saved then)."""
+	{"errors": [...]} for the model to correct (nothing is saved then). `customer` is a Customer
+	or, with party_type "Prospect", a Prospect (2026-10-22)."""
 	errors = []
-	if not customer or not frappe.db.exists("Customer", customer):
-		errors.append(f"Customer {customer!r} does not exist; use an ID from find_customers.")
+	if party_type not in ("Customer", "Prospect"):
+		errors.append(f"party_type {party_type!r} must be Customer or Prospect.")
+	elif not customer or not frappe.db.exists(party_type, customer):
+		errors.append(f"{party_type} {customer!r} does not exist; use an ID from find_customers.")
 	if not principal or not frappe.db.exists("Quotation Type", principal):
 		errors.append(f"Principal {principal!r} does not exist; use a code from list_principals.")
 	if not machines:
@@ -576,7 +629,8 @@ def create_quotation(customer, principal, machines, request):
 		return {"errors": errors}
 
 	doc = frappe.new_doc("Quotation")
-	doc.quotation_to = "Customer"
+	# ERPNext sets customer_name from the party: the Customer's name, or the Prospect's own name
+	doc.quotation_to = party_type
 	doc.party_name = customer
 	doc.transaction_date = nowdate()
 	doc.custom_quotation_type = principal
@@ -586,7 +640,7 @@ def create_quotation(customer, principal, machines, request):
 		if defaults.get(field):
 			doc.set(field, defaults[field])
 	# The form copies the Haas Cust ID when the customer is chosen (party_name in quotation.js).
-	if doc.meta.has_field("custom_haas_customer_id"):
+	if party_type == "Customer" and doc.meta.has_field("custom_haas_customer_id"):
 		doc.custom_haas_customer_id = frappe.db.get_value("Customer", customer, "custom_haas_customer_id")
 	# The terms text of the template, which the form fetches when tc_name is set.
 	if doc.tc_name:

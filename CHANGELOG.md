@@ -4,6 +4,23 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-22
 
+**Draft with AI: the party can also be a Prospect.**
+
+- Reason: the user asked that Draft with AI also finds the customer name among Prospects
+  (ERPNext CRM), not only Customers.
+- Changes:
+  - `manav/manav/quotation_agent.py`: `find_customers` returns Customers and Prospects, each
+    with `party_type` (Prospects read with the user's permissions; a Prospect already made into
+    a Customer is left out). `create_quotation` takes `party_type` and makes the quotation to
+    that Prospect (`quotation_to = Prospect`; ERPNext fills the customer name). The Haas Cust
+    ID and Account Manager are still only taken from a Customer. Tool schema and instructions
+    updated: when a company is both, the Customer is taken.
+  - `manav/public/js/quotation_list.js`: the dialog hint says "Customer or prospect".
+- Testing: `py_compile` and `node --check` pass; `find_customers` run against a stubbed
+  `frappe` (Customer + Prospect returned, converted Prospect left out, no Prospect permission:
+  Customers only). Not run against OpenAI or on a bench.
+- Pending: none known.
+
 **Manav Dashboard is a desk page (/desk/manav-dashboard), linked again in the Manav sidebar.**
 
 - Reason: the user asked that every sales employee sees a dashboard of their own figures, and

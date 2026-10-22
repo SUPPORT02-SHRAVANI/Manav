@@ -76,7 +76,7 @@
 						label: __("What should the quotation contain?"),
 						reqd: 1,
 						description: __(
-							"Customer, machines with quantity, and their sub-items, e.g. ABC Industries, 2 x VF-2SS with HSM and LK"
+							"Customer or prospect, machines with quantity, and their sub-items, e.g. ABC Industries, 2 x VF-2SS with HSM and LK"
 						),
 					},
 					{ fieldname: "answer", fieldtype: "HTML" },
