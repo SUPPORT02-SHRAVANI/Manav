@@ -57,7 +57,11 @@ add_to_apps_screen = [
 
 # include js, css files in header of web template
 # web_include_css = "/assets/manav/css/manav.css"
-# web_include_js = "/assets/manav/js/manav.js"
+# CHANGE NOTE
+# Date: 2026-10-22
+# Change: A "Request access" link on the login page, opening the sign-up page /manav-signup.
+# Reason: The user asked for a sign-up page whose requests the managers approve (signup.py).
+web_include_js = "/assets/manav/js/login_signup_link.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "manav/public/scss/website"
@@ -151,6 +155,9 @@ after_migrate = [
 	"manav.manav.workspace_tabs.setup_workspace_tabs",
 	# 2026-10-19: Job Offer fields for the print format Manav Appointment Letter (HRMS only)
 	"manav.manav.job_offer_fields.setup_job_offer_fields",
+	# 2026-10-22: support@ e-mail account, the managers' logins and the staff's access requests
+	# (after setup_management_role, whose role the managers get)
+	"manav.manav.signup.setup_signup",
 ]
 
 # CHANGE NOTE

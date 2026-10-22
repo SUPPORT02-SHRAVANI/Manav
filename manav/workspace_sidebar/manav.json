@@ -24,18 +24,6 @@
    "indent": 0,
    "keep_closed": 0,
    "show_arrow": 0,
-   "label": "Dashboard",
-   "type": "Link",
-   "link_type": "URL",
-   "icon": "layout-dashboard",
-   "url": "/manav-dashboard"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "indent": 0,
-   "keep_closed": 0,
-   "show_arrow": 0,
    "label": "Quotation",
    "type": "Link",
    "link_type": "DocType",
@@ -430,7 +418,7 @@
    "link_to": "Quotation Head"
   }
  ],
- "modified": "2026-10-19 17:00:00.000000",
+ "modified": "2026-10-22 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav",

@@ -2,6 +2,37 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-10-22
+
+**Desk: users other than the admin see only the Manav workspace and land on it after login;
+Dashboard link removed from the Manav sidebar.**
+
+- Reason: the user asked that on manav.mymagicerp.com the Dashboard entry is removed from the
+  sidebar and that everyone who logs in, except the admin, sees only the Manav workspace and is
+  taken straight to it.
+- Changes:
+  - `manav/workspace_sidebar/manav.json`: the "Dashboard" link (/manav-dashboard) removed;
+    `modified` raised so migrate syncs the sidebar. The dashboard page itself is unchanged and
+    still linked from the Manav workspace.
+  - `manav/hooks.py`: `add_to_apps_screen` route is `/desk/manav`, so users land on the Manav
+    workspace after login (was `/manav-dashboard` since 2026-10-19). Asked for by the user. An
+    admin can choose another landing page with Default App in their own User form.
+  - `manav/manav/desk_home.py`: `is_admin` (Administrator or System Manager) and
+    `limit_desk_to_manav`, which trims the boot sent to the browser for other users to the Manav
+    workspace, the Manav sidebar, the Manav desktop icon and the Manav app. Only navigation is
+    hidden; permissions still come from roles.
+  - `manav/manav/desk_home.py` `has_app_permission`: System Managers are always offered Manav,
+    so it appears in the Default App list (System Settings / User form); before, a System
+    Manager without a Quotation role did not see it there (live site, 2026-10-22).
+  - `manav/hooks.py`: `extend_bootinfo = ["manav.manav.desk_home.limit_desk_to_manav"]`.
+- Testing: `py_compile` of `desk_home.py` and `hooks.py` passes (also after the route change); the sidebar JSON parses. The
+  trimming was run locally against a stubbed `frappe` (normal user: only Manav left; System
+  Manager and Administrator: everything kept). Not tested on a real site yet: no bench on
+  Windows, and the live site needs a deploy and migrate.
+- Pending: deploy on Frappe Cloud (migrate syncs the sidebar). Users who are not admins and
+  have the Workspace Manager role are trimmed too. Doctypes not in the Manav sidebar can still
+  be opened by URL or search if the user's roles allow it.
+
 ## 2026-10-21
 
 **Quotation agent: "Draft with AI" makes a draft Quotation from one typed line (OpenAI).**

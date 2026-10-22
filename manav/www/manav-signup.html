@@ -1,0 +1,47 @@
+{#-
+	Page /manav-signup: the access request form. The script (manav-signup.js) and the styles
+	(manav-signup.css) sit next to this file and are loaded by Frappe automatically. The request
+	goes to the managers for approval (manav/manav/signup.py).
+
+	Created: 2026-10-22.
+-#}
+{% extends "templates/web.html" %}
+
+{% block title %}{{ _("Request Access") }}{% endblock %}
+
+{% block page_content %}
+<div class="ms-root">
+	<div class="ms-card page-card">
+		<h4 class="ms-title">{{ _("Request Access") }}</h4>
+		<p class="ms-muted">{{ _("New to the Manav system? Send a request. A manager will approve it and you will receive an e-mail to create your password.") }}</p>
+
+		<form id="ms-form" novalidate>
+			<label class="ms-field">
+				<span>{{ _("Full Name") }} *</span>
+				<input class="form-control" name="full_name" autocomplete="name" required maxlength="140">
+			</label>
+			<label class="ms-field">
+				<span>{{ _("Work E-mail") }} *</span>
+				<input class="form-control" name="email" type="email" autocomplete="email" required>
+			</label>
+			<label class="ms-field">
+				<span>{{ _("Mobile No") }}</span>
+				<input class="form-control" name="mobile_no" type="tel" autocomplete="tel" maxlength="20">
+			</label>
+			<label class="ms-field">
+				<span>{{ _("Message for the manager") }}</span>
+				<textarea class="form-control" name="message" rows="3" maxlength="1000" placeholder="{{ _('e.g. your department and role') }}"></textarea>
+			</label>
+			<p class="ms-error" id="ms-error" role="alert" hidden></p>
+			<button type="submit" class="btn btn-primary btn-block btn-sm" id="ms-submit">{{ _("Send Request") }}</button>
+		</form>
+
+		<div class="ms-done" id="ms-done" hidden>
+			<p class="ms-done-title">{{ _("Request sent") }}</p>
+			<p class="ms-muted" id="ms-done-text"></p>
+		</div>
+
+		<p class="ms-footer">{{ _("Already have a login?") }} <a href="/login">{{ _("Sign in") }}</a></p>
+	</div>
+</div>
+{% endblock %}
