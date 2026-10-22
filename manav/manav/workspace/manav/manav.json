@@ -238,7 +238,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-19 16:00:00.000000",
+ "modified": "2026-10-22 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav",
@@ -304,8 +304,9 @@
    "doc_view": "",
    "label": "Manav Dashboard",
    "stats_filter": "[]",
-   "type": "URL",
-   "url": "/manav-dashboard"
+   "type": "Page",
+   "url": null,
+   "link_to": "manav-dashboard"
   },
   {
    "color": "Grey",

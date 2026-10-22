@@ -14,7 +14,7 @@ Working:
 - A manager opens the request and presses Approve or Reject (manav_signup_request.js). Approve
   creates the desk User and e-mails "access approved" with a link to set the password; Reject
   e-mails "access rejected" with the reason. After setting the password the person is logged in
-  and sent to the Default App's route, the Manav dashboard (desk_home.py, hooks.py).
+  and sent to the Default App's route, the Manav workspace (desk_home.py, hooks.py; 2026-10-22).
 - setup_signup (after install / every migrate) creates the outgoing e-mail account, the
   managers' users (MANAGERS; skipped when the user exists, apart from giving them the Manav
   Management role) and the logins of the other Manav staff (STAFF; skipped when the user exists).
@@ -185,7 +185,7 @@ def send_approved_mail(doc):
 		_mail_body(
 			_("Hello {0},").format(escape_html(doc.full_name)),
 			_("Your request for access to the Manav system has been <b>approved</b>."),
-			_("Please create your password with the button below. After that you are logged in and taken to your dashboard."),
+			_("Please create your password with the button below. After that you are logged in and taken to the Manav workspace."),
 			_button(link, _("Create Password")),
 			_("Your login is your e-mail address: {0}").format(escape_html(doc.email)),
 			_("Site: {0}").format(get_url()),
@@ -221,7 +221,7 @@ def send_login_created_mail(user, full_name, manager=False):
 			_("Hello {0},").format(escape_html(full_name)),
 			_("A manager login to the Manav system has been created for you. You will receive the access requests of new users for approval.")
 			if manager
-			else _("A login to the Manav system has been created for you. After creating your password you are taken to your dashboard."),
+			else _("A login to the Manav system has been created for you. After creating your password you are taken to the Manav workspace."),
 			_button(link, _("Create Password")),
 			_("Your login is your e-mail address: {0}").format(escape_html(user)),
 		),

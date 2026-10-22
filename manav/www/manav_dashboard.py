@@ -9,23 +9,26 @@ manav.manav.dashboard.get_dashboard_data, which applies each reader's permission
 Only desk users (System User) may open it: website users (customers, suppliers) are refused.
 
 Created: 2026-10-17.
+
+CHANGE NOTE
+Date: 2026-10-22
+Change: The page only redirects to the desk page /desk/manav-dashboard (manav/manav/page/
+manav_dashboard), which shows the same dashboard inside the desk; a visitor who is not logged in
+is sent to the login page first. Its script and styles moved to manav/public/.
+Reason: The user asked that the dashboard opens inside the Frappe desk, not as a web page.
 """
 
 import frappe
-from frappe import _
 
 no_cache = 1
+
+DESK_ROUTE = "/desk/manav-dashboard"
 
 
 def get_context(context):
 	if frappe.session.user == "Guest":
-		# send the visitor to the login page and back here after logging in
-		frappe.local.flags.redirect_location = "/login?redirect-to=/manav-dashboard"
-		raise frappe.Redirect
-	if frappe.db.get_value("User", frappe.session.user, "user_type") != "System User":
-		frappe.throw(_("Only staff users can open the Manav dashboard"), frappe.PermissionError)
-
-	context.no_cache = 1
-	context.show_sidebar = False
-	context.full_width = True
-	context.title = _("Manav Dashboard")
+		# the login page sends the visitor on to the desk page after logging in
+		frappe.local.flags.redirect_location = f"/login?redirect-to={DESK_ROUTE}"
+	else:
+		frappe.local.flags.redirect_location = DESK_ROUTE
+	raise frappe.Redirect

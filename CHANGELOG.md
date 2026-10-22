@@ -4,6 +4,32 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-22
 
+**Manav Dashboard is a desk page (/desk/manav-dashboard), linked again in the Manav sidebar.**
+
+- Reason: the user asked that every sales employee sees a dashboard of their own figures, and
+  that it opens inside the Frappe desk, not as the web page /manav-dashboard (chosen with the
+  user: a desk page).
+- Changes:
+  - `manav/manav/page/manav_dashboard/` (new): desk Page "manav-dashboard" without roles, so
+    every desk user may open it. It mounts the existing dashboard view; the server
+    (`dashboard.get_dashboard_data`, unchanged) still decides what each user sees: My Dashboard
+    (own quotations: created by or Account Manager of) for everyone; Team Performance, HR &
+    Attendance and Payroll for management only.
+  - `manav/public/js/manav_dashboard_view.js` (moved from `manav/www/manav-dashboard.js`) and
+    `manav/public/css/manav_dashboard.css` (moved from `manav/www/manav-dashboard.css`): the view
+    now writes its own markup (formerly `manav-dashboard.html`) via `mount(root)`.
+  - `manav/www/manav_dashboard.py` / `manav-dashboard.html`: the old address redirects to the
+    desk page (guests via the login page).
+  - `manav/workspace_sidebar/manav.json`: "Dashboard" link back under Home, now to the desk page.
+  - `manav/manav/workspace/manav/manav.json`: the "Manav Dashboard" shortcut opens the desk page.
+  - `manav/manav/signup.py`: mail texts say users are taken to the Manav workspace (the landing
+    page since today), not the dashboard.
+- Testing: `node --check` of the view and the page script, `py_compile` of the changed Python
+  files pass; JSONs parse. Not tested in a browser or on a bench (none on Windows): to check
+  after deploy, open Dashboard in the sidebar as a sales user and as a manager.
+- Pending: a sales employee's own figures are their quotations by creator / Account Manager;
+  quotations entered by someone else with no Account Manager set do not count for them.
+
 **Fix: "Insufficient Permission for Quotation Type" for sales users.**
 
 - Reason: on manav.mymagicerp.com a user who is not a System Manager got "Insufficient

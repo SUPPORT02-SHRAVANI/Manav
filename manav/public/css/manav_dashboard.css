@@ -1,6 +1,6 @@
 /*
-	Styles of the Manav dashboard page (/manav-dashboard), loaded by Frappe as the page's
-	colocated CSS. Colours are tokens on .md-root, with their own dark-mode values. The charts
+	Styles of the Manav dashboard (desk page /desk/manav-dashboard, which loads this file with
+	frappe.require). Colours are tokens on .md-root, with their own dark-mode values. The charts
 	use one series colour (blue): every chart shows one measure, so no categorical palette is
 	needed, and statuses are told apart by their labels, not by colour.
 
@@ -10,6 +10,12 @@
 	Date: 2026-10-19
 	Change: Styles of the tab bar (.md-tabs) and the note under a section's heading.
 	Reason: The sections are tabs now (see manav-dashboard.html).
+
+	CHANGE NOTE
+	Date: 2026-10-22
+	Change: Moved from manav/www/manav-dashboard.css for the desk page; the page title is the
+	desk page's own, so .md-title is no longer used.
+	Reason: The user asked for the dashboard inside the Frappe desk instead of a web page.
 */
 .md-root {
 	color-scheme: light;
@@ -25,7 +31,7 @@
 	--md-focus: #2a78d6;
 	background: var(--md-surface);
 	color: var(--md-text);
-	padding: 16px 0 40px;
+	padding: 8px 0 40px;
 	font-variant-numeric: tabular-nums;
 }
 @media (prefers-color-scheme: dark) {

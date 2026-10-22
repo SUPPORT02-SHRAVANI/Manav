@@ -1,5 +1,5 @@
-// Script of the Manav dashboard page (/manav-dashboard), loaded by Frappe as the page's
-// colocated JS. Fetches the figures from manav.manav.dashboard.get_dashboard_data for the chosen
+// The Manav dashboard view, shown in the desk page "Manav Dashboard" (/desk/manav-dashboard,
+// manav/manav/page/manav_dashboard). Fetches the figures from manav.manav.dashboard.get_dashboard_data for the chosen
 // date range and draws: number tiles, a column chart per month (with hover tooltip and a table
 // view) and horizontal bar lists for categories. Plain DOM/SVG, no chart library, so nothing
 // extra has to be built or loaded from the internet.
@@ -14,11 +14,22 @@
 // and the team's quotations. The chosen tab is remembered in this browser.
 // Reason: The user asked for tabs instead of scrolling, for everyone to see their own dashboard,
 // and for only the admin, Milind and Naveen to see all employees' performance.
+//
+// CHANGE NOTE
+// Date: 2026-10-22
+// Change: Moved from manav/www/manav-dashboard.js and made a view for the desk: mount(root) writes
+// the dashboard's markup (formerly manav/www/manav-dashboard.html) into the desk page and runs the
+// code below on it. The web page /manav-dashboard now redirects to the desk page.
+// Reason: The user asked that the dashboard opens inside the Frappe desk, not as a web page, and
+// that every sales employee sees their own figures there.
 
-(function () {
+window.manav_dashboard_view = window.manav_dashboard_view || {};
+window.manav_dashboard_view.mount = function (root) {
 	const API = "/api/method/manav.manav.dashboard.get_dashboard_data";
-	const $ = (id) => document.getElementById(id);
 	const t = (text) => (window.__ ? window.__(text) : text);
+	root.innerHTML = manav_dashboard_markup(t);
+	// element by id inside this view (the ids are unique on the page: one dashboard per page)
+	const $ = (id) => root.querySelector(`#${id}`);
 	let currency = "INR";
 
 	// ---------- formatting ----------
@@ -205,7 +216,7 @@
 	// server (the server leaves out what the reader may not see). The chosen tab is kept in this
 	// browser's storage, which may be unavailable (private window): then the first tab is used.
 	const TAB_KEY = "manav-dashboard-tab";
-	const tabs = Array.from(document.querySelectorAll("#md-tabs [role=tab]"));
+	const tabs = Array.from(root.querySelectorAll("#md-tabs [role=tab]"));
 	function showTab(panelId) {
 		tabs.forEach((tab) => {
 			const on = tab.dataset.panel === panelId;
@@ -265,7 +276,7 @@
 			currency = d.currency || "INR";
 			$("md-from").value = d.from_date;
 			$("md-to").value = d.to_date;
-			document.querySelectorAll("[data-unit]").forEach((e) => (e.textContent = `(${currency})`));
+			root.querySelectorAll("[data-unit]").forEach((e) => (e.textContent = `(${currency})`));
 			$("md-range-note").textContent = `${d.user_name ? d.user_name + " · " : ""}${d.from_date} → ${d.to_date} · ${t("amounts in")} ${currency}`;
 			renderSales(d.my_sales, "mine");
 			renderSales(d.sales, "sales");
@@ -293,7 +304,7 @@
 		ev.preventDefault();
 		load();
 	});
-	document.querySelectorAll(".md-quick button").forEach((b) =>
+	root.querySelectorAll(".md-quick button").forEach((b) =>
 		b.addEventListener("click", () => {
 			const end = new Date();
 			const start = b.dataset.ytd ? new Date(end.getFullYear(), 0, 1) : new Date(end.getFullYear(), end.getMonth() - Number(b.dataset.months) + 1, 1);
@@ -303,4 +314,94 @@
 		})
 	);
 	load();
-})();
+};
+
+// The dashboard's markup (was manav/www/manav-dashboard.html until 2026-10-22): one tab per
+// section; the script shows only the tabs whose data came back. `t` translates a text.
+function manav_dashboard_markup(t) {
+	return `
+<div class="md-root" id="md-root">
+	<header class="md-head">
+		<div>
+			<p class="md-muted" id="md-range-note"></p>
+		</div>
+		<form class="md-filters" id="md-filters">
+			<label>${t("From")} <input type="date" name="from_date" id="md-from"></label>
+			<label>${t("To")} <input type="date" name="to_date" id="md-to"></label>
+			<div class="md-quick" role="group" aria-label="${t("Quick ranges")}">
+				<button type="button" data-months="3">3M</button>
+				<button type="button" data-months="6">6M</button>
+				<button type="button" data-months="12">12M</button>
+				<button type="button" data-ytd="1">${t("This year")}</button>
+			</div>
+			<button type="submit" class="md-apply">${t("Apply")}</button>
+		</form>
+	</header>
+
+	<nav class="md-tabs" role="tablist" id="md-tabs" aria-label="${t("Dashboard sections")}">
+		<button type="button" role="tab" id="md-tab-mine" data-panel="md-mine" aria-controls="md-mine" aria-selected="true">${t("My Dashboard")}</button>
+		<button type="button" role="tab" id="md-tab-sales" data-panel="md-sales" aria-controls="md-sales" aria-selected="false" hidden>${t("Team Performance")}</button>
+		<button type="button" role="tab" id="md-tab-hr" data-panel="md-hr" aria-controls="md-hr" aria-selected="false" hidden>${t("HR & Attendance")}</button>
+		<button type="button" role="tab" id="md-tab-payroll" data-panel="md-payroll" aria-controls="md-payroll" aria-selected="false" hidden>${t("Payroll")}</button>
+	</nav>
+
+	<p class="md-status" id="md-status">${t("Loading…")}</p>
+
+	<section class="md-section" id="md-mine" role="tabpanel" aria-labelledby="md-tab-mine" hidden>
+		<h2>${t("My Quotations")}</h2>
+		<p class="md-muted md-section-note">${t("Quotations you created or are Account Manager of")}</p>
+		<div class="md-tiles" id="md-mine-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>${t("My quotation value by month")} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-mine-month"></div>
+			<details><summary>${t("Show as table")}</summary><div id="md-mine-month-table"></div></details>
+		</div>
+		<div class="md-grid">
+			<div class="md-card"><h3>${t("By status")}</h3><div id="md-mine-status"></div></div>
+			<div class="md-card"><h3>${t("By principal")}</h3><div id="md-mine-principal"></div></div>
+			<div class="md-card"><h3>${t("My top customers")}</h3><div id="md-mine-customer"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-sales" role="tabpanel" aria-labelledby="md-tab-sales" hidden>
+		<h2>${t("Team Performance: all quotations")}</h2>
+		<div class="md-tiles" id="md-sales-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>${t("Quotation value by month")} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-sales-month"></div>
+			<details><summary>${t("Show as table")}</summary><div id="md-sales-month-table"></div></details>
+		</div>
+		<div class="md-grid">
+			<div class="md-card"><h3>${t("By status")}</h3><div id="md-sales-status"></div></div>
+			<div class="md-card"><h3>${t("By principal")}</h3><div id="md-sales-principal"></div></div>
+			<div class="md-card"><h3>${t("By sales engineer")}</h3><div id="md-sales-engineer"></div></div>
+			<div class="md-card"><h3>${t("Top customers")}</h3><div id="md-sales-customer"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-hr" role="tabpanel" aria-labelledby="md-tab-hr" hidden>
+		<h2>${t("HR & Attendance")}</h2>
+		<div class="md-tiles" id="md-hr-tiles"></div>
+		<div class="md-grid">
+			<div class="md-card"><h3 id="md-hr-month-title">${t("Attendance this month")}</h3><div id="md-hr-month"></div></div>
+			<div class="md-card"><h3>${t("Active employees by department")}</h3><div id="md-hr-department"></div></div>
+		</div>
+	</section>
+
+	<section class="md-section" id="md-payroll" role="tabpanel" aria-labelledby="md-tab-payroll" hidden>
+		<h2>${t("Payroll")}</h2>
+		<div class="md-tiles" id="md-pay-tiles"></div>
+		<div class="md-card md-wide">
+			<h3>${t("Net pay by month")} <span class="md-muted" data-unit></span></h3>
+			<div class="md-chart" id="md-pay-month"></div>
+			<details><summary>${t("Show as table")}</summary><div id="md-pay-month-table"></div></details>
+		</div>
+		<div class="md-card">
+			<h3 id="md-pay-department-title">${t("Gross pay by department")}</h3>
+			<div id="md-pay-department"></div>
+		</div>
+	</section>
+
+	<div class="md-tooltip" id="md-tooltip" role="tooltip" hidden></div>
+</div>`;
+}
