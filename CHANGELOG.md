@@ -4,6 +4,20 @@ Changes to the Manav app, newest first.
 
 ## 2026-10-22
 
+**Fix: installing / migrating no longer fails without an outgoing e-mail account.**
+
+- Reason: the install of manav (CI) stopped with `OutgoingEmailError: Please setup default
+  outgoing Email Account`: `signup.setup_signup` (after install / migrate) mailed the password
+  link to each manager it created, and the site had no outgoing account (the support account is
+  only created when `manav_support_email_password` is in site config).
+- Change: `manav/manav/signup.py` `send_setup_mail`: the setup's login mails are skipped when no
+  outgoing account exists (a line is printed) and any other mail error goes to the Error Log;
+  the users are still created. Their password link is then sent from the User form (Reset
+  Password).
+- Testing: `py_compile` passes. Not run on a bench (none on Windows); CI will run the install.
+- Pending: on sites where the mail was skipped, send the managers / staff their password links
+  by hand, or set `manav_support_email_password` before the first migrate.
+
 **Desk: users other than the admin see only the Manav workspace and land on it after login;
 Dashboard link removed from the Manav sidebar.**
 

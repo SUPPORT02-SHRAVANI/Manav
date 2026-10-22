@@ -28,6 +28,13 @@ linked to their employee when the e-mail matches, instead of a Pending request.
 Reason: The user asked for logins for the staff in the e-mail, and for the approval to offer the
 existing employees, left blank when the applicant is not one.
 
+CHANGE NOTE
+Date: 2026-10-22
+Change: The setup's "login created" mails go through send_setup_mail, which skips the mail when the
+site has no outgoing e-mail account and logs any other mail error, instead of raising.
+Reason: Installing the app (CI, a new site) and migrating a site without an outgoing account
+failed with "Please setup default outgoing Email Account" (OutgoingEmailError) from setup_managers.
+
 The e-mail account's app password is not kept in the code: it is read from the site config key
 manav_support_email_password (bench --site <site> set-config manav_support_email_password "...")
 and only on the first migrate; Frappe then keeps it, encrypted, in the Email Account.
@@ -365,7 +372,7 @@ def setup_managers():
 			continue
 		full_name = f"{first_name} {last_name}".strip()
 		create_user(email, full_name, roles=MANAGER_ROLES)
-		send_login_created_mail(email, full_name, manager=True)
+		send_setup_mail(email, full_name, manager=True)
 
 
 def setup_staff_logins():
@@ -380,4 +387,22 @@ def setup_staff_logins():
 			except Exception:
 				# e.g. an old employee record that no longer validates: the login stays, unlinked
 				frappe.log_error(title=f"Manav: login {email} not linked to employee {employee}")
-		send_login_created_mail(email, full_name)
+		send_setup_mail(email, full_name)
+
+
+def send_setup_mail(user, full_name, manager=False):
+	"""send_login_created_mail for a user made by the setup, without ever stopping the install or
+	migrate: with no outgoing e-mail account (a new site, CI) the mail is skipped, and any other
+	mail error is logged. The user exists either way, so a later migrate does not send it again;
+	an administrator then sends the password link from the User form (Reset Password)."""
+	from frappe.email.doctype.email_account.email_account import EmailAccount
+
+	if not EmailAccount.find_outgoing():
+		print(f"Manav: login {user} created, no outgoing e-mail account to send the password link")
+		return
+	try:
+		send_login_created_mail(user, full_name, manager=manager)
+	except Exception:
+		frappe.clear_last_message()
+		frappe.log_error(title=f"Manav: password link mail to {user} not sent")
+		print(f"Manav: login {user} created, the password link mail failed, see Error Log")
