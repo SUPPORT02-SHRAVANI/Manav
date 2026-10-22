@@ -16,7 +16,10 @@ Dashboard link removed from the Manav sidebar.**
     still linked from the Manav workspace.
   - `manav/hooks.py`: `add_to_apps_screen` route is `/desk/manav`, so users land on the Manav
     workspace after login (was `/manav-dashboard` since 2026-10-19). Asked for by the user. An
-    admin can choose another landing page with Default App in their own User form.
+    admin can choose another landing page with Default App in their own User form. This is
+    also where Frappe sends a new user after setting their password.
+  - `manav/www/manav_signup.py`: a logged-in visitor of /manav-signup is sent to `/desk/manav`
+    (was `/manav-dashboard`).
   - `manav/manav/desk_home.py`: `is_admin` (Administrator or System Manager) and
     `limit_desk_to_manav`, which trims the boot sent to the browser for other users to the Manav
     workspace, the Manav sidebar, the Manav desktop icon and the Manav app. Only navigation is

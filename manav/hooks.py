@@ -26,16 +26,32 @@ required_apps = ["frappe/erpnext"]
 # Change: The route is the Manav dashboard (/manav-dashboard), which shows each user their own
 # figures, instead of the Manav workspace.
 # Reason: The user asked that everyone sees their own dashboard after login.
+#
+# CHANGE NOTE
+# Date: 2026-10-22
+# Change: The route is the Manav workspace (/desk/manav) again, so users land on it after login
+# and after setting their password (Frappe sends them to the Default App's route). The dashboard
+# page stays reachable from the workspace. An admin who wants another landing page picks another
+# Default App in their own User form (it wins over System Settings).
+# Reason: The user asked that everyone except the admin opens the Manav workspace after login,
+# not the web page /manav-dashboard.
 add_to_apps_screen = [
 	{
 		"name": "manav",
 		"logo": "/assets/manav/images/manav_logo.svg",
 		"title": "Manav",
-		# 2026-10-19: the user's own dashboard after login (was the workspace, /desk/manav)
-		"route": "/manav-dashboard",
+		# 2026-10-22: the Manav workspace after login (2026-10-19 to 10-21: /manav-dashboard)
+		"route": "/desk/manav",
 		"has_permission": "manav.manav.desk_home.has_app_permission",
 	}
 ]
+
+# CHANGE NOTE
+# Date: 2026-10-22
+# Change: Users other than the Administrator and System Managers see only the Manav workspace,
+# sidebar and app in the desk (manav.manav.desk_home.limit_desk_to_manav).
+# Reason: The user asked that everyone except the admin sees only the Manav workspace.
+extend_bootinfo = ["manav.manav.desk_home.limit_desk_to_manav"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

@@ -5,7 +5,7 @@
 
 Working: the form (manav-signup.html, script manav-signup.js) posts to
 manav.manav.signup.submit_request, which saves a Manav Signup Request for the managers to approve.
-Someone who is already logged in is sent to the Manav dashboard instead.
+Someone who is already logged in is sent to the Manav workspace instead (the landing page, 2026-10-22).
 
 Created: 2026-10-22.
 """
@@ -18,7 +18,7 @@ no_cache = 1
 
 def get_context(context):
 	if frappe.session.user != "Guest":
-		frappe.local.flags.redirect_location = "/manav-dashboard"
+		frappe.local.flags.redirect_location = "/desk/manav"
 		raise frappe.Redirect
 
 	context.no_cache = 1
