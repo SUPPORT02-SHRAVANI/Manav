@@ -24,18 +24,6 @@
    "indent": 0,
    "keep_closed": 0,
    "show_arrow": 0,
-   "label": "Dashboard",
-   "type": "Link",
-   "link_type": "Page",
-   "icon": "layout-dashboard",
-   "link_to": "manav-dashboard"
-  },
-  {
-   "child": 0,
-   "collapsible": 1,
-   "indent": 0,
-   "keep_closed": 0,
-   "show_arrow": 0,
    "label": "Quotation",
    "type": "Link",
    "link_type": "DocType",
