@@ -1,0 +1,118 @@
+{#-
+	PI-style price line and totals for the quotation prints (Manav Modern Quotation and Manav Modern
+	Quotation CIF, both template files in this folder). Included at the end of their gathering, after
+	`q` and `main_items` are set; it changes `q` only.
+
+	As on the PI (manav_proforma_invoice.html):
+	- one price line after the lines: "Price <price basis> (<machines' qty> <UOM>) ...... US$ <amount>".
+	  The price basis is the quotation's Price Type and Port (since 2026-11-04; before, the principal's
+	  Quotation Type "Price Basis", else a fixed EX-WORKS FTWZ WAREHOUSE CHENNAI). The amount is the total before taxes and
+	  CIF charges, in plain digits as on the old print;
+	- totals: one TOTAL row when there is nothing to add; else TOTAL, the rows to add (taxes with an
+	  amount, CIF Charges - <port>) and GRAND TOTAL. " (CIF)" after the last name for a CIF quotation.
+	  No "Tax / Duties: As Applicable" row.
+	Unlike the PI, taxes with an amount are still printed (with_taxes, the Modern format), so the
+	printed total is always the quotation's. The CIF format passes with_taxes = False and, as
+	before, prints no tax rows; it also passes cif_label = True.
+
+	Created: 2026-11-02, when the user asked for the quotation to print the PI's price line and totals.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: CIF charges are printed as a second dotted line right under the price line
+	("CIF Charges - Chennai Sea Port ...... US$ 5500.00", q.cif_line / q.cif_amount) instead of a row
+	of the totals; the totals are then one row, TOTAL (CIF) = price line + CIF charges (with taxes:
+	TOTAL, the taxes, GRAND TOTAL (CIF)). The price line is the machines with their options (the
+	options are priced on their own lines since this date).
+	Reason: The user showed the old print, where the CIF charges stand under the price as a line of
+	the same kind, and chose to keep the options added into the price.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: The price line and the totals no longer add the options (sub-items): the price is the
+	machines' own amounts (main_items), the total is that + taxes + CIF charges. The options still
+	print with their own prices on their lines. (Earlier the same day: net total, options added.)
+	Reason: The user said "in quotation don't add the sub-item's price in the total", as on the old
+	print.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: No totals any more (q.no_totals): under the price line come the CIF charges and any taxes
+	as lines of the same kind (q.charge_lines), and nothing is added up, as on the old print. Amounts
+	in those lines and the column heads carry the currency code (USD / INR; q.currency_code) instead of
+	"US$" / "Rs.".
+	Reason: The user marked the print: no total line, and write INR or USD with the price.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: A CIF document prints as the old system did: "Prices : Ex-Works, <Ex-Works From>." and
+	"CIF Charges upto <CIF Port> ...... <charges>" (before: "Price <basis> (n NOS) ...... amount" and
+	"CIF Charges - <port>").
+	Reason: The user showed the old CIF print next to ours.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The CIF line "Prices : Ex-Works, <place>. (n NOS)" has the machines' price after it (was
+	without an amount) and is printed not bold (q.price_plain).
+	Reason: The user asked for the price in front of Ex-Works and for Ex-Works not in bold.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The price line's basis is the quotation's Price Type and Port (custom_price_type,
+	custom_price_port); the fixed EX-WORKS FTWZ WAREHOUSE CHENNAI is gone.
+	Reason: The user asked for that text not to be fixed: it is typed on the quotation.
+	Later the same day: the basis is Ex-Works From, then Port ("Price <Ex-Works From> <Port> (n
+	NOS) ...... amount") on every quotation, CIF or not, not bold; Price Type is dropped. The user
+	showed the old program's Price Type / Port and its print line. After that the line is bold
+	again (no price_plain), at the user's request.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The quotation's price line is "Prices : <Ex-Works From> <Port>" with the amount at the
+	right and no dots or quantity (q.price_no_dots), above "CIF Charges - <port> ...... amount".
+	Reason: The user showed the old quotation print for the quotation, and the "Price <type> <port>
+	(1 NOS) ...... amount" line for the Draft PI and Final PI only.
+-#}
+{%- set with_taxes = with_taxes if with_taxes is defined else True -%}
+{%- set is_cif = doc.get("custom_is_cif") -%}
+{%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges")) if is_cif else 0 -%}
+
+{#- the price line -#}
+{#- 2026-11-04: the quotation's Ex-Works From, then its Port when typed (no fixed text; CIF or
+    not); a quotation with neither prints its principal's Price Basis -#}
+{%- set price_basis = [doc.get("custom_ex_works_from"), doc.get("custom_price_port")] | select | map("trim") | select | join(" ") -%}
+{%- set price_basis = price_basis or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.get("custom_quotation_type") else None) or "" -%}
+{#- the currency code (USD, INR) with the amounts and in the column heads (2026-11-02; before "US$" / "Rs.") -#}
+{%- set currency_label = doc.currency or "" -%}
+{#- the machines only: options (sub-items) are not added (2026-11-02) -#}
+{%- set base = frappe.utils.flt(main_items | sum(attribute="amount")) if main_items else 0 -%}
+{%- if main_items -%}
+	{#- 2026-11-04 (last change that day): the quotation's line is the old quotation print's
+	    "Prices : Ex-Works, Oxnard, USA.        US$ 105100.00": "Prices : <Ex-Works From> <Port>", no
+	    quantity, no dots (price_no_dots), the amount at the right, bold. The PI's own line
+	    "Price <type> <port> (n NOS) ...... amount" stays in manav_proforma_invoice.html. -#}
+	{%- set _ = q.update({"price_line": ("Prices : " ~ (price_basis | trim)) if (price_basis | trim) else "Price :",
+		"price_amount": currency_label ~ " " ~ ("%.2f" | format(base)),
+		"price_no_dots": True}) -%}
+{%- endif -%}
+
+{#- under the price line: CIF charges, then taxes with an amount (Modern only); no totals -#}
+{%- set charge_lines = [] -%}
+{%- if cif_amount -%}
+	{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>") -#}
+	{#- 2026-11-04: "CIF Charges - <port>" again, e.g. "CIF Charges - Chennai Sea Port" (the user's wording) -#}
+	{%- set _ = charge_lines.append(["CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), currency_label ~ " " ~ ("%.2f" | format(cif_amount))]) -%}
+{%- endif -%}
+{%- if with_taxes -%}
+	{%- for tax in (doc.get("taxes") or []) | selectattr("tax_amount") -%}
+		{%- set _ = charge_lines.append([(tax.description or tax.account_head or "Tax") ~ ((" @ " ~ ("%g" | format(tax.rate)) ~ "%") if frappe.utils.flt(tax.rate) else ""), currency_label ~ " " ~ ("%.2f" | format(frappe.utils.flt(tax.tax_amount)))]) -%}
+	{%- endfor -%}
+{%- endif -%}
+{%- set _ = q.update({
+	"charge_lines": charge_lines,
+	"no_totals": True,
+	"currency_code": currency_label,
+	"taxes": [],
+	"subtotal": "",
+	"no_tax_line": True,
+}) -%}

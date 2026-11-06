@@ -2,6 +2,2026 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-11-06
+
+**Item form: Item Name shows an Item Master dropdown on a new item.**
+
+- Summary: while typing Item Name on a new Item, a dropdown lists up to 20 existing items whose
+  name or code contains the text (from 2 letters); picking one opens that item instead of making
+  a duplicate. Saved items are unchanged. Done in the app's Item form script (Awesomplete +
+  `frappe.db.get_list`), ERPNext's Item doctype is not changed.
+- Reason: the user asked for an Item Master dropdown on Item Name.
+- Files: `manav/public/js/item.js`.
+- Testing: `node --check` on the server: OK; checked that `frappe.desk.reportview.get_list`
+  accepts `or_filters`; `bench build --app manav` and `clear-cache` on manav.local: OK. Not
+  tested: the dropdown in a browser.
+- Pending: none.
+
+**Item Groups: tariff code removed from the old Magic group names.**
+
+- Summary: the 21 groups under "Magic Item Groups" no longer end with the old 8-digit tariff code
+  ("01 MACHINES" instead of "01 MACHINES - 16301000"). `import_item_groups` strips the code and
+  renames groups made earlier (`frappe.rename_doc`, which also updates linked Items).
+- Reason: the user asked for the number to be removed from the Item Group dropdown.
+- Files: `manav/manav/import_legacy.py`.
+- Testing: `py_compile` and `import_item_groups` run on manav.local: 14 groups renamed (the other
+  7 had no code), the 21 names read back without codes.
+- Pending: none.
+
+## 2026-11-05
+
+**Leads: each login sees only its own leads; Administrator / System Manager see all.**
+
+- Summary: row-level rule on Manav Lead. A user other than Administrator / System Manager sees
+  only the leads they created or where they are the Sale Engineer (their Sales Person, found with
+  `sales_person_for_user`). Applies to the Lead list, reports, Leads Board, Lead Funnel, link
+  searches (all use `frappe.get_list`) and to opening a lead by URL (`has_permission`).
+- Reason: the user asked that whoever logs in sees only their leads, and the admin sees everything
+  for now.
+- Files: `manav/manav/lead_permission.py` (new), `manav/hooks.py`.
+- Testing: Python syntax check of both files (Windows). Not run: `bench restart`, a check with a
+  Sales User / Sales Manager login on the server.
+- Pending: the Sales User role still has "Only if Creator" (if_owner) on Manav Lead, so a Sales
+  User sees only leads they created, not ones assigned to them as Sale Engineer.
+  `manav_lead.json` is read-only on the share for this login; remove if_owner there (or in Role
+  Permissions Manager) if assigned leads should show too. DVRs (Manav Visit) are not limited yet.
+
+**Quotation: Item Code dropdown offers the whole Item Master.**
+
+- Summary: the Item Code dropdown of the Quotation Items table lists every sales item (not
+  variant templates) of the Item Master on every line, still with its rate; it is no longer
+  limited to the principal's Item Group (machine lines) or that group plus Options (sub-item
+  lines). Sub-items via "+" and spares are unchanged.
+- Reason: the user asked for the Item Master dropdown when adding a quotation item.
+- Files: `manav/public/js/quotation.js`.
+- Testing: `node --check` (Windows). Not run: the form in a browser.
+- Pending: none.
+
+**Quotation: sub-item prices without decimals.**
+
+- Summary: the sub-items dialog of a machine's line shows prices as whole numbers (25,000 instead
+  of 25,000.000).
+- Reason: the user asked for no decimals in that list.
+- Files: `manav/public/js/quotation.js`.
+- Testing: `node --check` (Windows). Not run: the dialog in a browser.
+- Pending: none.
+
+## 2026-11-04
+
+**Workspace (Manav / branches): greeting, icon chips, tab colours, tidier charts.**
+
+- Summary: on top of the earlier restyle of today: a greeting line ("Good afternoon, <name> ·
+  <date>") under the workspace title in the tinted card (added next to the title, never saved with
+  the workspace, removed in edit mode); number cards with an icon chip and a top edge, and
+  shortcuts with a left edge, in the chosen tab's colour (blue Sales, green HR, orange Payroll,
+  purple Masters); the "Last synced" line under the charts hidden. Phone: no icon chips (room).
+- Reason: the user showed the Bangalore workspace and asked to make it better.
+- Files: `manav/manav/workspace_tabs_block/tabs.js`.
+- Testing: the block script compiles (Windows). Not run: `bench migrate`, the workspace in a
+  browser.
+- Pending: none.
+
+**Sidebar header: "Manav" left out of the Modules list.**
+
+- Summary: the sidebar header's Modules list shows Bangalore, Chennai, Coimbatore, FTWZ and Lead
+  Management, no longer Manav. Only that list changes: the Manav sidebar stays (Home, the Manav
+  pages and forms opened from it use it). Done by wrapping Frappe's
+  `frappe.ui.SidebarHeader.prototype.switcher_items` in `manav_branch.js` (guarded; nothing changes
+  if Frappe drops it). The file's `?v=` in hooks.py is raised so browsers fetch it again.
+- Reason: the user asked to remove Manav from that list.
+- Files: `manav/public/js/manav_branch.js`, `manav/hooks.py`.
+- Testing: `node --check` and a compile of hooks.py (Windows). Not run: the desk in a browser.
+- Pending: none.
+
+**Home (Manav workspace) in the look of the Lead Dashboard; phone friendly.**
+
+- Summary: the Manav workspace (sidebar "Home", also the branch workspaces with the same tab block)
+  gets the Lead Dashboard look through the "Manav Dashboard Tabs" block: the title block as a
+  tinted card, number cards and shortcuts as 16 px rounded tiles with a large figure and hover
+  lift, charts in rounded cards, and the chosen tab filled with its colour. On a phone: smaller
+  title card, two tiles a row, a full-width swipeable tab bar. Styles only, scoped to the
+  workspace holding the block (switched off when another workspace is opened); content,
+  permissions and edit mode unchanged.
+- Reason: the user asked for the home dashboard to match the Leads page / Lead Dashboard.
+- Files: `manav/manav/workspace_tabs_block/tabs.js`, `tabs.css` (written into the Custom HTML
+  Block by `workspace_tabs.setup_workspace_tabs` on migrate).
+- Testing: the block script compiles (Windows). Not run: `bench migrate`, the workspace in a
+  browser (PC or phone).
+- Pending: none.
+
+**Standard Accessories table hidden on a phone.**
+
+- Summary: on screens up to 767 px wide (Frappe's mobile width) the Standard Accessories table
+  under the Items of Quotation, Draft PI and Final PI is not shown; on a PC it is unchanged. The
+  lines' descriptions and the prints are not affected.
+- Reason: the user asked not to show it in the phone view (too narrow there).
+- Files: `manav/public/js/standard_accessories.js`.
+- Testing: `node --check` (Windows). Not run: the form on a phone.
+- Pending: none.
+
+**Quotation (Manav) Dashboard and Customer Dashboard in the look of the Lead Dashboard / Leads page; phone friendly.**
+
+- Summary:
+  - Manav Dashboard (quotations, team, HR, payroll tabs): greeting header tinted with the accent
+    colour holding the date filters and quick ranges, pill tabs, tiles with a coloured icon and a
+    large figure (a click opens the matching Quotation list within the dates: all, Ordered,
+    Open / Replied, Lost), bar rows with hover (a status or customer row opens its quotations),
+    16 px panels, loading shimmer; the desk's own colours (light / dark). Phone: two tiles a row,
+    panels stacked, smaller header.
+  - Customer Dashboard: 16 px cards, tinted header with a coloured avatar, key figure tiles with a
+    coloured icon (group colours kept), pill tabs in each tab's colour; phone: two tiles a row, a
+    swipeable tab row, smaller header and tables.
+  - Data, tabs, lists and what each user may see are unchanged.
+- Reason: the user asked for the quotation and customer dashboards to match the Leads page and the
+  Lead Dashboard, nothing else changing, and good on a phone.
+- Files: `manav/public/css/manav_dashboard.css`, `manav/public/js/manav_dashboard_view.js`,
+  `manav/manav/page/customer_dashboard/customer_dashboard.js`.
+- Testing: `node --check` on both scripts (Windows). Not run: the pages in a browser (PC or phone).
+- Pending: the browser may keep the old dashboard stylesheet until a hard refresh (Ctrl+Shift+R).
+
+**Prints keep the rich-text formatting of the points (colour, italic, underline ...).**
+
+- Summary: a description's list items are printed with their own HTML from the rich-text editor
+  instead of their bare text, so colour, italic, underline, size and bold print as typed. Done in
+  the macro describe (Modern, Quotation with HSN Code, Draft PI / Final PI), the quotation data of
+  Classic / Banded / Colour, and the Standard Accessories block of Quotation Classic / Bordered.
+  Quill's empty marker span is left out. A list item is now one point as it is (no longer cut into
+  sentences at ". ").
+- Reason: the user asked for the colour and other formatting of the rich text to print as well.
+- Files: templates `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`,
+  `manav_proforma_invoice.html`, `manav_quotation_data.html`, `manav_std_accessories.html`.
+- Testing: the describe macro rendered with Jinja on a sample list (Windows): a red point keeps its
+  `<span style="color: ...">`, a bold point with italic keeps both, the marker span is gone; the
+  five templates parse. Not run: a real print / PDF.
+- Pending: Quill's class-based formats (alignment, indent) are not styled in the prints; inline
+  styles (colour, background, size) and tags (bold, italic, underline, strike) are.
+
+**Quotation Classic / Bordered: Standard Accessories printed under the Items table.**
+
+- Summary: new print formats "Manav Quotation Classic" and "Manav Quotation Bordered": copies of
+  ERPNext's "Quotation Classic" / "Quotation Bordered" (Frappe print format builder layouts) with a
+  Standard Accessories block under the Items table: per machine line its name and code, then its
+  points in two columns (bold points bold), from `manav_std_accessories.html`. In the Classic copy
+  the description is no longer squeezed into the narrow Item column. ERPNext's two originals are
+  disabled (`HIDDEN_PRINT_FORMATS`; their files are not edited); the Print view shows the copies as
+  "Quotation Classic" / "Quotation Bordered".
+- Reason: the user showed Quotation Classic with a long list in a narrow column ("manage this")
+  and Quotation Bordered without the accessories ("here add std acc").
+- Files: `manav/manav/print_format/manav_quotation_classic/`, `manav_quotation_bordered/` (new),
+  `manav/templates/print_formats/manav_std_accessories.html` (new), `manav/manav/erpnext_fields.py`.
+- Testing: the block rendered with Jinja on a sample quotation (Windows): one machine, three
+  points in two columns, the bold point bold, the sub-item line left out. Not run: `bench migrate`,
+  the builder's print (Chrome PDF).
+- Pending: the copies do not follow later ERPNext changes to the originals' layout.
+
+**Rich-text editor: colour saved, Undo / Redo buttons; Standard Accessories on Quotation / PI as rich text.**
+
+- Summary:
+  - New `manav/public/js/manav_text_editor.js` (app_include_js, every desk page): Undo and Redo
+    buttons first in the toolbar of every rich-text (Text Editor) field; before any form is saved,
+    each editor whose text differs from the form's value hands it over at once.
+  - Standard Accessories table (Quotation, Draft PI, Final PI): on a document that can be changed,
+    each machine's accessories are a rich-text editor (bold, colour, lists, undo ...) bound to that
+    line's Description; only this document changes, not the Item. Submitted documents still show
+    the points read only. The add box / remove buttons of earlier today are gone.
+- Reason: the user reported that a colour put on text was not saved, asked for an undo button in
+  the editor, and for the Standard Accessories on the quotation and PI as rich text.
+  Cause found for the colour: Frappe hands the editor's text to the form 300 ms after the last
+  change; a Save right after picking a colour saved the old text. (No save error was in the
+  server logs.)
+- Files: `manav/public/js/manav_text_editor.js` (new), `manav/hooks.py` (app_include_js),
+  `manav/public/js/standard_accessories.js`.
+- Testing: `node --check` on both scripts (Windows). Not run: `bench build`, the editors in a
+  browser (toolbar buttons, colour, save).
+- Pending: if a colour is still lost after this, the exact steps / any message are needed.
+
+**Letter head, footer and page number on every page of every Manav print.**
+
+- Summary: new shared `manav/templates/print_formats/manav_page_frame.html`. Classic, Banded, Colour
+  quotations and the Appointment Letter now print the letter head at the top of every page and the
+  letter head footer plus "Page n of m" at the foot of every page: in the PDF (header-html /
+  footer-html, page margins made room for them) and when printed from the browser (repeated table
+  head / foot rows). The Modern layout (Modern, Quotation with HSN Code, Draft PI, Final PI) already
+  did this, with its quotation box in the head as well. Without a letter head only the page number
+  is repeated.
+- Reason: the user asked for the header, the footer and the page number on every page, whichever
+  print format is used.
+- Files: `manav_page_frame.html` (new), `manav_classic_quotation_body.html`,
+  `manav_banded_quotation_body.html`, `manav_appointment_letter.html`.
+- Testing: Jinja parse of the four files; the Banded body rendered (Windows) with and without a
+  letter head: one header-html and one footer-html, page margins 34 mm / 15 mm at the top, the
+  footer in both copies. Not run: a real PDF (wkhtmltopdf) or browser print.
+- Pending: in Classic and Banded / Colour only the letter head repeats, not their title and customer
+  box (the Modern layout repeats its box). Check a 2-3 page PDF of each: the top margin (34 mm)
+  assumes a letter head at most 27 mm high.
+
+**Quotation Print view: Standard, Quotation Modern, Quotation Modern with Images and Sales Quotation removed.**
+
+- Summary: ERPNext's "Quotation Modern" and "Quotation Modern with Images" and "Manav Sales
+  Quotation" are disabled (set again after every migrate, `erpnext_fields.HIDDEN_PRINT_FORMATS`;
+  ERPNext's files are not edited; Manav Sales Quotation also `disabled: 1` in its own file). Frappe's
+  built-in "Standard" is left out of the Quotation's list by `manav_print_sidebar.js` (it is not a
+  record). Manav Sales Quotation is no longer a default fallback. Kept: Classic Quotation, Quotation
+  Classic, Quotation Bordered, Modern Quotation, Quotation with HSN Code, Colour, Banded.
+- Reason: the user crossed those four out of the Print Format Type cards.
+- Files: `manav/manav/erpnext_fields.py`, `manav/public/js/manav_print_sidebar.js`,
+  `manav/manav/print_format/manav_sales_quotation/manav_sales_quotation.json`.
+- Testing: `node --check` and a Python compile (Windows). Not run: `bench migrate`, the Print view.
+- Pending: Standard is still listed for other doctypes (Sales Order, Draft PI).
+
+**Print format "Manav Modern Quotation CIF" renamed "Quotation with HSN Code".**
+
+- Summary: the format's file is now `print_format/quotation_with_hsn_code/quotation_with_hsn_code.json`
+  with the new name (same layout and template, `manav_modern_quotation_cif.html`); the old folder is
+  removed. Patch `manav.patches.rename_hsn_print_format` (post_model_sync) deletes the old record
+  after the new one has synced and moves any default print format pointing at the old name.
+- Reason: the user asked to rename it "Quotation with HSN Code".
+- Files: `manav/manav/print_format/quotation_with_hsn_code/` (new), `manav/manav/print_format/
+  manav_modern_quotation_cif/` (removed; it was not in git), `manav/patches/rename_hsn_print_format.py`
+  (new), `manav/patches.txt`, `manav/templates/print_formats/manav_modern_quotation_cif.html` (note).
+- Testing: JSON load and a syntax check of the patch (Windows). Not run: `bench migrate` (the patch
+  and the sync).
+- Pending: the sidebar tile of the renamed format uses the plain thumbnail (its name no longer has
+  "CIF").
+
+**Price line: "Prices : ..." on the quotation, "Price ... (n NOS)" on the Draft PI and Final PI.**
+
+- Summary:
+  - Quotation (Modern): "Prices : <Ex-Works From> <Port>" with the amount at the right, no quantity
+    and no dots (q.price_no_dots), as on the old quotation print, then "CIF Charges - <port> ......
+    amount". Classic already printed "Prices : ..." with the amount.
+  - Draft PI / Final PI: always "Price <Price Type> <Port> (n NOS) ...... amount"; a CIF PI no longer
+    replaces it with "Prices : Ex-Works, <place>.".
+- Reason: the user showed the two old prints: the first for the quotation only, the second for the
+  Draft PI and Final PI.
+- Files: templates `manav_quotation_pi_totals.html`, `manav_modern_quotation_body.html`,
+  `manav_proforma_invoice.html`.
+- Testing: Jinja parse of the three templates; the quotation line rendered as "Prices : Ex-Works,
+  Oxnard, USA." / "Prices : EX-WORKS FTWZ WAREHOUSE CHENNAI" / "Price :" (Windows). Not run: a real
+  print.
+- Pending: Make Draft PI still puts the quotation's Ex-Works From in the Draft PI's Price Type (and
+  copies Port); change it there when the PI should read differently.
+
+**CIF line wording: "CIF Charges - <CIF Port>".**
+
+- Summary: the CIF charges line prints "CIF Charges - <CIF Port> ...... amount" (e.g. "CIF Charges -
+  Chennai Sea Port") instead of "CIF Charges upto <port>", on the Modern, Classic, Banded / Colour
+  quotations and the PI. CIF Port's help text on Quotation, Sales Order and Draft PI says the same.
+- Reason: the user asked for this wording (old print).
+- Files: templates `manav_quotation_pi_totals.html`, `manav_quotation_data.html`,
+  `manav_proforma_invoice.html`; `manav/manav/erpnext_fields.py`,
+  `manav/manav/doctype/draft_pi/draft_pi.json`.
+- Testing: Jinja parse of the three templates, the line rendered as "CIF Charges - Chennai Sea
+  Port"; JSON load and `py_compile` passed (Windows). Not run: a real print, `bench migrate`.
+- Pending: an empty CIF Port is still filled with "FTWZ Chennai" (DEFAULT_CIF_PORT); the user may
+  want "Chennai Sea Port" as that default.
+
+**Price line bold again.**
+
+- Summary: the price line ("Price <Ex-Works From> <Port> (n NOS)" on the Modern quotation,
+  "Prices : ..." on Classic, the CIF line of the PI) is printed bold again; the not-bold setting of
+  earlier today (q.price_plain) is no longer used. The style for it stays in the Modern body.
+- Reason: the user asked for the line in bold.
+- Files: templates `manav_quotation_pi_totals.html`, `manav_classic_quotation_body.html`,
+  `manav_proforma_invoice.html`.
+- Testing: Jinja parse of the three templates (Windows). Not run: a real print.
+- Pending: none.
+
+**Quotation price line: "Price <Ex-Works From> <Port> (n NOS)"; the Quotation Price Type is dropped.**
+
+- Summary: the quotation's price line starts with Ex-Works From, followed by Port when typed, e.g.
+  "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS) ...... amount", on every quotation, CIF or not
+  (the CIF-only "Prices : Ex-Works, <place>." line is gone); not bold. Classic prints
+  "Prices : <Ex-Works From> <Port>". The Quotation "Price Type" added earlier today is removed
+  (OBSOLETE_FIELDS deletes it on migrate); Port stays. Choosing a principal fills an empty
+  Ex-Works From with the principal's Ex-Works From, else its Price Basis. Make Draft PI puts
+  Ex-Works From in the Draft PI's Price Type and copies Port.
+- Reason: the user showed the old program's Price Type / Port and its print line, and asked for
+  Ex-Works From first in the line with Port after it.
+- Files: `manav/manav/erpnext_fields.py`, `manav/manav/quotation.py`, `manav/manav/pi.py`,
+  `manav/public/js/quotation.js`, templates `manav_quotation_pi_totals.html`,
+  `manav_quotation_data.html`, `manav_classic_quotation_body.html`.
+- Testing: Jinja parse of the four quotation templates; the line rendered as "Price EX-WORKS FTWZ
+  WAREHOUSE CHENNAI (1 NOS)", "Price Ex-Works Dubai (1 NOS)" and "Price (1 NOS)"; `py_compile` and
+  `node --check` passed (Windows). Not run: `bench migrate`, a real print.
+- Pending: the Draft PI / Final PI prints still use their own Price Type and Port (unchanged).
+
+**Draft PI: Terms tab; Banded / Colour prints: Standard Accessories laid out in their own rows.**
+
+- Summary:
+  - Draft PI: the Terms section (Terms template, Terms and Conditions) is a "Terms" tab, as on the
+    quotation; the fields before it stay on the first tab ("Details").
+  - Manav Banded Quotation (black) and Manav Colour Quotation: a machine's Standard Accessories are
+    no longer squeezed into the machine row's description cell. Under the machine's row come a
+    "Standard Accessories" heading and the points in two columns (read down the left, then the
+    right), each pair a row of its own across the table, so a long list runs onto the next page;
+    a small square bullet in the theme colour; bold points stay bold. The machine's name is on its
+    own line under the code.
+- Reason: the user asked for a Terms tab on the Draft PI like the quotation's, and said the Standard
+  Accessories did not look right in the black and colour prints.
+- Files: `manav/manav/doctype/draft_pi/draft_pi.json`, `draft_pi.py` (note),
+  `manav/templates/print_formats/manav_banded_quotation_body.html`.
+- Testing: the banded body rendered with Jinja (Windows) on sample data: 7 points give 4 rows,
+  left column 1-4, right 5-7, the bold point bold. Not run: `bench migrate`, a real PDF
+  (wkhtmltopdf) of either format.
+- Pending: check one long machine (60 points) as PDF in both formats.
+
+**Quotation: the price line's text is typed on the quotation (Price Type, Port).**
+
+- Summary: new Quotation fields "Price Type" (custom_price_type) and "Port" (custom_price_port)
+  after Ex-Works From. The Modern quotation prints "Price <Price Type> <Port> (n NOS) ...... amount"
+  and Classic "Prices : <Price Type> <Port>" from them; the fixed EX-WORKS FTWZ WAREHOUSE CHENNAI
+  is gone from the quotation prints. Choosing a principal puts its Price Basis in an empty Price
+  Type (editable). A quotation saved before still prints its principal's Price Basis; with
+  neither, "Price (n NOS)". Same fieldnames as the PI's, so Make Draft PI copies them.
+- Reason: the user asked for that text not to be fixed; they type it on the quotation.
+- Files: `manav/manav/erpnext_fields.py`, `manav/manav/quotation.py`, `manav/public/js/quotation.js`,
+  templates `manav_quotation_pi_totals.html`, `manav_quotation_data.html`.
+- Testing: Jinja parse of both templates; the price-line expression rendered with type + port,
+  with nothing, and with a type only ("Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS)", "Price (1
+  NOS)", "Price CIF Chennai (1 NOS)"); `node --check` and `py_compile` passed (Windows). Not run:
+  `bench migrate`, a real print.
+- Pending: the Draft PI / Final PI still fill EX-WORKS FTWZ / WAREHOUSE CHENNAI when both fields
+  are empty (pi.fill_price_basis), as asked on 2026-11-02.
+
+**Standard Accessories table: add / remove points on the document only.**
+
+- Summary: on a Quotation, Draft PI or Final PI that can still be changed (draft; a Draft PI
+  without its Final PI), each machine in the Standard Accessories table has an "Add an accessory"
+  box (+ Add or Enter) and each point a remove (×) button on hover. They change only that line's
+  Description on this document, so its print follows; the Item master is not changed. Machines
+  without points are listed too while the document is editable.
+- Reason: the user asked to add standard accessories on the transaction only, not in the master.
+- Files: `manav/public/js/standard_accessories.js`.
+- Testing: `node --check` passed (Windows). Not run: `bench build`; not tried in a browser.
+- Pending: a submitted Quotation / Final PI cannot be changed this way (its lines are locked).
+
+**Standard Accessories table on Quotation, Draft PI and Final PI; CIF without a tick; Ex-Works print; no New button on PI lists.**
+
+- Summary:
+  - A read-only "Standard Accessories" table under the Items table of Quotation, Draft PI and
+    Final PI (Sales Order): one row per machine line (No., code, name) with the points of its
+    description (the Item's Standard Accessories), bold points bold. HTML field
+    `custom_standard_accessories` (Custom Field on Quotation / Sales Order, own field on Draft PI),
+    drawn by the new `public/js/standard_accessories.js`; hidden when no machine has points.
+  - CIF: the CIF tick is hidden on Quotation, Draft PI and Final PI; CIF Charges, CIF Port and
+    Ex-Works From are always shown. A document is CIF when CIF Charges has an amount: the hidden
+    tick is set from it on saving (`quotation.fill_cif_defaults`, now also on Sales Order validate
+    and update after submit), so the prints are unchanged. Typing charges fills an empty Port and
+    Ex-Works From; a principal that is CIF by default writes its charges (1500 without a default)
+    on the quotation. The server no longer writes 1500 by itself.
+  - Prints: the CIF line "Prices : Ex-Works, <place>. (n NOS)" now has the machines' price after it
+    on the Modern quotation (it had none; the PI had it already), and the text is not bold (Modern,
+    PI, Classic).
+  - Draft PI and Final PI lists have no New button; they are made from the quotation (Make Draft
+    PI) and the Draft PI (Make Final PI).
+- Reason: the user asked for the Standard Accessories table on the three documents, to remove the
+  CIF tick and give its fields directly, the price in front of Ex-Works with Ex-Works not bold, and
+  no New button on the Draft PI / Final PI lists.
+- Files: `manav/public/js/standard_accessories.js` (new), `manav/hooks.py`,
+  `manav/manav/erpnext_fields.py`, `manav/manav/quotation.py`, `manav/public/js/quotation.js`,
+  `manav/public/js/sales_order_list.js`, `manav/manav/doctype/draft_pi/draft_pi.json`,
+  `draft_pi.js`, `draft_pi_list.js`, templates `manav_quotation_pi_totals.html`,
+  `manav_proforma_invoice.html`, `manav_modern_quotation_body.html`,
+  `manav_classic_quotation_body.html`.
+- Testing: `node --check` on the five JS files, `py_compile` on the three Python files, JSON load of
+  draft_pi.json and a Jinja parse of the four templates passed (Windows). Not run: `bench migrate`,
+  `bench build`, the forms and prints in a browser.
+- Pending: an existing document ticked CIF with CIF Charges 0 stops being CIF when next saved.
+  Direct links such as /app/draft-pi/new still open a new form (only the list buttons are gone).
+
+**Sidebars: "Sub-Item List" in "Item & Price Masters".**
+
+- Summary: a link "Sub-Item List" (the Quotation Sub Item Master list) at the top of the section
+  "Item & Price Masters" in the Manav, Bangalore, Chennai, Coimbatore and FTWZ sidebars (after
+  "Machine Sub-Items Tree" in the branch sidebars).
+- Reason: the user asked for the list of sub-items in that section.
+- Files: `manav/workspace_sidebar/manav.json`, `bangalore.json`, `chennai.json`,
+  `coimbatore.json`, `ftwz.json`.
+- Testing: the files were read back as JSON and the link is in place. Not run: `bench migrate` on
+  the server; not looked at in a browser.
+- Pending: none.
+
+**Machine Sub-Items page redesigned; own "Sub-Items" link in the Manav sidebar.**
+
+- Summary: the page machine-sub-items (now titled "Machine Sub-Items") shows a searchable machine
+  list grouped by Item Group, with group filter chips and totals (machines, sub-items, active). A
+  click opens that machine's sub-items as a table (Sr, code, description, type, qty, rate) with a
+  filter box and an Active switch; this replaces the tree. New server method
+  `item_tree.get_machines`; `get_tree_nodes` is kept. The Manav sidebar has a top-level
+  "Sub-Items" link after Item (moved out of "Item & Price Masters").
+- Reason: the user asked to make the sub-items page nicer and to give it its own sidebar item.
+- Files: `manav/manav/page/machine_sub_items/machine_sub_items.js` and `.json`,
+  `manav/manav/item_tree.py`, `manav/workspace_sidebar/manav.json`.
+- Testing: `node --check` on the page script and `py_compile` on item_tree.py passed (Windows). Not
+  run: `bench migrate` / `bench build` on the server, and not looked at in a browser.
+- Pending: the branch sidebars (Bangalore, Chennai, Coimbatore, FTWZ) still list the page under
+  "Item & Price Masters" as "Machine Sub-Items Tree".
+
+**Item: the item's full name is shown under the Description heading.**
+
+- Summary: new HTML custom field `custom_item_full_name` (after the hidden Brand, top of the
+  Description section in the Standard Accessories tab); the Item form shows the Item Name (else
+  the code) there in blue, above Standard Accessories, and refreshes it when Item Name changes.
+  Nothing is stored and the prints are unchanged. The section's "Description" heading is removed
+  (property setter: section_break_11 label empty).
+- Reason: the user asked for the full name of the item under Description, in another colour, and
+  for the Description heading to go.
+- Files: `manav/manav/item_fields.py`, `manav/public/js/item.js`.
+- Testing: `node --check` on item.js and `py_compile` on item_fields.py passed (Windows). Not run:
+  `bench migrate` / `bench build` on the server, and not looked at in a browser.
+- Pending: run `bench migrate` and `bench build --app manav` on the server.
+
+## 2026-11-03
+
+**Item: the Description field is labelled "Standard Accessories".**
+
+- Summary: property setter on Item.description (label), added to ITEM_PROPERTIES so every migrate
+  keeps it. Only the label on the Item form changes; quotation lines and prints are unchanged.
+- Reason: the user asked to name the field Standard Accessories.
+- Files: `manav/manav/item_fields.py`.
+- Testing: setup_item_fields run on manav.local; Item meta shows the label "Standard Accessories".
+  Not looked at in a browser.
+- Pending: none.
+
+**Machines' Standard Accessories loaded from the old "Quotation Sub Machine Mst"; bold points print bold.**
+
+- Summary: the old table (744_Quotation_Sub_Machine_Mst.xlsx, 5434 rows, 187 machines) was loaded
+  into the Item Description ("Standard Accessories" tab) of 178 machines on manav.local as a
+  bulleted list in Sub Item Sr.no. order; rows with Bold Print "Bo"/"BO" are <strong>. The
+  previous descriptions were replaced (backup: `~/item_description_backup_20261103.json` on the
+  server). Not loaded: EC-300, MDC-500, SR-100, VF-3APC, VF-3SSAPC, VF-4APC, VF-4SSAPC, VR-11B (no
+  Item with that code) and HRT310 (no text). Prints: a bold list item is marked "!" when the
+  description is read and printed bold (Modern, Modern CIF, PI, Classic, Banded / Colour).
+- Reason: the user asked to add the points from the file to Standard Accessories.
+- Files: templates `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`,
+  `manav_proforma_invoice.html`, `manav_quotation_data.html`, `manav_modern_quotation_body.html`;
+  data change on manav.local (one-off script, not in the app).
+- Testing: dry run, then applied (178 Items). An unsaved quotation with the new VF-2SSYT
+  description renders the points with "BT 40-Taper Spindle" bold and no stray "!" in Modern,
+  Classic and Banded. Not looked at in a browser.
+- Pending: existing quotation lines keep the description they were made with; only lines added
+  from now on (or re-picked items) get the new points. The 8 missing machines need Items first.
+
+**CIF prints like the old system; "Ex-Works From"; board next stage opens a Visit; bullets by default.**
+
+- Summary:
+  - CIF: new "Ex-Works From" on Quotation and Sales Order (custom_ex_works_from), Draft PI
+    (ex_works_from) and the principal ("Default Ex-Works From", Quotation Type ex_works_from),
+    shown when CIF is ticked, copied Quotation -> Draft PI -> Final PI and filled from the
+    principal. CIF Port is where the charges run to; FTWZ Chennai when the principal has none.
+    A CIF document with Ex-Works From prints "Prices : Ex-Works, <place>." (Modern: no dots, no
+    amount) and "CIF Charges upto <port> ...... <charges>" in Modern, Modern CIF, Classic,
+    Banded / Colour, Draft PI and Final PI (PI: "Prices : Ex-Works, <place>. (n NOS) ...... total").
+  - Leads Board: the next-stage button opens a new Visit of the lead with that stage and its Next
+    Visit Date filled in (saving the visit moves the lead), instead of moving the lead at once.
+  - Item: an empty Description starts as a bullet list (Quill, without marking the form changed).
+- Reason: the user's screenshot of the old CIF print beside ours; "after clicking next stage open
+  visit"; "make this (bullet) default".
+- Files: `manav/manav/erpnext_fields.py`, `quotation.py`, `pi.py`, doctypes `quotation_type`
+  (json, py), `draft_pi` (json, py, js), `public/js/quotation.js`, `public/js/item.js`,
+  `page/manav_leads_board/manav_leads_board.js`, templates `manav_quotation_pi_totals.html`,
+  `manav_quotation_data.html`, `manav_proforma_invoice.html`, `manav_modern_quotation_body.html`.
+- Testing: `bench --site manav.local migrate` rc=0; JS files pass `node --check`; 26QX000087 set
+  in memory to CIF / Ex-Works From "Oxnard, USA" / port "FTWZ Chennai" / 1500 (not saved) prints
+  "Prices : Ex-Works, Oxnard, USA." and "CIF Charges upto FTWZ Chennai ... USD 1500.00" in Modern
+  and Modern CIF, the same lines in Classic, and "CIF Charges upto FTWZ Chennai" in Banded. The
+  first run failed (a Jinja comment inside `{% set q = {...} %}`), fixed. Not tried in a browser.
+- Pending: principal "1" still has Default CIF Port "Chennai Sea Port" and no Default Ex-Works
+  From, so its new CIF quotations get those until the Quotation Type is filled in. 26QX000087's own
+  CIF Port is "Oxnard USA" (typed earlier) and its Ex-Works From is empty: it prints the CIF line
+  "CIF Charges upto Oxnard USA" and the old price line until it is corrected.
+
+**Item description as rich text; no Payment block on prints; Signature switch on the print page.**
+
+- Summary: the Item's Description is ERPNext's rich-text editor again: the numbered points panel
+  (and its help text) is removed from `item.js`; bullet lists typed in the editor still print as
+  points. The Payment / Valid till block is no longer printed by the Classic, Banded / Colour and
+  Modern layouts (so by every Manav quotation and PI format). The print page's sidebar has a
+  "Print Signature" switch under Font that saves the document's Print Signature tick
+  (custom_print_signature) and redraws the preview; shown only where the field exists.
+- Reason: the user asked to make the description RTF, to remove the Payment block from every print,
+  and for a sign / no-sign option on the print page.
+- Files: `manav/public/js/item.js`, `manav/public/js/manav_print_sidebar.js`,
+  `manav_classic_quotation_body.html`, `manav_banded_quotation_body.html`,
+  `manav_modern_quotation_body.html`.
+- Testing: both JS files pass `node --check`; on manav.local 26QX000085 in six quotation formats,
+  Draft PI 26DPI00002 and Final PI 26FPI00001 render without "Payment" / "Valid till". The
+  sidebar switch and the Item editor were not tried in a browser.
+- Pending: none known.
+
+**Leads Board: next-stage button, "Visit" instead of "DVR", simpler card.**
+
+- Summary: the card's main button shows the next stage's name and moves the lead there
+  (lead_board.next_stage; "Last stage" when there is none); "DVR(s)" reads "Visit(s)"; clicking
+  "3 Visits" opens that lead's visit list; the big stage number and the list / edit icon buttons
+  are gone (the lead no. still opens the lead); no "Open DVR (checked in)" button. Lead Stage's
+  Days description says visit instead of DVR. Possible now that the files are owned by support02
+  again.
+- Reason: the user's screenshots of the board card.
+- Files: `manav/manav/page/manav_leads_board/manav_leads_board.js`,
+  `manav/manav/doctype/manav_lead_stage/manav_lead_stage.json`.
+- Testing: `node --check` passes; `bench --site manav.local migrate` rc=0. Not looked at in a
+  browser.
+- Pending: none known.
+
+**Lead / Visit, Quotation, prints and Item changes (the user's list of 15).**
+
+- Summary:
+  - Lead: Sales Engineer (sale_engineer) is a Link to Sales Person, filled with the user's own Sales
+    Person; patch `lead_sales_engineer_link` replaced the two old text values ("Administrator", no
+    Sales Person) with the owner's Sales Person (none) and kept the text in Other Information Notes.
+    Product Type / Product hidden; the free-hand field is labelled "Product". Top-right buttons
+    "New Visit" (primary) and "Next Stage" (lead_board.next_stage: next stage by sequence, next
+    follow-up = today + its days). The quotation from a lead takes the lead's Sales Engineer.
+  - Visit (was DVR): check-in / check-out removed: no GPS on save, no Check Out button (form and
+    list), map, location checks, DIGIPIN or Set as Customer Location; those sections and Status are
+    hidden, old data kept. checkin_date is shown as "Visit Date". A "Next Stage" button sets the
+    visit's stage to the next one and saves, which moves the lead. `manav_visit_position.js`
+    deleted and dropped from hooks. Visit list indicator = stage; Visit Register shows Visit Date
+    and Stage instead of In / Out / Status / location; field texts say "visit" instead of "DVR".
+  - Quotation: Principal (Quotation Type) compulsory (not on the PI); "Magic Cust Code"
+    (custom_magic_cust_code, read only) filled from Customer.custom_customer_code when the customer
+    is chosen and on save; "Print Signature" tick (default on) on Quotation, Draft PI and Final PI;
+    Connections show a "PI" group with Draft PI and Sales Order (override_doctype_dashboards).
+  - Account Manager hidden on Quotation, Sales Order, Draft PI and Customer (values kept; the Manav
+    dashboard still uses it), removed from the Customer Dashboard and the Manav dashboard text.
+  - Prints: the signature image only when Print Signature is ticked (all Manav quotation / PI
+    formats); the Modern layout's signing block starts "For <company>" instead of "Account Manager"
+    (Classic, Banded / Colour and Sales Quotation already had "For <company>").
+  - Item: the tab "Description" is "Standard Accessories"; Sub-Items is a table (Sr, code,
+    description, type, qty, rate, Active switch) with "+ Add Sub-Item", shown on every saved item
+    (item_tree.get_sub_items / add_sub_item / set_sub_item_active). New field Quotation Sub Item
+    Master "Active" (all 6059 rows active); switched-off sub-items are not offered on quotations.
+  - Draft PI form: machine lines blue with a blue bar, sub-items indented, as on the quotation.
+- Reason: the user's list of changes for leads, visits, quotations, prints and items.
+- Files: `manav/hooks.py`, `manav/patches.txt`, `manav/patches/lead_sales_engineer_link.py` (new),
+  `manav/manav/erpnext_fields.py`, `quotation.py`, `pi.py`, `lead_board.py`, `item_tree.py`,
+  `item_fields.py`, doctypes `manav_lead` (json, py, js), `manav_visit` (json, py, js, list js),
+  `draft_pi` (json, py, js), `quotation_sub_item_master` (json, py), `quotation_head.py`,
+  `public/js/quotation.js`, `item.js`, `manav_lead_form.js`, `manav_dashboard_view.js`,
+  `public/js/manav_visit_position.js` (deleted), `page/customer_dashboard/customer_dashboard.js`,
+  reports `manav_visit_register`, `manav_visit_analysis`, print templates
+  `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`, `manav_proforma_invoice.html`,
+  `manav_quotation_data.html`, `manav_modern_quotation_body.html`.
+- Testing: all changed Python files parse; all changed JS files pass `node --check`;
+  `bench --site manav.local migrate` rc=0. On manav.local (writes rolled back): field properties as
+  above; Magic code of ZODIAC LIFE SCIENCES PVT LTD. -> MZ029; next_stage 04 RFQ -> 05 Quote
+  Followup with follow-up 2026-11-06; Modern print of 26QX000085 has the signature image with Print
+  Signature on and none with it off, "For Manav" and no "Account Manager"; VS-1 has 19 sub-items,
+  switching one off gives 18 options; the Quotation dashboard has the PI group. Nothing was tried
+  in a browser.
+- Pending: the Leads Board page (`page/manav_leads_board`, owned by Linux user support03, folder not
+  writable) still says "Make DVR" / "DVRs" and has the old "Open DVR (checked in)" button for old
+  checked-in visits; `manav_lead_stage.json`'s description still says DVR. Both need
+  `sudo chown` first. newsite.local / OH.local not migrated.
+
+**Page numbers ("Page n of m") on the quotation and PI PDFs: templates done, server PDF tool pending.**
+
+- Summary: new shared footer `manav_page_number.html` (id footer-html, visible-pdf) with
+  "Page <page> of <topage>", which Frappe's PDF footer fills on every page. Used by the Modern
+  layout (Modern, Modern CIF, Modern Quotation Head, Draft PI, Final PI; under the letter head
+  footer, PDF bottom margin 31 mm with a footer, was 26), the Classic, Banded and Colour bodies, and
+  the inline formats Manav Sales Quotation and Manav Quotation (their JSON html, modified bumped).
+- Reason: the user asked for page numbers when printing quotations and PIs.
+- Files: `manav/templates/print_formats/manav_page_number.html` (new),
+  `manav_modern_quotation_body.html`, `manav_classic_quotation_body.html`,
+  `manav_banded_quotation_body.html`,
+  `manav/manav/print_format/manav_sales_quotation/manav_sales_quotation.json`,
+  `manav/manav/print_format/manav_quotation/manav_quotation.json`.
+- Testing: migrate on manav.local rc=0; all nine formats render to PDF without error and the
+  footer reaches wkhtmltopdf (`--footer-html` file holds the "Page ... of ..." line). The page
+  numbers do NOT appear yet: the server's wkhtmltopdf is Ubuntu's 0.12.6 without patched Qt, which
+  ignores --header-html / --footer-html (so the Modern layout's letter head footer has not been
+  in server PDFs either). The patched build wkhtmltox 0.12.6.1-3 (jammy, amd64; sha256
+  4f723b26...ddba15) was downloaded to ~/ on the server; its dependencies are present on Ubuntu
+  24.04 except xfonts-75dpi (apt installs it). It was not run or installed (needs sudo).
+- Pending: install it (`sudo apt install ~/wkhtmltox_0.12.6.1-3.jammy_amd64.deb`), then re-check
+  the PDFs. Printing from the browser (Print button) has no page numbers on the Modern layout,
+  which removes the browser's own page margins.
+
+**Draft PI: "Final price with" section (Price Type, Port).**
+
+- Summary: the Draft PI's Price Type (now labelled "Final price with: Price Type") and Port moved
+  into the empty left column at the top, under Quotation No. / Final PI No., as the user marked on
+  the form. (First the same day they were put in a section after the totals; moved again at the
+  user's request.) Filling is unchanged (pi.fill_price_basis: the principal's Price Basis, else
+  EX-WORKS FTWZ / WAREHOUSE CHENNAI). The two existing Draft PIs, 26DPI00001 and 26DPI00002, had both
+  fields empty (saved before the fields existed) and were filled with those defaults (db_set, the
+  modified date kept); their print does not change, as it already used the defaults.
+- Reason: the user asked for the old program's "Final price with" Price Type / Port on the Draft PI.
+- Files: `manav/manav/doctype/draft_pi/draft_pi.json`, `manav/manav/doctype/draft_pi/draft_pi.py`
+  (change note).
+- Testing: `bench --site manav.local migrate` rc=0 (twice); the Draft PI meta has Price Type and
+  Port right after Final PI No., in the left column. Not looked at in a browser.
+- Pending: newsite.local / OH.local not migrated for this change (Manav runs on manav.local).
+
+**CIF ticked: CIF Charges 1500 by default.**
+
+- Summary: ticking CIF on a Quotation, Draft PI or Final PI (Sales Order) writes 1500 in an empty
+  CIF Charges when the principal (Quotation Type) has no Default CIF Charges (none has one now).
+  The field stays editable and a typed amount is never replaced. The same rule runs on saving the
+  Quotation and Draft PI (quotation.fill_cif_defaults, DEFAULT_CIF_CHARGES), now also without a
+  principal. A principal's Default CIF Charges, when set, still wins.
+- Reason: the user asked for 1500 to be written automatically when CIF is selected, with the
+  option to change it.
+- Files: `manav/manav/quotation.py`, `manav/public/js/quotation.js`,
+  `manav/manav/doctype/draft_pi/draft_pi.js`.
+- Testing: both JS files pass `node --check`; on manav.local fill_cif_defaults on an unsaved copy
+  of 26QX000085 (rolled back): empty -> 1500 (port Chennai Sea Port from principal 1), typed 2200
+  kept, no principal -> 1500. The forms were not tried in a browser.
+- Pending: none known.
+
+**Customer Dashboard colour bands; no lone TOTAL row on the PI prints.**
+
+- Summary: Customer Dashboard: the Overview groups have their own colour (Sales blue, Orders
+  purple, Accounts green): a coloured title label, a 4px band on top of each card and a light tint;
+  each tab has a colour dot, and when active a coloured underline, tint and filled count pill.
+  PI prints (Manav Draft PI, Manav Proforma Invoice): the TOTAL row is left out (q.no_totals) when
+  nothing is added to the price line, as it only repeated the price line's amount; with CIF
+  charges or an advance the rows down to GRAND TOTAL / BALANCE stay. The quotation formats with
+  the price line already printed no totals.
+- Reason: the user asked for colour bands on the dashboard, and marked the TOTAL row under the
+  price line as not needed in any print format.
+- Files: `manav/manav/page/customer_dashboard/customer_dashboard.js`,
+  `manav/templates/print_formats/manav_proforma_invoice.html`.
+- Testing: dashboard script passes `node --check` and the served page script contains the new
+  classes (manav.local, cache cleared); not looked at in a browser. Rendered on manav.local: Manav
+  Proforma Invoice (3 Final PIs) and Manav Draft PI 26DPI00001 have the price line and no totals
+  row; Draft PI 26DPI00002 (with an advance) still prints BALANCE; all Manav quotation formats
+  render without error.
+- Pending: Manav Banded / Colour Quotation (no price line) still print Subtotal / Grand Total;
+  left as is because it is their only total.
+
+**"Customer Dashboard" button on the Customer form.**
+
+- Summary: the Customer form has a blue "Customer Dashboard" button that opens the page
+  customer-dashboard for that customer (via route_options, read by the page's on_page_show). Shown
+  only to the Administrator, System Managers and Manav Management, as the page refuses others.
+- Reason: the user asked for the customer dashboard on the Customer form.
+- Files: `manav/public/js/customer.js` (new), `manav/hooks.py` (doctype_js).
+- Testing: on manav.local, after clearing the cache, the hooks list customer.js for Customer and
+  the form's served script contains the button; the file passes `node --check`. Not clicked in a
+  browser.
+- Pending: none known.
+
+**The user's branch beside the page title in the desk.**
+
+- Summary: every desk page shows the logged-in user's branch (User > Branch; when empty, the branch
+  of the user's Employee) as a blue pill beside the title, e.g. "Manav  [Manav Marketing -
+  Bangalore]". The branch is sent in the boot (`add_branch_to_boot`, extend_bootinfo) and drawn by
+  `public/js/manav_branch.js` (app_include_js), which wraps frappe.ui.Page.render_breadcrumbs so
+  the pill is put back after every title change. Users without a branch (the Administrator) see
+  no pill; hidden on phones.
+- Reason: the user asked for the branch name beside the "Manav" title at the top of the page.
+- Files: `manav/hooks.py`, `manav/manav/branches.py`, `manav/public/js/manav_branch.js` (new).
+- Testing: on manav.local the hooks list the new boot function and script after clearing the
+  cache; the boot function gives "Manav Marketing - Coimbatore" for shyam@manavmarketing.com and
+  nothing for the Administrator; the script is served (HTTP 200) and passes `node --check`. Not
+  checked in a browser.
+- Pending: none known.
+
+**Signatures on quotation / PI prints; lead "Masters" group out of the Manav sidebar.**
+
+- Summary: Sales Person has a "Signature" field (custom_signature, Attach Image, after Login User;
+  `erpnext_fields.py`). The print data (`manav_quotation_data.html`, `manav_modern_quotation.html`,
+  `manav_modern_quotation_cif.html`, `manav_proforma_invoice.html`) carries `q.signature` from the
+  Signed By sales person, and the Classic, Banded and Modern bodies print it in the signing space
+  (Modern: in place of the italic name); nothing changes when there is no signature. Placeholder
+  signature images (name in dark-blue "ink" with a flourish, made with Pillow) were attached to the
+  19 sales persons of the user list on manav.local. The "Masters" group (Lead Sources, Product
+  Types, Products, Lead Stages, Lead Management Settings) was removed from the site's Manav sidebar,
+  and the Masters and Settings sections from `manav/workspace_sidebar/lead_management.json`; they
+  stay on the Lead Management workspace page.
+- Reason: the user asked for a dummy signature per user on the PDF, and to remove that sidebar group.
+- Files: `manav/manav/erpnext_fields.py`, the four print data templates above,
+  `manav_classic_quotation_body.html`, `manav_banded_quotation_body.html`,
+  `manav_modern_quotation_body.html`, `manav/workspace_sidebar/lead_management.json`.
+- Testing: migrate on manav.local rc=0; quotation 26QX000085 rendered with Signed By set in memory
+  (not saved): the image is in the HTML of Classic, Banded and Modern, and the Modern PDF shows it
+  above the name. A PDF made from a script needs host_name pointing at the server (it fails with
+  HostNotFoundError on http://manav.local:8005 with or without a signature); in the browser the URL
+  comes from the request. Sidebar: the site's "Manav" sidebar went from 65 to 59 items.
+- Pending: real signatures to be uploaded (Sales Person > Signature); several lead-module files
+  were again created as Linux user support03 (read-only for support02), see
+  `find ~/frappe-bench/apps/manav -not -user support02`.
+
+**Bench updated to the latest version-16 (all sites), at the user's request.**
+
+- Summary: Frappe 16.33.1 -> 16.54.0, ERPNext 16.35.0 -> 16.53.0, HRMS 16.19.0 -> 16.53.0; other
+  apps unchanged. Hand edits inside the three core apps were saved to `~/core_edits_20261103/`
+  (diff + untracked files + HEAD) and re-applied; conflicts resolved: frappe `modules.txt` keeps
+  upstream's list plus "Evision"; ERPNext `employee.json` keeps upstream's new "select" roles plus
+  the local Administrator / System Manager rights, read_only and show_title_field_in_link;
+  desktop icons deleted locally stay deleted; frappe `ui/` dev files (package.json, yarn.lock,
+  RecipientSelect.vue, CodeEditorField.vue) take upstream (local versions only in the saved patch).
+  The git stashes "hand edits before v16 update 2026-11-03" are kept in each app.
+- newsite.local: migrate failed in Frappe's `rename_conflicting_custom_module` (it queries the new
+  `tabSidebar` before it exists) because Module Def "BNI Milestone" was still flagged custom while
+  milestone_app ships it (its 14 doctypes already belong to the app); the flag was cleared and the
+  migrate re-run.
+- Manav: the new Frappe opens /desk on an "Apps" screen; Desktop Settings -> Desktop Page is set to
+  "Desktop Icons" on manav.local so the branch icons show again. "Lead Management" had only a
+  Workspace Sidebar; a standard Workspace "Lead Management" (module Manav) was added to the app
+  (`manav/manav/workspace/lead_management/`), as Frappe 16.54 needs one for a desktop icon.
+- Reason: the user asked to update Frappe and to get the branch icons back on the desk.
+- Testing: backups of all 3 sites first (`sites/*/private/backups/20261103_100*`); `bench --site
+  <site> migrate` rc=0 on manav.local, OH.local and (after the fix) newsite.local; `bench build`
+  rc=0 for all apps except helpdesk; boot data for Administrator and govind@ lists Manav,
+  Bangalore, FTWZ, Chennai, Coimbatore, Lead Management; both web servers answer `ping`.
+- Pending: helpdesk (1.30.1) does not build against Frappe 16.54's UI ("TabList" not exported by
+  its frappe-ui) and keeps its old assets until helpdesk is updated; `bench setup requirements`
+  fails on `apps/employee_tracker` (not a git repository); supervisor-managed workers were not
+  restarted (sudo needs a password); no browser check yet.
+
+**Workspaces (Manav and the branch workspaces): better-looking dashboard.**
+
+- Summary: number cards coloured by meaning (blue counts, green money / present, orange waiting,
+  red absent, purple ordered); "Quotation Value by Month" is a filled green line, "Quotations by
+  Status" a donut, the other quotation charts in their own colours; shortcuts coloured, and
+  "Quotation Head (Old)" (cut off on its tile) is now "Old Quotations"; the tab bar is a segmented
+  pill bar with a coloured dot per tab and no visible scrollbar.
+- Reason: the user asked to make the workspace UI better (screenshot of Manav Marketing - Bangalore).
+- Files: `manav/manav/number_card/*` (12), `manav/manav/dashboard_chart/*` (6),
+  `manav/manav/workspace/{manav,bangalore,chennai,coimbatore,ftwz}/*.json`,
+  `manav/manav/workspace_tabs_block/tabs.css`.
+- Testing: see the migrate line below; not checked in a browser.
+
+**Branch on User; Hyderabad branch; user list linked to Employees (manav.local).**
+
+- Summary: new branch "Manav Marketing - Hyderabad"; User has a "Branch" field (custom_branch,
+  beside Username), created by `setup_branches` (after_migrate). The 19 users of the list got their
+  branch. 10 existing Employees were linked to their user (user_id) and branch: Naveen Kumar S,
+  Somashekar M, Suresh Kumar K, Mohanraj K, Raghu P Ambore, Vishwanath M, Manoj S, Kolakoti Navin,
+  Sivakumar P, Shyam Shankar T.
+- Reason: the user asked for the branch on users and for the user list in Employee too.
+- Files: `manav/manav/branches.py`; data via one-off scripts over SSH (not kept).
+- Testing: `py_compile` passed; `bench execute ...setup_branches` ran; every user / employee
+  update printed OK.
+- Pending: no Employee exists for Govind, MHM Jambunath, B. Vijay Bhaskar Reddy, Krishna Mohan,
+  L. Karthikeyan, Sharan Kumar, G. Jayaprakash, Anbu, L.R.K Reddy; creating them needs gender, date
+  of birth and date of joining (mandatory), which the list does not give.
+
+**Customer Dashboard: "Quotations & PIs" tab as deals (Quotation -> Draft PI -> Final PI).**
+
+- Summary: the three separate tables are replaced by one row per deal with three stage cards
+  (number, date, amount, status; Delivered / Billed bars on a submitted Final PI; dashed "Not yet"
+  when a stage is not reached), linked through the quotation's Draft PI No. / Final PI No., the Draft
+  PI's quotation / final_pi and the Sales Order's custom_quotation / custom_draft_pi; Draft / Final
+  PIs without a quotation get their own row. Above: count and value per stage with "Open list".
+- Reason: the user found the tab "still not good" (screenshot: wide, unaligned tables, empty link
+  columns).
+- Files: `manav/manav/page/customer_dashboard/customer_dashboard.js`.
+- Testing: `node --check` passed; `bench build --app manav` and `clear-cache` on manav.local over
+  SSH completed. Not checked in a browser.
+
+**Login users for the sales team (data only, manav.local).**
+
+- Summary: from the user's list "User List for frappe.pdf", 17 users were created (Sales User role,
+  no welcome email; passwords to be set by the user) and the 2 existing ones (govind@, soma@) kept as
+  they were. Each of the 19 is linked to their existing Sales Person through "Login User"
+  (custom_user), e.g. manavblr@mmpltd.in -> NAVEEN KUMAR .S, manavchennai@mmpltd.in -> SURESH KUMAR
+  .K, manavcbe@mmpltd.in -> MOHAN RAJ.K, krishna@ -> KRISHNA MOHAN (matches confirmed by the user).
+  Signed By still lists all Sales Persons (the user's choice).
+- Reason: the user asked for the user list to be made and the people to be in the Signed By dropdown.
+- Files: none in the app (one-off script run over SSH, not kept).
+- Testing: script output showed every user created/kept and every Sales Person linked, no errors.
+- Pending: passwords for the new users; branches (incl. Hyderabad, which is not a Manav Branch) are
+  not stored on the users.
+
+**Item form: points panel without title box; Details and Description tabs coloured.**
+
+- Summary: the points panel has no inner "Description" label and no title box; a title already in a
+  description is shown as point 1 and saved as a point on the next change (so it then prints as a
+  "*" point). The Details tab is blue and the Description tab green (CSS in item.js, Item form only).
+- Reason: user request (screenshot).
+- Files: `manav/public/js/item.js`.
+- Testing: `node --check` passed; `bench build --app manav` and `clear-cache` on manav.local over
+  SSH: both completed. Not checked in a browser.
+
+**Item: description shown point-wise on the form, with "Add point".**
+
+- Summary: the "Add points" dialog under Description is replaced by a "Description points" panel:
+  an optional title and the points as a numbered list, each editable in place with a remove (×)
+  button, plus "+ Add point"; Enter in a point adds the next one. Every change rewrites the
+  description as before (title paragraph + bulleted list, printed as "*" points). Editing the
+  description in the editor redraws the panel. Without write permission the points are listed
+  read-only.
+- Reason: the user asked to see the description point-wise and to have an option to add points.
+- Files: `manav/public/js/item.js`.
+- Testing: `node --check` on item.js passed. Not tested in a browser; needs `bench build --app manav`
+  on the Linux bench server (not run from Windows).
+- Pending: check on the live Item form (e.g. ST-10Y) after the build.
+- Follow-up (same day): the Description rich-text editor box is hidden on the Item form (CSS on the
+  field wrapper only; the field and its data are unchanged); the points panel is labelled
+  "Description" and "+ Add point" is a primary (coloured) button. Reason: user asked to remove the
+  big box and colour the add button. Testing: `node --check` passed; not tested in a browser.
+
+**Item form: shorter Details tab, Description in its own tab, Brand hidden.**
+
+- Summary: ERPNext's "Item Attributes" section and the over-delivery / over-billing allowances
+  section (labelled "Allowances") are collapsible and start closed. A new tab "Description"
+  (Custom Field `custom_description_tab`) holds the Description section; Brand is hidden. "Old
+  System Data" and "Sub-Items" are moved before the new tab so they stay on Details. Done with a
+  Custom Field and property setters in `setup_item_fields` (after_migrate); ERPNext files untouched.
+- Reason: user asked to collapse those sections, put the description in a tab and remove Brand.
+- Files: `manav/manav/item_fields.py`.
+- Testing: `python -m py_compile` passed. `bench --site manav.local migrate` run over SSH:
+  completed (after_migrate hooks ran). Checked afterwards (Item meta, read-only): no `field_order`
+  property setter on Item; Item Attributes and Allowances collapsible; Old System Data and Sub-Items
+  on Details; tab Description holds the Description section with Brand hidden; Accounting follows.
+  `bench build --app manav` over SSH failed: the non-interactive shell has Node 18 and Frappe v16
+  needs Node >= 24 (not needed for item.js, which `doctype_js` serves from the file).
+  Re-run with nvm's Node 24 on the PATH (`~/.nvm/versions/node/v24.21.0/bin`, which a
+  non-interactive SSH shell does not load): build completed.
+- Pending: no browser check yet.
+
+## 2026-11-02
+
+**Migrate run on manav.local (at the user's request).**
+
+- `bench --site manav.local migrate` over SSH: completed (after_migrate hooks ran).
+- Checked afterwards (database, read-only): Specifications hidden on Item and Quotation Item; no
+  "Redesign" print formats left (patch `remove_redesign_print_formats` logged); default print formats
+  Quotation = Manav Classic Quotation, Sales Order = Manav Proforma Invoice, Draft PI = Manav Draft PI;
+  page_js hook for the print page active.
+- Checked in a browser on the live site (as e2e.admin, nothing changed): Item ST-10Y shows "Add
+  points" and no Specifications or its buttons; the Print page of 26QX000085 opens Manav Classic
+  Quotation with the sidebar sections Format and Print Format Type (9 format cards); no JavaScript
+  errors.
+
+**Item: Specifications hidden; "Add points" for the description; prints read the points.**
+
+- Reason: the user asked to remove Specifications from the Item form and to give a point-wise way to
+  enter the description.
+- Changes:
+  - `item_fields.py`: Item "Specifications" (`custom_specifications`) `hidden: 1`; `erpnext_fields.py`:
+    the same field on Quotation Item hidden. The values stay in the database.
+  - `public/js/item.js`: the Specifications buttons (Format / From screenshot) only while that field
+    is shown; "Add points" button under Description: a dialog with Title and Points (one per line,
+    a leading * or - is dropped), filled from the current description ("Title; a, b, c", several
+    lines, or an existing list); it writes `<p>Title</p><ul><li>point</li>...</ul>`.
+  - Print templates: macro `describe` (`manav_modern_quotation.html`, `manav_modern_quotation_cif.html`,
+    `manav_proforma_invoice.html`) reads such a list (title = text before it, a point per item);
+    `manav_quotation_data.html` (Classic, Banded, Colour) takes a bullet per list item and no longer
+    falls back to the key Specifications.
+- Testing: `node --check` of `item.js`, `py_compile` of both field files. On the server (read-only,
+  description changed in memory only): 26QX000085's ST-10Y with title + 3 points prints the 3 points
+  and the title in Modern, CIF and Classic, no specifications. On the live site (edited item.js
+  served by Playwright, item ST-10Y, not saved): "Add points" pre-filled title "CNC Lathe w/Y Axis"
+  and point "9" x 14" (229 x 356 mm) max capacity"; OK wrote the title and list; no JavaScript errors.
+- Not run: hiding the fields (after_migrate step) - needs `bench --site manav.local migrate`, then a
+  hard reload of the Item form.
+- Pending: existing items keep their old descriptions until edited with "Add points" (a description
+  "Title; a, b, c" already prints as points). Quotation lines take the description when the item is
+  chosen, so quotations made before an item is edited keep the old text.
+
+**Quotation / Final PI: options (sub-items) no longer offered in a machine line's Item Code search.**
+
+- Reason: the user asked why ACF (an option / sub-item) is in the Item Code list when no spares or
+  sub-items were asked for.
+- Cause: `set_item_query` (public/js/quotation.js, 2026-10-19) let the principal's Item Group and the
+  "Options" group into every line. ACF, 10K-40T-GBX, PFDM, 18K-HSK-A63 are in "Options".
+- Change: `public/js/quotation.js` `set_item_query`: a line without "Sub-Item of" offers only the
+  principal's Item Group (without a principal: anything but Options); a line with "Sub-Item of"
+  still offers the principal's group and Options. The "+" sub-items dialog and "Spares for Machine"
+  are unchanged. (The file is also the Sales Order / Final PI's script, so the same applies there.)
+- Testing: `node --check`; on the live site, new Quotation with principal 1 (Machines), the edited
+  file put in place of the served form script by Playwright: machine line filter "Machines", search
+  "ACF" -> nothing, "VF-10" -> VF-10/40, VF-10/50; sub-item line (Sub-Item of VF-10/40) filter
+  Machines + Options, search "ACF" -> ACF; no JavaScript errors.
+- Pending: 17 items of the "Machines" group are also registered as sub-items in Quotation Sub Item
+  Master (e.g. HRT450); by group they are machines, so they are still offered on machine lines. The
+  form script reaches browsers after `bench --site manav.local clear-cache` and a hard reload.
+
+**Print page sidebar: Page, "<Doctype> options" and "Set as default" removed; price / CIF lines bold.**
+
+- Reason: the user marked the sidebar's Page / Quotation options / Set as default part "remove this
+  part", and the quotation's Price and CIF Charges lines "make this bold".
+- Changes:
+  - `public/js/manav_print_sidebar.js`: no Page section (paper size, orientation), no "<Doctype>
+    options" (Frappe's print settings section is hidden; their defaults still apply), no "Set as
+    default" button; the `add_settings_to_sidebar` wrapper is gone. Format, Print Format Type cards and
+    Font stay.
+  - `manav_modern_quotation_body.html`: the price line and the lines under it 10.5pt, weight 800, black;
+    amounts 900. The PI prints use the same lines and are bold the same way.
+- Testing: `node --check`; on the live print page of 26QX000085 (file appended to the page script by
+  Playwright): sections Format and Print Format Type, controls print_format / letterhead / language /
+  font, no default button, no JavaScript errors. Read-only render of 26QX000085 (CIF) checked on a
+  screenshot.
+- Not run: the hook-served file on the site (needs `bench --site manav.local clear-cache` or a migrate).
+
+**Manav Modern Quotation: no specifications, the description as "*" points (as on the old print).**
+
+- Reason: the user said: in the quotation no specification, only the description, like the old
+  print's photo.
+- Changes:
+  - `manav_modern_quotation.html`: `no_specs` and `no_page_per_machine` (no "Equipment Specification"
+    box, machines one after another); each machine's and option's description split into points
+    (macro `describe`, copied from `manav_modern_quotation_cif.html`, where the same macro already
+    lives, as in `manav_proforma_invoice.html`); `bullet: "*"`. Specifications are no longer read.
+  - `manav_modern_quotation_cif.html`: `bullet: "*"` as well.
+  - `manav_modern_quotation_body.html`: optional `q.bullet` (default the round bullet, so the PI prints
+    are unchanged).
+- Testing: read-only render on the server: 26QX000080 (Modern) shows no specification box, VF-1 and
+  VF-10/40 with their description as two columns of "*" points beside the picture, HIL's point under
+  it (screenshot checked); 26QX000085, 26FPI00001, 26DPI00002 render.
+- Pending: the picture beside the points is kept (asked for on 2026-10-28); the old print had none.
+
+**Quotation prints (Modern, CIF): no total line; currency code with the prices.**
+
+- Reason: the user marked the Modern/CIF quotation print: "don't add total line", and write INR or USD
+  with the price.
+- Changes:
+  - `manav_quotation_pi_totals.html`: `q.no_totals` (no TOTAL / GRAND TOTAL row); CIF charges and any
+    taxes as dotted lines under the price line (`q.charge_lines`, replacing `q.cif_line` of earlier
+    today); the amounts in those lines and the column heads use the currency code (USD / INR) instead
+    of "US$" / "Rs." (`q.currency_code`).
+  - `manav_modern_quotation_body.html`: `q.charge_lines` list, optional `q.no_totals` (payment info
+    stays), optional `q.currency_code` in the heads ("Price (USD)", "Total (USD)"). The PI prints do not
+    set these and are unchanged.
+- Testing: read-only render on the server: 26QX000085 (CIF) shows "Price ... USD 187000.00", "CIF
+  Charges - Chennai Sea Port ... USD 1500.00", heads "PRICE (USD)" / "TOTAL (USD)", no total row
+  (screenshot checked); 26QX000080, 26FPI00001, 26DPI00002 render, the PIs still with their TOTAL.
+- Not run: on the live site's Print view (needs the files there; the site serves the app's files, so
+  a reload of the print should show it).
+
+**Quotation print like the old one: Manav Classic Quotation matches the old print and is the default; options are never added to the price or total.**
+
+- Reason: the user showed the old entry screen (machine at its own rate, CIF as an "Essential" sub-item)
+  and the old print, and asked for the print to match "whole format, calculation and all"; asked,
+  they chose the old calculation (price = machine only, options listed with own prices but not added,
+  no Total) and Classic as the default; then "in quotation don't add the sub-item's price in the
+  total". This replaces the "options added in" choice made earlier the same day (entry below).
+- Changes:
+  - `manav_classic_quotation_body.html`: title "Quotation"; plain bordered heads; per machine
+    "Prices : <price basis>  US$ <machine's own amount>" (plain digits), under the last machine
+    "CIF Charges - <port> . . . . US$ <amount>" and other charges the same way; then "Options" in the
+    same four columns (1, 2, 3 | code | description | price). No Total row, no amount in words.
+  - `manav_quotation_data.html`: new keys `price_digits`, `cif_line` / `cif_digits`, `tax_lines` (the
+    keys Banded and Colour use are unchanged).
+  - `manav_quotation_pi_totals.html` (Modern, CIF): price line = the machines' own amounts; total =
+    machines + taxes + CIF charges; options keep their own prices on their lines but are not added.
+  - `erpnext_fields.py`: `DEFAULT_QUOTATION_PRINT_FORMATS` starts with Manav Classic Quotation (set as
+    the Quotation's default print format by the after_migrate step).
+- Testing: on the server (read-only render with the real documents): Classic for 26QX000085 shows
+  "Price : US$ 187000.00", "CIF Charges - Chennai Sea Port ... US$ 1500.00" and Options ACF 3400.00,
+  10K-40T-GBX 10000.00, PFDM 0.00, HRT450 25000.00, no total (screenshot checked by eye); 26QX000080
+  renders. Modern / CIF: 26QX000085 TOTAL (CIF) 1,88,500 (= 187,000 + 1,500); 26QX000080 TOTAL 0
+  (both machines are entered at 0 there); PI prints unchanged.
+- Not run: the default print format change (after_migrate step, next migrate); PDF of Classic.
+- Pending: the Quotation's own Grand Total (ERPNext, used by the dashboards' "Quoted value" and taken
+  over to the Draft PI) still adds the options; only the prints leave them out. Quotation Types still
+  have no Price Basis, so the line says "Price :" until one is entered.
+
+**Quotation print: each line priced, CIF charges as a line under the price (as on the old print).**
+
+- Reason: the user showed the old quotation print ("Prices : Ex-Works, Oxnard, USA ... US$ 105100.00",
+  "CIF Charges - Chennai Sea Port ...... US$ 5500.00", options with their own prices) and asked for
+  the calculation to work the same in the quotation; asked, they chose to keep the options added into
+  the price, for both Manav Modern Quotation and Manav Modern Quotation CIF.
+- Changes:
+  - `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`: the machine row shows the
+    machine's own rate / amount and each option row its own rate / amount (since 2026-10-28 the
+    machine row showed the machine plus its options and the options had no price).
+  - `manav_quotation_pi_totals.html`: CIF charges go to `q.cif_line` / `q.cif_amount` instead of a
+    totals row; the totals are one row TOTAL (CIF) = net total + CIF charges (with taxes: TOTAL, taxes,
+    GRAND TOTAL (CIF)).
+  - `manav_modern_quotation_body.html`: optional second dotted line under the price line for
+    `q.cif_line` (the PI prints do not give it and are unchanged).
+- Testing: on the server (read-only render with the real documents): 26QX000085 (CIF) prints VF-10/40
+  187,000 + ACF 3,400 + 10K-40T-GBX 10,000 + PFDM 0 + HRT450 25,000 = "Price ... US$ 225400.00",
+  "CIF Charges - Chennai Sea Port ... US$ 1500.00", "TOTAL (CIF): $ 2,26,900.00" (checked on a
+  screenshot); 26QX000080, 26FPI00001 and 26DPI00002 render without errors.
+- Pending: no Quotation Type has a Price Basis, so the line says the default "EX-WORKS FTWZ WAREHOUSE
+  CHENNAI"; for the old wording, enter e.g. "Ex-Works, Oxnard, USA." in the principal's Quotation Type
+  (Price Basis). Takes effect on the site after `bench --site manav.local migrate` (the template files
+  are read by the print formats synced there).
+
+**Customer Dashboard: new look in the frappe-ui style.**
+
+- Reason: the user asked to make the dashboard prettier ("/frappe-ui").
+- Changes (`page/customer_dashboard/customer_dashboard.js` only; same data, same tabs and lists):
+  - Styled with the desk's frappe-ui colour tokens (`--ink-gray-*`, `--surface-*`, `--outline-*`), so
+    light and dark themes both work. It stays a desk page: the app has no Vue / frappe-ui build, and
+    adding one would need a server build.
+  - Header: round avatar, details line (id · group · territory · type), contact chips (mail / phone
+    links, Haas Cust ID, Account Manager).
+  - Underline tabs with count pills.
+  - Key figures as number cards in three groups: Sales (with a conversion bar), Orders, Accounts
+    (Outstanding red / Received green when not zero).
+  - Chart card "Quoted vs ordered": light / strong blue, shortened Y-axis numbers (were cut off as
+    "0000000").
+  - Lists: cards with count pill and "Open list →", quiet headers, 40px rows, tinted status badges
+    (red / amber / blue / green), right-aligned tabular figures; empty state when no customer is
+    chosen.
+- Testing: `node --check`. On the live site as e2e.admin (Customer "Z AXIS"), the page loaded with
+  this file put in place of the served page script by Playwright: overview, Quotations & PIs tab and
+  dark theme screenshotted and checked by eye; no JavaScript errors. The Accounts group and Invoices
+  tab were not seen (the test user has no accounts role).
+- Not run: the file served by the site itself (it is read from the app; a `bench --site manav.local
+  clear-cache` or the next migrate brings it).
+
+**Print page: left sidebar like the design (Format, Print Format Type, Font, Page, options, set default).**
+
+- Reason: the user pointed to sketch.netchamp.dev/u/iamejaaz/print-page-redesign and said the print
+  format is not to change, only that left sidebar is wanted; then asked for the print format types
+  in place of the style cards.
+- Changes:
+  - New `public/js/manav_print_sidebar.js`, loaded on Frappe's print page by `hooks.py`
+    `page_js = {"print": ...}`. It extends `frappe.ui.form.PrintView` (Frappe 16.33.1; each wrapper
+    calls Frappe's method, and nothing runs if a method is missing):
+    - Format: Print Format, Letter Head, Language (letter head moved above language);
+    - Print Format Type: a card per print format of the doctype (Frappe's own list); a click selects
+      it, the same as the Print Format field;
+    - Font; Page: Paper size (A4, A5, Letter, Legal) and Portrait / Landscape. They change the preview
+      (font, page width, `@page` size); when one differs from the default, Print prints the preview
+      itself, else Frappe's Print runs as before. PDF still uses Print Settings (noted in the sidebar).
+      Remembered per browser (localStorage);
+    - "<Doctype> options": Frappe's print settings of the doctype, drawn as switches;
+    - "Set as default for <Doctype>": Frappe's `print_format.make_default`; shown only to users who may
+      write Print Format.
+- Testing: `node --check` of the file; `py_compile` of `hooks.py`. On the live site, as e2e.admin and
+  e2e.sales, the print page loaded with the file appended to the page script by Playwright (what the
+  page_js hook does, as the hook needs a cache clear first): sections and cards drawn for Quotation
+  26QX000085 and Sales Order 26FPI00001, a card click switched the format (Manav Classic Quotation),
+  Landscape / Inter changed the preview's CSS and width, no JavaScript errors, "Set as default" shown
+  to the admin only. Checked by eye on screenshots.
+- Not run: the hook itself on the site (needs `bench --site manav.local migrate` or `clear-cache`);
+  printing on paper and the browser print dialog.
+
+**Quotation print: the PI's price line and totals. ("Redesign" print formats added and taken back.)**
+
+- Reason: the user asked for the quotation to print like the PI ("in quotation also i want pi format
+  print"), choosing the price line + totals only (options stay without prices), for the Modern and
+  CIF formats.
+- Changes:
+  - The HTML of **Manav Modern Quotation** and **Manav Modern Quotation CIF** moved from their JSON
+    into `templates/print_formats/manav_modern_quotation.html` / `manav_modern_quotation_cif.html`
+    (the JSONs only include them); the values printed are unchanged except the totals below.
+  - New `templates/print_formats/manav_quotation_pi_totals.html`, included by both: the PI's line
+    "Price <Quotation Type price basis, else EX-WORKS FTWZ WAREHOUSE CHENNAI> (n NOS) ...... US$ <net
+    total>" after the lines; totals as on the PI: TOTAL alone, or TOTAL / rows to add / GRAND TOTAL
+    (" (CIF)" for CIF). No "Subtotal" and no "Tax / Duties: As Applicable" row. The Modern format still
+    prints tax rows that have an amount (so the printed total is the quotation's); the CIF format
+    still prints none.
+  - The same day, a "redesign" style of the shared layout and three print formats (Manav Quotation
+    Redesign, Manav PI Redesign, Manav Draft PI Redesign) were added and made the defaults, and a
+    migrate put them on manav.local. The user then said the print format is not to change, so all of
+    it was taken back: the style, the formats' files and the default changes (`erpnext_fields.py`,
+    `draft_pi.json` back to Manav Draft PI, its `modified` moved on so migrate reloads it). New patch
+    `manav.patches.remove_redesign_print_formats` deletes the three records on the next migrate;
+    `erpnext_fields.setup_erpnext_fields` sets the Quotation / Sales Order defaults back to Manav
+    Modern Quotation / Manav Proforma Invoice.
+- Testing: on the server (read-only, `frappe.render_template` with 26QX000085 CIF, 26QX000080,
+  26FPI00001, 26DPI00002), after the take-back: all rendered without errors, each with the price line
+  and no "Tax / Duties" row. The live print page showed the price line and PI totals (the migrate
+  above had run). `py_compile` of `erpnext_fields.py` and the patch.
+- Not run: the patch and the reset of the defaults (they run on the next migrate).
+- Pending:
+  - Run `bench --site manav.local migrate`. Then check that the Redesign formats are gone from the
+    Print view and that Quotation / PI / Draft PI open with Manav Modern Quotation / Manav Proforma
+    Invoice / Manav Draft PI.
+  - Found while checking, not caused by this change: the server's wkhtmltopdf 0.12.6 is built with
+    unpatched Qt and ignores `--header-html`, so "Get PDF" of all the Manav modern / PI formats
+    prints **no letter head and no customer box** (checked on the live CIF format PDF of 26QX000085).
+    Fix on the server: install wkhtmltopdf 0.12.6.1 with patched Qt, or set the formats' PDF
+    Generator to Chrome.
+  - A CIF quotation's price line says the price basis (EX-WORKS ... by default), as on the PI; the CIF
+    charges follow in the totals. Quotation has no Price Type / Port fields of its own.
+
+**E2E: Firefox and WebKit results; WebKit time limit raised.**
+
+- Firefox + WebKit run (2026-11-02, 56 min, writes on): 122 passed, 36 failed. Firefox: only the known
+  app findings (landing page, workspaces' Salary Slip card, Sales User reports, Lead Dashboard
+  `removeChild` error). WebKit: the same, plus 7 form tests in `03-doctypes` that ran out of their
+  90 s ("Target page ... closed") while the slow desk loaded; WebKit's Lead Dashboard error reads
+  "The object can not be found here." (the same `removeChild` bug). The lead flow, with the GPS
+  check-in, passed in both (Firefox saved the position; WebKit the http case without one).
+- Change: `e2e/playwright.config.ts`: the webkit project's test timeout is 180 s.
+- Not run: WebKit again with the longer limit.
+
+**Playwright end-to-end tests for the whole Manav site (`e2e/`).**
+
+- Reason: the user asked for Playwright test cases covering the whole Manav Frappe site.
+- Changes (new folder `e2e/`, its own `package.json`, so `bench setup requirements` does not install
+  it; nothing in the app itself changed):
+  - `playwright.config.ts`, `.env.example`, `.gitignore` (`.env` and `.auth/` are not committed),
+    `README.md`.
+  - `tests/helpers.ts` (users, a `problems` fixture failing a test on uncaught JS errors or HTTP
+    errors from `/api/`, desk / API helpers); `tests/auth.setup.ts` (login via `/login`, saved sessions).
+  - Specs: `01-public` (login page, Request access, `/manav-signup` checks, guests refused, sign-up
+    request), `02-navigation` (landing page, desk icons, non-admin limited to Manav, the five
+    workspaces), `03-doctypes` (list + new form of every Manav doctype and settings, ERPNext doctypes
+    with Manav fields, Sales User permissions), `04-pages-reports` (5 desk pages, 6 script reports, as
+    admin and Sales User; Leads Board tabs), `05-print-formats` (11 formats as HTML and PDF),
+    `06-api` (read-only whitelisted methods and refusals), `07-lead-flow` (masters through their
+    forms, mandatory check, lead -> Leads Board -> visit check-in -> check-out, Sales User cannot
+    delete).
+  - Writing tests run only with `E2E_ALLOW_WRITES=1`; their records are named `E2E-<run id>` and
+    deleted by the admin afterwards.
+  - On `manav.local`, two test users were created over SSH: `e2e.admin@manav.test` (System Manager,
+    Sales Manager, Sales User) and `e2e.sales@manav.test` (Sales User). Their random passwords are
+    only in the git-ignored `e2e/.env` on the share.
+- Testing: run from Windows (Node 24, Playwright 1.64.1, Chromium) against
+  http://192.168.1.30:8006 with writes on. Full run 2: 98 passed, 17 failed (23.1 min). After fixing
+  3 test bugs (sign-up cleanup, Leads Board default tab, GPS over http), the affected tests were
+  re-run and passed (5 passed). The remaining failures are app findings, listed below. Test records
+  checked on the server afterwards: none left (one leftover from an earlier run, MSR-12593, deleted).
+- Pending (findings from the tests; the app was not changed):
+  - Sales Users cannot open any of the 6 Manav reports ("You don't have permission to get a report
+    on: Manav Lead"). Their Manav Lead / Manav Visit permission is "If Owner", and Frappe's
+    `has_permission(doctype, "report")` without a document is then False.
+  - After login, users land on `/desk` (desk home), not on the Manav Dashboard (`/desk/manav-dashboard`)
+    the 2026-10-28 hooks.py change intends.
+  - The Manav and branch workspaces show the "Draft Salary Slips" number card. A System Manager
+    without an HR role gets a "Permission Error: Insufficient Permission for Salary Slip" dialog.
+    The Sales User test did not hit it.
+  - `manav-lead-dashboard` sometimes throws "Failed to execute 'removeChild' on 'Node'" (run 2, both
+    users; not seen in run 1).
+  - Visit check-in with a GPS position is only checked when the site is served over https; over http
+    the test checks that the visit is saved without a position.
+
+**PI print: one price line for the whole bill (before TOTAL), not one under each machine.**
+
+- Reason: the user's print of 26DPI00002 showed "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS) ...
+  US$ 0.00" under every machine; the user said it is one line for the whole bill.
+- Changes:
+  - `manav_proforma_invoice.html`: `q.price_line` / `q.price_amount` once per PI: "Price <Price Type>
+    <Port> (<machines' qty added up> <first machine's UOM>)" and the PI's total before advance and
+    CIF charges (`net_total`), plain digits.
+  - `manav_modern_quotation_body.html`: the row under each machine removed; the line is printed after
+    the last line table, before the totals (new optional key `price_line` / `price_amount` of `q`).
+  - Price Type help text (Draft PI, Sales Order custom field) says "printed once before the total".
+- Testing: local: both templates parsed with jinja2; the PI's price-line block rendered with two
+  machines (1 NOS each, net_total 105100) -> "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (2 NOS)" /
+  "US$ 105100.00", and with no machines -> no line. `bench --site manav.local migrate` over SSH:
+  completed. No PDF rendered on the server; not checked in a browser.
+- Pending: reprint 26DPI00002 and a Final PI to check the line's place and look.
+
+**Draft PI / Final PI: price basis as "Price Type" + "Port" (defaults EX-WORKS FTWZ / WAREHOUSE CHENNAI), editable.**
+
+- Reason: the user asked for "EX-WORKS FTWZ WAREHOUSE CHENNAI" as the default with an option to set
+  it, and showed the old program, where it is entered under "Final price with" as Price Type and Port.
+- Changes:
+  - New fields **Price Type** (`custom_price_type`) and **Port** (`custom_price_port`) on Draft PI
+    (`draft_pi.json`) and Sales Order (custom fields, `erpnext_fields.py`, allow on submit); copied
+    Draft PI -> Final PI (`pi.FINAL_PI_HEADER_FIELDS`).
+  - `pi.fill_price_basis`: fills both only when both are empty: an older PI's Price Basis (the old
+    default text splits into the two defaults, any other text goes to Price Type), else the
+    principal's Quotation Type Price Basis as Price Type, else `DEFAULT_PRICE_TYPE` /
+    `DEFAULT_PRICE_PORT`. Also called by `make_draft_pi`, so a new Draft PI opens with them filled.
+  - Price Basis (`custom_price_basis`, 2026-10-31) is hidden / read only ("Price Basis (old)"), kept
+    for PIs not saved since.
+  - `manav_proforma_invoice.html`: the price line prints "Price <Price Type> <Port> (qty UOM) ......
+    US$ <amount>"; falls back to the old Price Basis, the principal's, then the default text. The
+    amount is unchanged (the machine line's amount).
+- Testing: local only (Windows): `py_compile` of `pi.py`, `erpnext_fields.py`, `draft_pi.py`; JSON of
+  `draft_pi.json` re-parsed; `fill_price_basis` run with a stubbed `frappe` for new / user-typed / old
+  default / old other / principal cases, and the template's price-basis expression rendered with
+  jinja2 for type+port, type only, old basis and empty: all gave the expected text.
+  `bench --site manav.local migrate` run over SSH: completed (after_migrate hooks ran, no errors
+  shown).
+- Not run: no database check that the fields exist, no PDF rendered, not checked in a browser.
+- Pending: open a Draft PI / Final PI (hard-reload), check Price Type and Port, and print it.
+  `newsite.local` not migrated.
+
+## 2026-10-31
+
+**Draft PI / Final PI print: "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS) ...... US$ 105100.00" under each machine.**
+
+- Reason: the user asked for this line of the old print on both the Draft PI and the Final PI.
+- Changes:
+  - New field **Price Basis** (`custom_price_basis`): Draft PI (`draft_pi.json`) and Sales Order
+    (custom field, `erpnext_fields.py`). Filled when empty by `pi.fill_price_basis` (Draft PI
+    validate, Sales Order validate hook) with the principal's Quotation Type Price Basis, else
+    `pi.DEFAULT_PRICE_BASIS` = "EX-WORKS FTWZ WAREHOUSE CHENNAI"; editable; copied Draft PI -> Final
+    PI (`FINAL_PI_HEADER_FIELDS`).
+  - `manav_proforma_invoice.html`: each machine gets `price_line` ("Price <basis> (<qty> <UOM>)")
+    and `price_amount` ("US$"/"Rs." + the machine line's amount, plain digits as on the old print);
+    PIs saved before the field existed fall back to the principal's basis / the default.
+  - `manav_modern_quotation_body.html`: a bold row under a machine's points with a dotted leader,
+    printed only when the PI passes `price_line` (quotation prints unchanged).
+- Testing: `py_compile` on the server; `bench --site manav.local migrate` (both fields created);
+  PDFs of 26FPI00001 and 26DPI00002 rendered and checked as images (line under each machine, dots,
+  amount right). End-to-end suite on manav.local (rolled back): 78/78 passed, including "quotation
+  prints have no price line" and Price Basis filled / copied.
+- Pending: none of the Quotation Types has a Price Basis yet, so every PI prints the default; set
+  one per principal (or edit Price Basis on the PI) where another basis applies (e.g. CIF).
+
+**Final PI with a Draft PI quantity above the quotation's can be submitted; new leads open in USD.**
+
+- Reason: an end-to-end test run on manav.local found two problems: (1) a quantity raised on the
+  Draft PI stopped its Final PI from being submitted (ERPNext `OverAllowanceError`, Stock Settings
+  over-delivery allowance 0%); (2) new leads got INR instead of the lead's USD default, because
+  Frappe fills a Link field from the site's global default of the same name (`currency` = INR)
+  before the field's own default.
+- Changes:
+  - `pi.py` `allow_draft_pi_quantities` + `hooks.py` (Sales Order `before_submit`): for a Final PI
+    made from a Draft PI, ERPNext's quantity check against the quotation is switched off with its
+    own `validate_qty: False` option on the Quotation Item status updater. Ordered Qty is still
+    updated and the quotation still becomes "Ordered". Other Sales Orders and the site-wide
+    allowance are unchanged.
+  - `manav_lead.js` `onload`: a new lead whose currency is the global default is set to the
+    Currency field's default (USD). A currency picked by the user, or brought by a duplicate, is kept.
+- Testing: `py_compile` (pi.py, hooks.py) and `node --check` (manav_lead.js) on the server; cache
+  cleared. End-to-end test script (Quotation, 6 quotation prints + Draft PI + Proforma Invoice
+  HTML/PDF, Draft PI, Final PI incl. qty above the quotation, Lead, Visit, dashboard API) run on
+  manav.local in a rolled-back transaction: 68/68 passed, 0 test records left. The lead form's USD
+  default (JavaScript) was not tested in a browser.
+- Pending: open a new Manav Lead in the browser to confirm USD (hard-reload first). A Sales Order
+  without a Draft PI keeps ERPNext's check (by design; not re-tested).
+
+**Sidebars: "Draft PI" and "Final PI" links under Quotation.**
+
+- Reason: the user asked for Draft PI and Final PI in the sidebar next to Quotation.
+- Changes: `workspace_sidebar/manav.json`, `bangalore.json`, `chennai.json`, `coimbatore.json`,
+  `ftwz.json`: two top-level links after Quotation: "Draft PI" (doctype Draft PI, icon
+  `notepad-text-dashed`) and "Final PI" (doctype Sales Order, icon `file-check`). `modified` set to
+  2026-10-31 so `bench migrate` reloads the sidebars from the files.
+- Testing: JSON files re-parsed by the edit script; icon names checked in Frappe's lucide sprite.
+  `bench --site manav.local migrate` run over SSH: completed; the database shows Draft PI (idx 3)
+  and Final PI (idx 4) in all five sidebars. Not viewed in a browser.
+- Pending: hard-reload the browser. `newsite.local` not migrated.
+
+## 2026-10-30
+
+**Lead Management: Lead Dashboard restyled (attractive stat tiles + charts).**
+
+- Reason: the user asked for a fantastic, attractive and effective dashboard.
+- Changes:
+  - `manav_lead_dashboard.js`: KPI stat tiles with a coloured icon, big number and a sub-line
+    (Total Leads +this month, Qualified %-of-leads, Converted conversion %, Visits Today +this month,
+    Pending Follow-ups with overdue in red), hover lift, responsive grid, and four charts in cards
+    (status donut, source bar, visits-per-month spline-area line, engineers bar). Theme-aware.
+  - `lead_api.py` `get_dashboard`: added leads-this-month, qualified count and qualified % to the
+    conversion block for the new sub-lines.
+- Testing: `py_compile`, `node --check`; `get_dashboard()` on manav.local returned the enriched block.
+  Cache cleared. Not viewed in a browser.
+- Pending: hard-reload once. Uses the desk's bundled frappe.Chart.
+
+**Lead Management: Lead Dashboard rebuilt with KPIs and charts.**
+
+- Reason: the user asked for a dashboard.
+- Changes:
+  - `lead_api.py`: new `get_dashboard()` - lead status counts, conversion (leads / converted / %), visit
+    figures (today, this month, pending and overdue follow-ups) and data for four charts. All via
+    `frappe.get_list`, so a salesperson sees only their own leads / visits.
+  - `page/manav_lead_dashboard/manav_lead_dashboard.js`: rebuilt - status cards (unchanged, click opens
+    the lead list), a KPI row (Visits Today / This Month, Pending & Overdue Follow-ups -> Follow-up
+    Tracker, Conversion %), and four frappe.Chart graphs (leads by status donut, leads by source bar,
+    visits per month line, visits by sale engineer bar). Refresh redraws.
+- Testing: `py_compile`, `node --check`; `get_dashboard()` on manav.local returned the right counts,
+  conversion, visit figures and six-month chart labels. Cache cleared. Not viewed in a browser.
+- Pending: hard-reload once. Charts use the desk's bundled frappe.Chart.
+
+**Lead Management: four new reports.**
+
+- Reason: the user asked for good reports; the existing ones were plain lists.
+- Changes (all Script Reports under `manav/manav/report/`, each with filters, linked in the Lead
+  Management sidebar; all use `frappe.get_list`, so a salesperson sees only their own data):
+  - `Manav Followup Tracker`: pending follow-up visits (open follow-up ToDos) with Next Visit Date and
+    days overdue; overdue rows red, due-today orange; filters sale engineer / location / overdue-only.
+  - `Manav Salesperson Performance`: per sale engineer over a date range - visits, days worked, leads,
+    qualified, converted (lead with a Quotation), conversion %, follow-ups pending.
+  - `Manav Lead Funnel`: leads grouped by status / source / location / sector / type / business size,
+    with qualified, converted and conversion %, and a Total row.
+  - `Manav Visit Analysis`: visits grouped by sale engineer / reason / location / check-in date, with
+    checked-out count and, for managers only, within / outside the customer location.
+- Testing: `py_compile`, `node --check`, JSON load for all four; migrate on manav.local; each report's
+  execute() ran on seeded data (rolled back) and returned the right columns and rows. Not viewed in a
+  browser.
+- Pending: hard-reload once to see the sidebar links. Location columns in Visit Analysis show only to
+  System Manager / Sales Manager / Manav Management.
+
+**Manav Visit: remind until follow-up is done; Lead Settings email toggle (off for now).**
+
+- Reason: the reminder should go the day before and, if the follow-up is still not done, keep going on
+  the due day and after; and the email should be switchable - off while testing.
+- Changes:
+  - `manav_visit.py` `send_followup_reminders`: now reminds for open follow-up ToDos due tomorrow, today
+    or overdue (date <= tomorrow), once per follow-up per day, until the visit is made (ToDo closed). The
+    subject says tomorrow / today / overdue. An e-mail is sent only when the new setting is ticked and an
+    outgoing account exists; the bell notification is always sent.
+  - New Single DocType `Manav Lead Settings` with "Send Follow-up Reminder Email" (default OFF). Linked in
+    the Lead Management sidebar under a new Settings group.
+- Testing: `py_compile`, JSON load; migrate on manav.local. On the server (rolled back, three separate
+  leads): day-before, due-day and overdue each produced the right bell notification; a second run did not
+  duplicate; the setting read 0 and 0 e-mails were queued.
+- Pending: the e-mail option is OFF now (testing) - no mail is sent. Turn it on in Lead Management ->
+  Lead Management Settings when ready (needs an outgoing Email Account). Reminders need the scheduler on.
+
+**Manav Visit: follow-up reminder the day before the next visit.**
+
+- Reason: the follow-up ToDo lands on the Next Visit Date itself; the user wanted the notification a day
+  earlier - if the next visit is tomorrow, remind today.
+- Changes:
+  - `manav_visit.py`: `send_followup_reminders()` (daily) finds the open follow-up ToDos due tomorrow and
+    sends each sale engineer a desk (bell) Notification Log today; `notify_followup()` builds it and skips
+    a duplicate the same day. Tied to the open ToDos, so a lead already revisited is not reminded.
+  - `hooks.py`: `scheduler_events` daily -> send_followup_reminders.
+- Testing: `py_compile`; migrate registered the Scheduled Job Type. On manav.local (rolled back): a visit
+  with Next Visit Date = tomorrow created the notification today; a second run did not duplicate it; a
+  visit 3 days out got none. Not seen in the browser bell.
+- Pending: a desk notification (no e-mail). The site scheduler must stay enabled (it is now). If e-mail
+  reminders are also wanted, an outgoing Email Account is needed.
+
+**Manav Visit: photo options moved to buttons on the form body.**
+
+- Reason: the camera options were in a top-right Take Photo menu, which the user found confusing; the
+  Lead's visiting card uses body buttons.
+- Changes:
+  - `manav_visit.json`: Button fields under each photo - Front: Take Photo / Upload File, Back: Take
+    Photo / Upload File.
+  - `manav_visit.js`: handlers for the four buttons (via manav.photo.capture); the top-right Take Photo
+    menu is removed. The photo fields still show their own Attach and preview.
+- Testing: `node --check`, JSON field order passed; migrate on manav.local. Not tried in a browser.
+- Pending: hard-reload the browser once.
+
+**Manav Lead: Scan Now button shown in white.**
+
+- Reason: the user asked for the Scan Now button to be white so it stands out.
+- Changes: `manav_lead.js` styles the body Scan Now button white (dark text, light border, bold) in
+  refresh.
+- Testing: `node --check` passed; cache cleared. Not tried in a browser.
+
+**Manav Lead: visiting card image fields made visible again (not read-only).**
+
+- Reason: as read-only, an empty Attach Image rendered nothing (the Front field disappeared, leaving only
+  its buttons) and a filled one showed the raw file path instead of the picture.
+- Changes:
+  - `manav_lead.json`: the Visiting Card (Front) and (Back) fields are no longer read-only, so each shows
+    its label and an image preview. The scan buttons and Scan Now stay.
+- Testing: migrate on manav.local; both fields read back read_only = 0. Not tried in a browser.
+- Pending: the fields' own "Attach" button is back too; on a brand-new lead it tries to save and will ask
+  for the mandatory fields - use the Take Photo / Upload File buttons to avoid that. Hard-reload once.
+
+**Manav Lead: a Scan Now button; upload no longer reads straight away.**
+
+- Reason: the user asked for a Scan Now button after uploading a card.
+- Changes:
+  - `manav_lead.json`: a Scan Now button in its own row at the bottom of the Visiting Card section.
+  - `manav_lead.js`: uploading a side now only stores it (with a "click Scan Now" hint); Scan Now
+    (body button and top-right menu) reads the front and back together in one call, and warns if no
+    card was uploaded.
+- Benefit: for a two-sided card the AI is now called once (both sides), not once per side.
+- Testing: `node --check`, JSON field order passed; migrate on manav.local. The server read (front +
+  back merged) was tested earlier. Not tried in a browser.
+- Pending: hard-reload the browser once to get the updated form.
+
+**Manav Lead: visiting card scan buttons on the form body too.**
+
+- Reason: after the field was made read-only the only scan buttons were in the top-right menu, which was
+  hard to find.
+- Changes:
+  - `manav_lead.json`: four Button fields in the Visiting Card section - Front: Take Photo / Upload File
+    under the front image, Back: Take Photo / Upload File under the back image.
+  - `manav_lead.js`: handlers for the four buttons (same actions as the top-right menu, which is kept).
+- Testing: `node --check`, JSON field order passed; migrate on manav.local. Not tried in a browser.
+- Pending: hard-reload the browser once to get the updated form.
+
+**Manav Lead: visiting card - read front and back together.**
+
+- Reason: some cards have the phone, e-mail or address only on the back; one side missed them.
+- Changes:
+  - `manav_lead.json`: new Visiting Card (Back) image field beside the front one (both read-only).
+  - `manav_lead.js`: the Visiting Card menu now has Front / Back, each with Take Photo and Upload File.
+    After a picture is added, both sides present are sent to the AI together.
+  - `visiting_card.py`: `read_visiting_card` takes a list of file URLs (front and back) and sends both
+    in one request; the model merges them into a single set of details. A single `file_url` still works.
+- Testing: `py_compile`, `node --check`, JSON field order passed; migrate on manav.local. On the server
+  (rolled back): a front with only the name / company, and a back with the phone / e-mail / address /
+  GSTIN, read front-only = name + company; front + back = all fields merged correctly. Not tried in a
+  browser.
+- Pending: adding the back after the front triggers a second AI read (the first was front-only); each
+  read is paid for on the OpenAI key. Hard-reload the browser once to get the updated form.
+
+**Manav Lead: visiting card scan did nothing - field made read-only, use the buttons.**
+
+- Reason: on a new lead, clicking the Visiting Card field's built-in "Attach" did nothing (no AI). Two
+  causes: the browser was running an old copy of the lead form (before the scan feature), so the
+  "Visiting Card -> Take Photo / Upload Card" buttons and the field-change scan were absent; and
+  Frappe's built-in Attach control calls `frm.save()` right after upload, which fails on a new lead
+  because the required fields are still empty (so the scan never ran).
+- Changes:
+  - `manav_lead.json`: the Visiting Card field is now read-only, so the only way to add a card is the
+    Take Photo / Upload Card buttons (which upload without forcing a save and then run the AI). The
+    built-in Attach button, and its broken save-on-new-lead, are gone. Description updated.
+- Testing: migrate on manav.local; the field reads back read-only; the form meta still serves the scan
+  script. The server path (read_visiting_card on an uploaded File) was tested earlier and read a test
+  card correctly. Not tried in a browser.
+- Pending: the browser must be hard-reloaded (Ctrl+Shift+R) once to pick up the current lead form; the
+  old cached form is why nothing appeared.
+
+**Manav Visit: Front / Back photos with upload and phone-camera capture.**
+
+- Reason: the user asked for front and back photo upload on a visit, plus a take-photo-from-the-phone-
+  camera option.
+- Changes:
+  - `manav_visit.json`: new "Photos" section with Front Photo and Back Photo (Attach Image), after the
+    customer details and before Check In. Visible to everyone (salespeople take the photos).
+  - New `public/js/manav_photo.js`: `manav.photo.capture(frm, fieldname, use_camera)` opens the phone's
+    back camera (`<input capture="environment">`, works on http:// unlike the mediaDevices camera),
+    shrinks the picture to 1600 px JPEG, uploads it as a private file and stores it in the field.
+  - `manav_visit.js`: a "Take Photo" button group with Front Photo / Back Photo (camera). Upload from a
+    file is the Attach Image fields' own built-in option.
+  - `hooks.py`: the Manav Visit form now loads both `manav_visit_position.js` and `manav_photo.js`.
+- Testing: `node --check`, `py_compile`, JSON field order passed; `bench --site manav.local migrate`
+  added both columns (confirmed in the db); the helper is served through the asset symlink; cache
+  cleared. Not looked at in a browser or on a phone.
+- Pending: none known. The camera uses the phone's native file-capture, so it needs no HTTPS.
+
+**Manav Visit: the captured location is hidden from salespeople (managers only).**
+
+- Reason: the user asked that a visit does not show the salesperson that their location is tracked.
+- Changes:
+  - `manav_visit.js`: the Check In / Check Out / Map / Customer Location sections, the coordinates,
+    the distance, the location check and the DIGIPIN are shown only to System Manager, Sales Manager
+    and Manav Management. A Sales User sees a plain visit (lead, reason, description, status, next
+    visit date, Check Out button) with no sign of a position. The GPS is still read and saved in the
+    background on the first save; only the display is hidden (set_df_property hidden by role).
+  - `manav_visit_register.py`: the Location Check and Distance columns are returned only to those
+    manager roles; a salesperson's report has neither the columns nor the data.
+- Testing: `node --check`, `py_compile` passed; `get_columns(True/False)` returns the location
+  columns only for managers (confirmed on manav.local). Cache cleared. `bench build` does not run on
+  this server (its Node is v18, the framework wants v24), but these files need no build - the doctype
+  JS loads directly and the helper is served through the asset symlink. Not looked at in a browser
+  as each role.
+- Pending: the browser's own one-time "allow location" prompt cannot be hidden (a browser feature);
+  the hide is at the form / report display level, so the position is still stored on the visit and a
+  manager (or the API) can read it.
+
+**Manav Visit rebuilt like My Visit Monitor (GPS check-in / check-out, map, location check).**
+
+- Reason: the user asked for visits to look like My Visit Monitor's MVM Visit Entry, with everything
+  automated. Built inside the manav app (modelled on my_visit_monitor's code, no dependency on it).
+- Changes:
+  - `manav_visit.json`: layout of MVM Visit Entry: Lead (company, contact, mobile, location fetched),
+    Reason of Visit, Visit Description | Sale Engineer, Status (Checked In / Checked Out), Next Visit
+    Date, Digipin; sections Check In, Check Out, Map, Customer Location. The old Visit Date, Check-in /
+    Check-out Datetime, Latitude / Longitude and Remarks fields are gone (no visits existed).
+  - `manav_visit.py`: first save = check-in (date, time, sale engineer = user, GPS from the form);
+    customer point from the lead, else its address looked up on OpenStreetMap; distance and a
+    500 m check (green Inside / red Outside with a warning; "approximate" without warning when only
+    the area was found); DIGIPIN of the check-in point; `check_out()` / `check_out_visit()`;
+    Next Visit Date -> ToDo of the salesperson, a new visit to the lead closes earlier follow-up
+    ToDos; `use_checkin_as_customer_location()` for System / Sales Manager and Manav Management.
+  - New `manav/manav/visit_location.py`: distance, OpenStreetMap (Nominatim) lookup with shortened
+    addresses, India Post DIGIPIN.
+  - New `public/js/manav_visit_position.js` (loaded for Manav Visit form and list in `hooks.py`):
+    best GPS position within 10 s, accuracy warning, check-out call.
+  - `manav_visit.js`: check-in on save, red Check Out, map (green / red / blue marks with legend),
+    coloured location checks, Set as Customer Location. `manav_visit_list.js`: Checked In / Out
+    colours and a red Check Out row button.
+  - Manav Lead: collapsible Customer Location section (Latitude, Longitude).
+  - Manav Visit Register report: check-in date / in / out times, location check and distance.
+- Testing: `py_compile` / `node --check` / JSON field order on the server passed. DIGIPIN of India
+  Post's example point (28.622788, 77.213033) = 39J-49L-L8T4 as published; distance of the
+  screenshot's points = 133 m as MVM showed. `bench --site manav.local migrate` without errors. On
+  manav.local, in a transaction rolled back afterwards: check-in (3.6 s with lookup), approximate
+  area match, check-out, Set as Customer Location, a second visit "Within 500 m" (31 m) closing the
+  first visit's ToDo, a far visit "Not within ... 11910 m", a visit without GPS, the report. Not
+  looked at in a browser or on a phone.
+- Pending: GPS is only given to HTTPS pages; on http:// visits are saved without a position
+  ("Check-in location was not captured"). Addresses are sent to OpenStreetMap at check-in when the
+  lead has no location.
+
+**Lead Management: scan a visiting card into a lead (OpenAI).**
+
+- Reason: the user asked that a salesperson takes a photo of / attaches a visiting card and the AI
+  fills the lead.
+- Changes:
+  - Manav Lead (`manav_lead.json`): new "Visiting Card" section with an Attach Image field
+    (`visiting_card`) at the top of the form.
+  - `manav_lead.js`: "Visiting Card" menu with Take Photo (`<input capture>`: opens the phone
+    camera, also on http://) and Upload Card. The photo is shrunk to 1600 px JPEG, uploaded as a
+    private file into the field, and read; attaching a picture straight into the field reads it
+    too. Company, Contact Person, Contact Position, Mobile, E-mail, Website and Address are filled
+    from the card; other phones and GSTIN are added to Other Information Notes.
+  - Manav Lead: new fields Address (Small Text, under Location) and Website (Data / URL, under
+    Email ID) in the Customer section, on the user's request.
+  - New `manav/manav/visiting_card.py`: `read_visiting_card(file_url)` (whitelisted, POST) checks
+    lead create/write and file read permission, sends the picture to OpenAI Chat Completions with
+    a strict JSON schema, and returns the card details. Key, model and effort come from
+    `get_ai_settings()` (same as Draft with AI).
+  - Site data (manav.local, on the user's request): the OpenAI key the user gave was stored
+    encrypted in Manav AI Settings. It now wins over site_config's `openai_api_key`, so Draft with
+    AI uses it too.
+- Testing: `py_compile`, `node --check`, JSON load on the server passed. `call_openai` with a
+  generated test card on manav.local (gpt-5-mini, effort low): all ten fields read correctly in
+  7.7 s. Not migrated; the form buttons, upload and camera were not tried in a browser or phone.
+- Pending: `bench --site manav.local migrate` for the new field. The key was pasted in chat and
+  should be rotated at platform.openai.com, then re-entered in Manav AI Settings.
+
+**Lead Management: Visits in the sidebar; clearer location error on Manav Visit.**
+
+- Reason: "Visits" did not show in the Lead Management sidebar, and Capture Location only said
+  "Could not read the location" with no cause.
+- Changes:
+  - `manav/workspace_sidebar/lead_management.json`: `modified` bumped to 2026-10-30. Frappe
+    re-imports a Workspace Sidebar on migrate only when the file's `modified` is newer than the
+    database copy (no hash check, unlike DocTypes), so the Visits rows added later were skipped.
+  - `manav/manav/doctype/manav_visit/manav_visit.js`: `capture_location` says when the page is not
+    on HTTPS (browsers refuse geolocation on http://; the bench serves http on port 8005), and on
+    a failure names the cause (permission blocked, position unavailable, timeout); on timeout /
+    unavailable it retries once without high accuracy (desktops without GPS).
+  - Server: the Lead Management files had been created as Linux user support03 and could not be
+    edited; the user changed their owner to support02 (41 files, apps/manav only).
+- Testing: `node --check manav_visit.js` on the server passed; no file in apps/manav is owned by
+  anyone but support02 any more. Not migrated and not looked at in a browser.
+- Pending: `bench --site manav.local migrate` for the sidebar. Real GPS capture needs the site on
+  HTTPS (or a browser flag for testing).
+
+## 2026-10-29
+
+**CIF defaults per principal.**
+
+- Reason: the user asked for the CIF port and the rest to be filled in by default.
+- Changes:
+  - Quotation Type (`quotation_type.json`): "CIF by Default" (`cif_default`), "Default CIF Port"
+    (`cif_port`), "Default CIF Charges" (`cif_charges`), after Price Basis.
+  - `manav/manav/quotation.py`: `get_type_defaults` returns them; `fill_cif_defaults` (Quotation
+    validate in `hooks.py`, Draft PI validate) fills an empty CIF Port / Charges of a document
+    ticked CIF; typed values are kept.
+  - `manav/public/js/quotation.js`: choosing a principal that is CIF by default ticks CIF; ticking
+    CIF fills an empty port / charges. `draft_pi.js`: the same for the Draft PI's CIF tick.
+- Testing: `py_compile`, `node --check`; `bench --site manav.local migrate` without errors, the
+  three fields on the site; `fill_cif_defaults` on 26QX000082 in memory with a principal port
+  stubbed as "Chennai Sea Port": empty port filled, typed "Mumbai Air Port" kept, not CIF left
+  alone. Not looked at in a browser.
+- Site data (manav.local, after the user's "not coming in quotation" and their go-ahead): Quotation
+  Type 1 MACHINES set to CIF by Default, Default CIF Port "Chennai Sea Port" (no default charges);
+  `get_type_defaults("1")` read back with these values. Before, no principal had defaults, so
+  nothing was filled. Other principals have none.
+- Pending: "CIF by Default" ticks CIF only in the form when the principal is chosen; a quotation
+  made without the form (import, API) is not ticked. Not looked at in a browser.
+
+**CIF Charges amount and port (Quotation, Draft PI, Final PI); Quotation's CIF moved.**
+
+- Reason: the user asked to move the quotation's CIF tick under Customer Ref. Date and, once CIF is
+  ticked, to enter an amount, printed as on the old quotation ("CIF Charges - Chennai Sea Port ...
+  US$ 5500.00", screenshot).
+- Changes:
+  - `manav/manav/erpnext_fields.py`: Quotation CIF after Customer Ref. Date; Quotation and Sales
+    Order "CIF Charges" (`custom_cif_charges`) and "CIF Port" (`custom_cif_port`), shown only when
+    CIF is ticked. Draft PI `cif_charges`, `cif_port` (`draft_pi.json`).
+  - `manav/manav/pi.py`: copied Quotation -> Draft PI (`field_map`) -> Final PI.
+  - Prints: "CIF Charges - <port>" and the amount added to the printed grand total in Manav Modern
+    Quotation, Manav Modern Quotation CIF (TOTAL, CIF Charges, GRAND TOTAL (CIF)), Classic / Colour
+    / Banded (`manav_quotation_data.html`, amount in words follows) and the PI template (TOTAL, CIF
+    Charges, GRAND TOTAL (CIF); with an advance, Less: Advance Received and BALANCE (CIF)).
+- Testing: `bench --site manav.local migrate` without errors; fields read back; on the site with
+  CIF Charges 5,500 / "Chennai Sea Port" set in memory (rolled back): Modern "GRAND TOTAL (CIF):
+  $ 2,48,384.62"; Modern CIF "TOTAL $ 2,42,884.62, CIF Charges $ 5,500.00, GRAND TOTAL (CIF)
+  $ 2,48,384.62"; Classic "CIF Charges - Chennai Sea Port US$ 5,500.00, Total US$ 2,48,384.62";
+  Draft PI made from the quotation copies the three values; Draft PI print with advance 10,000:
+  BALANCE (CIF) $ 2,38,384.62. Not looked at in a browser; Banded and Colour not printed.
+- Pending: the CIF amount is added on the prints only; ERPNext's own totals (quotation, Sales
+  Order, dashboard figures, invoices) do not include it. Banded prints no "Tax / Duties: As
+  Applicable" row when the CIF line is its only charge line.
+
+**Quotation: CIF option.**
+
+- Reason: the user asked for the CIF tick on the quotation too.
+- Changes: Quotation custom field "CIF" (`custom_is_cif`, after Final PI No., `erpnext_fields.py`);
+  `pi.make_draft_pi` copies it into the Draft PI's CIF (`field_map`); print format Manav Modern
+  Quotation prints "GRAND TOTAL (CIF)" when ticked. The other quotation print formats are unchanged
+  (Manav Modern Quotation CIF always says CIF).
+- Testing: `bench --site manav.local migrate` without errors; on the site, in a transaction rolled
+  back afterwards: 26QX000082 prints "GRAND TOTAL: $ 2,42,884.62", ticked "GRAND TOTAL (CIF):
+  $ 2,42,884.62"; a Draft PI made from it has CIF ticked. Not looked at in a browser.
+- Pending: Classic, Banded, Colour and Sales Quotation prints do not show CIF.
+
+**PI: CIF option.**
+
+- Reason: the user asked for a CIF option on the PI; chosen with the user: a tick box and the
+  label only (prices print as before).
+- Changes: Draft PI "CIF" (`is_cif`, `draft_pi.json`); Sales Order custom field "CIF"
+  (`custom_is_cif`, allow on submit, `erpnext_fields.py`), copied from the Draft PI by
+  `pi.make_final_pi`; `manav_proforma_invoice.html` prints "TOTAL (CIF)" / "BALANCE (CIF)" when
+  ticked.
+- Testing: `bench --site manav.local migrate` without errors; `frappe.get_print` on the site with
+  the values set in memory (not saved): 26DPI00001 CIF -> "TOTAL (CIF): $ 2,42,884.62"; CIF with
+  advance 10,000 -> TOTAL (CIF), "Less: Advance Received: - $ 10,000.00", "BALANCE (CIF):
+  $ 2,32,884.62"; 26FPI00001 CIF -> "TOTAL (CIF): $ 2,74,700.00", not CIF -> "TOTAL". Not looked
+  at in a browser.
+- Pending: none known.
+
+**Customer Dashboard page.**
+
+- Reason: the user asked for a customer dashboard showing all information about a customer, the
+  admin choosing the customer from a drop-down.
+- Changes:
+  - `manav/manav/page/customer_dashboard/` (new): desk page /desk/customer-dashboard. Customer
+    drop-down (also `?customer=<name>`), buttons Open Customer / New Quotation. Shows the
+    customer's head, key figures (quotations, quoted value, conversion, Draft / Final PIs, ordered
+    value, invoiced, outstanding, received; company currency, quoted / ordered before taxes), a
+    12-month quoted vs ordered chart (frappe.Chart), and lists of Quotations, Draft PIs, Final PIs,
+    Sales Invoices, Payments, Machines (Serial Nos), Contacts, Addresses, old Contact Persons and old
+    quotations (Quotation Head), plus every filled field of the Customer form. Rows open their
+    documents.
+  - `manav/manav/customer_dashboard.py` (new): `get_customer_dashboard`, management only
+    (`desk_home.is_management`); records read with `frappe.get_list` (reader's permissions).
+  - `manav/workspace_sidebar/{manav,bangalore,ftwz,chennai,coimbatore}.json`: "Customer Dashboard"
+    under Customer.
+- Testing: `py_compile`, `node --check`; `bench --site manav.local migrate` without errors; on the
+  site: page and sidebar links present; `get_customer_dashboard("MERRITRONIX LIMITED")` as
+  Administrator returned the figures (1 quotation, 1 Draft PI, 1 Final PI), 28 detail fields,
+  2 contacts, 1 address, 1 old contact person, the chart. Not looked at in a browser.
+- Pending: users outside management see the sidebar link but get "for management only".
+- Later the same day: the "Customer Details" card (every filled field of the Customer form) was
+  removed at the user's request (`customer_dashboard.js`, `customer_dashboard.py`
+  `customer_details`). Checked: `get_customer_dashboard` for Z AXIS on the site returns no
+  details; `node --check` / `py_compile` pass. Not looked at in a browser.
+- Later the same day: tabs under the customer's head, at the user's request
+  (`customer_dashboard.js`): Overview (key figures, chart), Quotations & PIs, Invoices &
+  Payments, Machines, Contacts & Addresses, Old Records, each with its row count; a tab whose
+  lists the reader may not see is left out; the chosen tab stays when another customer is chosen;
+  the chart is drawn when Overview is shown. Checked: `node --check`. Not looked at in a browser.
+- Later the same day (user: "not looking good", screenshot of Quotations & PIs): the lists of a
+  tab are one under the other at full width (were up to three side by side, cut off, scrolling
+  sideways); roomier rows; Principal shows the name (`add_principal_names`: Z AXIS's quotations
+  show MACHINES instead of 1, checked on the site); "Not Submitted" red; empty lists say
+  "No ... yet". Checked: `py_compile`, `node --check`. Not looked at in a browser.
+
+**PI print: advance received.**
+
+- Reason: the user asked that when the customer has paid an advance, the PI print shows the total,
+  minus the advance, and then the total to pay.
+- Changes:
+  - `manav/templates/print_formats/manav_proforma_invoice.html`: with an advance, TOTAL, "Less:
+    Advance Received", BALANCE; without, TOTAL only as before. Advance on the Final PI: ERPNext's
+    Advance Paid (Payment Entries against the Sales Order; converted from company currency to the
+    PI's), else the hand-typed Advance Received; on the Draft PI its Advance Received.
+  - `manav/templates/print_formats/manav_modern_quotation_body.html`: optional `subtotal_label`.
+  - Draft PI field "Advance Received" (`advance_received`, `draft_pi.json`); Sales Order custom field
+    "Advance Received" (`custom_advance_received`, allow on submit, `erpnext_fields.py`), copied from
+    the Draft PI by `pi.make_final_pi`.
+- Testing: template rendered locally with a stubbed `frappe`: Draft PI with 10,000 advance -> TOTAL
+  274,700.00 / Less 10,000.00 / BALANCE 264,700.00; Final PI with Advance Paid INR 9,49,000 at 94.9
+  -> Less $ 10,000.00; no advance -> TOTAL only. After migrate, `frappe.get_print` of 26DPI00001
+  and 26FPI00001 on the site (no advance): TOTAL only, no tax rows. Not printed with an advance on
+  the site, not looked at in a browser.
+- Pending: none known.
+
+**Draft PI: sub-items at their machine's price, not converted.**
+
+- Reason: the user asked for the PI to print in its own currency (USD or INR). Draft PI 26DPI00001
+  (USD) printed sub-items at INR prices converted to USD (10K-40T-GBX 146.47 instead of 13,900;
+  total 242,884.62), copied from quotation 26QX000082; its Final PI 26FPI00001 had the right
+  prices (274,700.00), as the Sales Order applies `keep_sub_item_rates`.
+- Changes: `manav/manav/doctype/draft_pi/draft_pi.py` validate runs `quotation.keep_sub_item_rates`
+  (with a `calculate_taxes_and_totals` method for it); `manav/manav/pi.py` `make_draft_pi` does
+  the same when the Draft PI is made.
+- Testing: `py_compile`; on manav.local `make_draft_pi("26QX000082")` built in memory (not saved):
+  sub-items 13,900 / 8,500 / 3,500 / 200 / 10,000 / 2,600, total $ 2,74,700.00 = the Final PI's.
+- Pending: the saved 26DPI00001 still holds the converted prices (it is closed, its Final PI
+  exists) and quotation 26QX000082 too (submitted); neither was changed. USD amounts are grouped
+  the Indian way (2,74,700.00) because the USD Currency has no number format of its own.
+
+**Draft PI in ERPNext's Selling sidebar, between Quotation and Sales Order.**
+
+- Reason: the user asked for Draft PI between Quotation and Sales Order in the sidebar.
+- Changes: `manav/manav/desk_home.py` `add_draft_pi_to_selling_sidebar` (in `after_migrate`,
+  `manav/hooks.py`): adds one Workspace Sidebar Item "Draft PI" after Quotation in the site's
+  Selling sidebar and moves the rows after it down. ERPNext's `selling.json` is not edited, and the
+  sidebar is not saved as a whole, because with developer_mode on that writes ERPNext's file.
+- Testing: run twice with `bench --site manav.local execute` on the server: the first run failed
+  (copied row had no docstatus; nothing was committed), fixed; then the sidebar reads Home,
+  Dashboard, Quotation, Draft PI, Sales Order, Sales Invoice ...; one Draft PI row after the second
+  run; `git status` of ERPNext's workspace_sidebar folder clean. Not looked at in a browser.
+- Pending: the Manav and branch sidebars (what non-admin users see) have no Draft PI link.
+
+**Draft PI as a document of its own (Manav doctype); the Sales Order is the Final PI; no taxes on
+the PI prints.**
+
+- Reason: the user asked for the Final PI to be the Sales Order, with one more step, the Draft PI,
+  as a separate document (not a Sales Order), and a different number for each of Quotation, Draft
+  PI and Final PI, each referring to the others. Later the same day the user asked to remove the
+  taxes from the print of both PIs. (An earlier version of the same day kept the Draft PI as a
+  Sales Order with a "PI Stage"; the user rejected it and it was replaced before it reached the
+  server. Its custom fields are deleted on migrate where a site has them.)
+- Changes:
+  - `manav/manav/doctype/draft_pi/` and `draft_pi_item/` (new): doctype Draft PI (Manav module,
+    numbered `26DPI00001`: financial year, DPI, five-digit running number) with Draft PI Item.
+    Field names are those of Quotation / Sales Order (custom_ ones included), so values copy by
+    name and the PI print template works on it. Amounts and Total (before taxes) worked out on
+    save, sub-items numbered as on the quotation, status Draft / Final PI Made; closed for changes
+    once its Final PI exists. Form (`draft_pi.js`): live amounts, rates of added lines (price list,
+    or the machine's sub-item price), "Make Final PI"; list labels (`draft_pi_list.js`).
+  - `manav/manav/pi.py`: `make_draft_pi` (Quotation -> Draft PI, `get_mapped_doc`; Lead/Prospect
+    quotations keep the name only, the Customer is made with the Final PI); `make_final_pi`
+    (Draft PI -> Sales Order through ERPNext's own `make_sales_order`, so taxes, addresses, payment
+    terms and the quotation checks are ERPNext's; lines replaced by the Draft PI's, keeping their
+    quotation links so the quotation becomes Ordered on submit); `get_draft_pi_item_rate`; Sales
+    Orders numbered `26FPI00001` (`autoname`); references kept by `link_pi_documents` /
+    `unlink_pi_documents` (also on cancel, which frees the Draft PI again).
+  - `manav/manav/erpnext_fields.py`: Sales Order "Draft PI No." (`custom_draft_pi`, Link to Draft
+    PI); Quotation "Draft PI No." (`custom_draft_pi_no`, new) and "Final PI No." (`custom_pi_no`,
+    was "PI No."). Obsolete `custom_pi_stage` / `custom_final_pi` deleted on migrate.
+  - `manav/hooks.py`: Sales Order `autoname`, `on_cancel`, new link hooks.
+  - `manav/public/js/quotation.js`: the quotation's "Make Draft PI" makes a Draft PI; a draft
+    Sales Order says "Final PI, not yet submitted".
+  - `manav/public/js/sales_order_list.js`: "Final PI: Not Submitted" / "Final PI: <status>".
+  - `manav/templates/print_formats/manav_proforma_invoice.html` (new, the HTML moved out of the
+    print format): shared by print formats Manav Proforma Invoice (Sales Order) and Manav Draft PI
+    (new, `manav/manav/print_format/manav_draft_pi/`, default of Draft PI). DRAFT PROFORMA INVOICE
+    / Draft PI No. on the Draft PI; PROFORMA INVOICE / PI No. and "Against Draft PI No." on the
+    Final PI. No taxes on either: no subtotal, tax rows or "Tax / Duties: As Applicable"; one TOTAL
+    row with the total before taxes.
+- Testing (local, Windows): `py_compile` of all changed Python files; `node --check` of the four
+  JS files; all JSON files load; the shared template rendered with a stubbed `frappe` for a Draft
+  PI and a Sales Order (title, number label, both "Against ..." lines, TOTAL = total before taxes,
+  no tax / subtotal rows).
+- Server: `bench --site manav.local migrate` ran without errors; read back on the site: doctypes
+  Draft PI and Draft PI Item, print formats Manav Draft PI (Draft PI) and Manav Proforma Invoice
+  (both modified 2026-10-29), the custom fields above (Quotation "Final PI No."), the obsolete
+  custom_pi_stage / custom_final_pi absent, default print formats set.
+- Not tested yet in a browser: Make Draft PI, editing it, Make Final PI, submitting, cancelling,
+  the prints.
+- Pending: Sales Orders made before keep their SAL-ORD-... names; draft ones made as "Draft PI" on
+  2026-10-28 now count as Final PIs not yet submitted. HSN Code column and payment schedule are
+  still printed on the PIs. Quotation's Connections tab does not list Draft PIs (Draft PI No. on the
+  quotation does).
+
+## 2026-10-28
+
+**Quotation form: Total Taxes and Charges and the Totals section hidden.**
+
+- Reason: the user asked to remove these from the quotation form.
+- Changes: `manav/manav/erpnext_fields.py`: property setters hide Quotation's sections
+  `section_break_39` (Total Taxes and Charges, both currencies) and `totals` (Grand Total,
+  Rounding Adjustment, Rounded Total, In Words, Disable Rounded Total). Totals are still worked
+  out by ERPNext; prints and the PI unchanged.
+- Testing: `py_compile`; `bench migrate` on manav.local; property setters read back. Not looked
+  at in a browser.
+- Pending: none known.
+
+**No Delivery Date on the PI.**
+
+- Reason: the user asked to remove Delivery Date from the PI (Sales Order).
+- Changes:
+  - `manav/manav/erpnext_fields.py`: property setters hide Delivery Date on Sales Order and Sales
+    Order Item (and take it out of their list views).
+  - `manav/manav/pi.py` `fill_delivery_date` (Sales Order before_validate in `manav/hooks.py`): an
+    empty Delivery Date is set to the PI's date, on the PI and its lines, because ERPNext still
+    requires one ("Please enter Delivery Date").
+  - `manav/public/js/quotation.js` (added after the user's first save failed): Sales Order form
+    `validate` fills the empty Delivery Date of the PI and its rows with the PI's date, because
+    ERPNext's form makes the Items' Delivery Date compulsory in the browser (toggle_delivery_date)
+    and stopped the save with "Delivery Date is required in every row".
+- Testing: `py_compile`, `node --check`; `bench migrate` on manav.local; property setters read
+  back. The user's save of a Draft PI failed before the form fix; saving again not yet tested.
+- Pending: the stored delivery date equals the PI date; Delivery Note planning reports will show
+  that date.
+
+**Desk home: only four branch workspaces (Bangalore, FTWZ, Chennai, Coimbatore).**
+
+- Reason: the user asked to remove everything else from the desk home (/desk) and keep four
+  workspaces like the branches, with the same content on all four for now.
+- Changes:
+  - `manav/manav/workspace/{bangalore,ftwz,chennai,coimbatore}/`, `manav/workspace_sidebar/<branch>.json`,
+    `manav/desktop_icon/<branch>.json` (new): copies of the Manav workspace, sidebar and desktop
+    icon; the page header names the branch ("Manav Marketing - FTWZ"), the sidebar's Home opens
+    the branch workspace. Charts, number cards and the dashboard tabs block are shared.
+  - `manav/manav/desk_home.py` `limit_desk_to_manav`: the desk home shows only the four branch
+    icons for every user (admins too); non-admins may open the branch workspaces and Manav.
+- Testing: `py_compile`; `bench migrate` on manav.local; workspaces, sidebars and desktop icons
+  read back. Not looked at in a browser.
+- Pending: the four workspaces show the same (all-branch) figures; filtering by branch would come
+  later. Other modules are no longer on the desk home but still open through search (Ctrl+K)
+  and links. Login still lands on the Manav Dashboard.
+
+**Old Magic item groups imported as ERPNext Item Groups.**
+
+- Reason: the user asked to import the old item group master (20_item_group_mst.pdf). Chosen with
+  the user: groups only; items stay in their current groups (the principals' item lists on
+  quotations depend on Machines / Spares / Options ...).
+- Changes:
+  - `manav/manav/legacy_data/item_group.json` (new): the 21 groups (code and name) from the PDF.
+  - `manav/manav/import_legacy.py`: `import_item_groups` makes them under a parent group "Magic
+    Item Groups", named "<code> <name>" (e.g. "01 MACHINES - 16301000"); in `import_all`.
+- Testing: `py_compile`; run on manav.local: 21 groups added and read back.
+- Pending: items are not assigned to these groups. The old items' group codes in 21_item_mst do
+  not match the site's grouping (e.g. old group 3 SPARES also holds Options and Machines); 39
+  items use codes 98 / 99, which are not in the group master.
+
+**Login page back to Frappe's default, with the company logo shown properly.**
+
+- Reason: the user asked for the default login page, only with the company logo shown properly.
+- Changes:
+  - `manav/public/css/login.css`: only the logo size is kept (login page, max 120px high /
+    300px wide instead of Frappe's 32px high; first 64px / 240px, made bigger the same day at the
+    user's request); background, card, button and link styles removed.
+  - `manav/public/images/manav_marketing_logo.png` (new): the company logo, copied from
+    manavmarketing.com (2048 x 758), so the login page no longer depends on that website.
+  - Site setting on manav.local: Website Settings > App Logo = /assets/manav/images/
+    manav_marketing_logo.png (was the image's address on manavmarketing.com).
+- Testing: `bench migrate`; logo file and login.css served (HTTP 200); login page shows the new
+  logo address. Not looked at in a browser.
+- Pending: on other sites (e.g. manav.mymagicerp.com), set App Logo in Website Settings the same
+  way. The App Name "Manav Marketing" and the dashboard after login stay as set earlier today.
+
+**Better login page; Manav Dashboard opens after login.**
+
+- Reason: the user asked for a better looking login page and for the Manav dashboard to open
+  directly after login.
+- Changes:
+  - `manav/public/css/login.css` (new, `web_include_css` in `manav/hooks.py`): login page only
+    (body[data-path="login"]): light blue background, white card with Manav-blue top border and
+    shadow, larger logo, blue Sign In button and links.
+  - `manav/manav/desk_home.py`: `set_app_name` (after_migrate): App Name "Manav Marketing" in
+    Website Settings and System Settings while it is empty or "Frappe".
+  - `manav/hooks.py`: the Manav app's route (`add_to_apps_screen`) is `/desk/manav-dashboard`;
+    Frappe sends users to the Default App's route after login.
+- Testing: `py_compile`; `bench migrate` on manav.local; the login page fetched from the server
+  carries login.css (served) and the new App Name. Not looked at in a browser; login with a
+  user not tried.
+- Pending: a user whose own Default App (User form) is another app lands there instead.
+
+**Spares quotation for the customer's machine (ERPNext Serial No).**
+
+- Reason: the user asked for spare parts quotations for the machine the customer bought; chose
+  ERPNext's Serial No as the record of customers' machines, and linked spares first plus a search
+  over all spares.
+- Changes:
+  - `manav/manav/erpnext_fields.py`: Quotation (and Sales Order) "Customer's Machine (Serial No)"
+    (custom_machine_serial_no, Link to Serial No); property setters make Serial No's Customer
+    editable and a list filter (ERPNext fills it only on delivery).
+  - `manav/manav/quotation.py`: `get_machine_spares(serial_no)`: the machine model and its spare
+    parts from Quotation Sub Item Master (Items in group Spares).
+  - `manav/public/js/quotation.js`: the machine field offers only the customer's Serial Nos and
+    copies the serial into Machine Number; "Spares for Machine" button (draft with a machine)
+    lists the model's linked spares; ticked ones are added as normal lines (ERPNext fetches name,
+    unit and price list rate). Other spares through the Item Code search, as before.
+- Testing: `py_compile`, `node --check`; `bench migrate` on manav.local; fields and property setter
+  read back. 136 machine models have linked spares. Not tested in a browser; no Serial No exists
+  on the site yet.
+- Pending: the customers' machines must be entered as Serial Nos (serial number, machine model,
+  company, customer). Old spares quotations have a machine number but no model, so they cannot be
+  turned into Serial Nos automatically.
+
+**Quotation No. on the PI, PI No. on the quotation.**
+
+- Reason: the user asked for the quotation number as reference on the PI and the other way round.
+- Changes:
+  - `manav/manav/pi.py` (new): Sales Order validate sets `custom_quotation` from ERPNext's own
+    line link (Sales Order Item.prevdoc_docname); on_update / on_submit write the PI on the
+    quotation's `custom_pi_no`; on_trash clears it.
+  - `manav/manav/erpnext_fields.py`: Sales Order "Quotation No." (custom_quotation) and Quotation
+    "PI No." (custom_pi_no, allow_on_submit), both read only. Quotation No. sits right under
+    Customer at the top of the PI (moved there from Manav Details the same day, user's request).
+  - `manav/hooks.py`: the Sales Order doc_events above.
+  - `manav/manav/print_format/manav_proforma_invoice/`: "Against Quotation No. ..." under the head.
+- Testing: `py_compile`; PI rendered locally with a quotation set (line printed); `bench
+  migrate` on manav.local. Not tested: saving a real PI (no Sales Order on the site yet).
+- Pending: a quotation with several PIs shows the last saved one; all are in its Connections tab.
+
+**Quotation print: one price per machine (machine + its sub-items); sub-items without price.**
+
+- Reason: the user asked for the quotation to show only the machine's price in the total, not the
+  sub-items' prices.
+- Changes: `manav/manav/print_format/manav_modern_quotation/` and
+  `manav/manav/print_format/manav_modern_quotation_cif/`: a machine's row prints Total = machine
+  amount + its sub-items' amounts and Price = that total / machine qty; its sub-item rows print
+  no price or total. Sub-items whose machine is not on the quotation keep their prices. Grand
+  total unchanged. Print format only (no code or fields).
+- Testing: both rendered locally with a stubbed `frappe`: VF-2 (100) + sub-item (10) printed as
+  110 with the sub-item row blank; grand total unchanged. `bench migrate` on manav.local.
+- Pending: the PI (Manav Proforma Invoice) and Manav Modern Quotation Head (old quotations) still
+  print each sub-item's price. Check a real print.
+
+**Branches: Manav Marketing - Bangalore (head office), FTWZ, Chennai, Coimbatore.**
+
+- Reason: the user asked for four branches of Manav Marketing with Bangalore as the head office;
+  chosen with the user: branches of the one company "Manav" (not separate ERPNext companies),
+  named "Manav Marketing - <city>".
+- Changes:
+  - `manav/manav/branches.py` (new): `setup_branches` (after_migrate in `manav/hooks.py`) renames
+    the existing Branch "Bangalore" to "Manav Marketing - Bangalore" (links follow) and creates
+    the missing ones. Idempotent.
+  - `manav/manav/erpnext_fields.py`: Branch field (`custom_branch`) on Quotation and Sales Order
+    (copied from quotation to PI), standard filter.
+- Testing: `py_compile`; `bench migrate` on manav.local; the four Branch records read back.
+- Pending: Branch has no parent field, so "head office" is only in the name. The Branch field is
+  not filled by default and not printed. Not an accounting dimension (no split of the books by
+  branch).
+
+**Sales Order list shows "Draft PI" / "Final PI".**
+
+- Reason: the user asked to see in the Sales Order list whether each is a Draft or Final PI.
+- Changes: `manav/public/js/sales_order_list.js` (new, via `doctype_list_js` in `manav/hooks.py`)
+  wraps ERPNext's list indicator: not submitted = "Draft PI" (orange); submitted = "Final PI: "
+  + ERPNext's status (its colour and filter); cancelled stays "Cancelled". The form's status
+  label at the top follows the same rule.
+- Testing: `node --check`, `py_compile` of hooks.py; `bench migrate` on manav.local. Not seen in
+  a browser.
+- Pending: none known.
+
+**Quotation -> Draft PI -> Final PI (ERPNext Sales Order as the PI).**
+
+- Reason: the user asked for a Draft PI after the quotation, editable (items, sub-items and all),
+  then a Final PI. The user chose ERPNext's Sales Order as the PI and only submitted quotations
+  as its source.
+- Changes:
+  - `manav/manav/erpnext_fields.py`: Sales Order / Sales Order Item get the same custom fields as
+    Quotation / Quotation Item (principal, references, Signed By, Sales Engineer, Account
+    Manager, Haas Cust ID, Sub-Item of, Sub-Item Sr.No, Specifications, Magic Ref. Code), so
+    ERPNext's Quotation -> Sales Order mapping copies them. Sub-Item Sr.No first in the PI's Items
+    table; default print format of Sales Order = Manav Proforma Invoice. Quotation Item's Magic
+    Ref. Code is no longer no_copy (so it maps to the PI).
+  - `manav/hooks.py`: `doctype_js` loads `public/js/quotation.js` for Sales Order too;
+    `doc_events` Sales Order validate: `keep_sub_item_rates`, `number_sub_items`.
+  - `manav/public/js/quotation.js`: handlers registered once for Quotation and Sales Order.
+    Submitted quotation: "Make Draft PI" button (ERPNext's own make_sales_order). Sales Order:
+    "+" sub-items on machine lines, item search with rates, principal's currency / price list,
+    customer -> Haas Cust ID and Account Manager, and a note "Draft PI" / "Final PI".
+  - `manav/manav/print_format/manav_proforma_invoice/` (new): PROFORMA INVOICE (DRAFT PROFORMA
+    INVOICE while not submitted), Invoice To / PI No., HSN, description points with photo,
+    subtotal, taxes, grand total, payment schedule.
+  - `manav/templates/print_formats/manav_modern_quotation_body.html`: optional `doc_title`,
+    `to_label`, `number_label` (defaults unchanged).
+- Testing: `py_compile` of hooks.py and erpnext_fields.py, `node --check` of quotation.js;
+  PI (draft and final), CIF and Modern rendered locally with a stubbed `frappe`: the PI shows its
+  title and labels, CIF and Modern unchanged. `bench migrate` on manav.local. Not tested in a
+  browser: making a Draft PI from a quotation, sub-items on the Sales Order, submitting.
+- Pending: ERPNext asks for a Delivery Date on the Sales Order and refuses quotations past
+  "Valid till" unless Selling Settings allows it. The PI keeps ERPNext's Sales Order numbering.
+
+**"Magic Ref. Code" on Item and Quotation Item (shown in the form, not printed).**
+
+- Reason: the user asked for the old Magic item codes (21_item_mst) on the doctypes, not on prints.
+- Changes:
+  - `manav/manav/item_fields.py`: Item field `custom_magic_ref_code` in "Old System Data"
+    (standard filter, no_copy, print_hide).
+  - `manav/manav/erpnext_fields.py`: Quotation Item field `custom_magic_ref_code`, fetched from
+    the Item, read only, print_hide.
+  - Data on manav.local: filled on the 5239 Items whose code is in the file.
+- Testing: `py_compile` of both files; `bench migrate` on manav.local; 5239 Items have the code
+  set; the Quotation Item field has fetch_from and print_hide as intended.
+- Pending: for every matched item the Magic code equals the Item code (items were loaded under
+  those codes). Quotation lines made before today keep an empty value until the item is chosen
+  again. The 109 codes Excel turned into numbers in the file could not be filled.
+
+**Manav Modern Quotation CIF: machine photo.**
+
+- Reason: the user asked for the photo on the CIF quotation too.
+- Changes: the CIF format passes the machine's picture again (line image, else Item image; Haas
+  WebP links asked for as PNG, which wkhtmltopdf can show). The shared layout prints it, when
+  the specification box is off (`no_specs`), on the left of the machine's description points.
+  Manav Modern Quotation still shows it in its specification box only.
+- Testing: rendered locally (stubbed `frappe`): one picture beside the points in CIF, none in
+  Modern's line rows. The Haas PNG link answers 200 image/png. `bench migrate` on manav.local.
+- Pending: only 4 Items on manav.local have a picture; check the PDF on the server.
+
+**Manav Modern Quotation CIF: description point by point, side by side.**
+
+- Reason: the user asked for each item's description as points in two columns.
+- Changes:
+  - `manav/manav/print_format/manav_modern_quotation_cif/`: macro `describe` splits the
+    quotation line's description ("Title; a, b, c. d", or one point per line) into points and a
+    short title. A one-line description without "; " and under six comma parts is not split.
+  - `manav/templates/print_formats/manav_modern_quotation_body.html`: a line with `points` gets a
+    row under it with the points as bullets in two columns; its title is the short title. Lines
+    without points (all lines of the other print formats) print as before.
+- Testing: rendered locally with Jinja2 and a stubbed `frappe`, using the VF-10/40 description
+  of quotation 26QX000084: 9 points in two columns under "Vertical Machining Center"; Manav
+  Modern Quotation shows no points. `bench migrate` run on manav.local.
+- Pending: check the printed PDF on the server.
+
+**Item descriptions on manav.local set from the old item master (data, no code).**
+
+- Reason: the user asked for the item descriptions from `21_item_mst.xlsx` / `.pdf`.
+- Change: 599 Items whose description differed got the file's "Item Description" (broken
+  characters replaced by spaces). Skipped: empty descriptions in the file, code 37012 (twice in
+  the file with different texts), and codes Excel had turned into numbers.
+- Testing: read back after the update: 599 of 599 match.
+- Pending: the file's texts are often cut at about 40 characters, so some Items now have
+  shorter descriptions than before (e.g. VF-10/40, 10K50T-5). The old values are saved in
+  `~/frappe-bench/tmp_item_desc/desc_backup.json` on the server.
+
+**New print format "Manav Modern Quotation CIF".**
+
+- Reason: the user asked for a quotation like Manav Modern Quotation without Cust ID, phone
+  number, specifications, subtotal, tax and the payment terms (100%), with the HSN code and a
+  CIF grand total only.
+- Changes:
+  - `manav/manav/print_format/manav_modern_quotation_cif/` (new): Quotation print format in the
+    modern layout. Head without Cust ID and phone; no Equipment Specification boxes (and so no
+    page break per machine); HSN Code column, read from Quotation Item Master by item code (the
+    quotation's principal first); totals show only GRAND TOTAL (CIF); payment info shows only
+    "Valid till".
+  - `manav/templates/print_formats/manav_modern_quotation_body.html`: optional switches
+    `no_specs`, `no_page_per_machine`, `show_hsn`, `no_tax_line`, `grand_total_label`, and an
+    empty subtotal is not printed. Manav Modern Quotation and Manav Modern Quotation Head do not
+    set them and print as before.
+- Testing: both print formats rendered locally with Jinja2, a stubbed `frappe` and a sample
+  quotation: the CIF format shows HSN codes and GRAND TOTAL (CIF) and none of Cust ID, phone,
+  specifications, subtotal, tax or payment schedule; Manav Modern Quotation still shows all of
+  them. Not run on a bench or printed to PDF.
+- Pending: `bench migrate` on the server to load the print format; check a real print/PDF.
+  Items without an HSN code in Quotation Item Master print an empty HSN cell.
+
 ## 2026-10-22
 
 **Draft with AI: the party can also be a Prospect.**

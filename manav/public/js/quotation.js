@@ -5,8 +5,8 @@
 //
 // Working, in the order the employee uses the form:
 // 1. Principal (Quotation Type): its currency, price list, letter head, terms template and signing
-//    sales person are put on the quotation. The Items table then offers only the items of the
-//    principal's Item Group, plus the Options group.
+//    sales person are put on the quotation. The Items table offers every sales item of the Item
+//    Master (2026-11-05; before: only the principal's Item Group, plus the Options group).
 // 2. Customer: ERPNext fills name, address, contact and territory; this script adds the Haas Cust ID.
 // 3. Items: ERPNext fills description, unit and the rate from the principal's price list. The
 //    item's Specifications are copied by the field's fetch_from.
@@ -109,10 +109,60 @@
 // Reason: "Dollar not applied" on a MACHINES quotation: the currency was USD, but ERPNext had
 // re-priced the sub-items from the price list, converting their old INR prices (26QX000082:
 // 10K-40T-GBX 146.47 instead of 10,000). The user also asked for the rate in bold.
+//
+// CHANGE NOTE
+// Date: 2026-10-28
+// Change: The PI. A submitted quotation has a "Make Draft PI" button, which makes an ERPNext Sales
+// Order from it (ERPNext's own Quotation -> Sales Order, so the fields of the same name, sub-item
+// links among them, are copied). A Sales Order not yet submitted is the Draft PI: its items,
+// sub-items ("+" on a machine's line), prices and other fields can be changed as on a quotation;
+// submitting it makes it the Final PI. This file is loaded for Sales Order too (hooks.py) and
+// registers the handlers of both forms on its first run only (each form runs the file in a scope
+// of its own, so a second run would register every handler twice).
+// Reason: The user asked for Quotation -> Draft PI -> Final PI, with items and sub-items editable in
+// the draft, and chose Sales Order as the PI.
+//
+// CHANGE NOTE
+// Date: 2026-10-28
+// Change: "Customer's Machine (Serial No)" offers the customer's machines (ERPNext Serial Nos), and
+// "Spares for Machine" adds that model's linked spare parts (setup_machine_spares).
+// Reason: The user asked for spare parts quotations for the machine the customer bought.
+//
+// CHANGE NOTE
+// Date: 2026-10-28
+// Change: Sales Order "validate" fills an empty (hidden) Delivery Date with the PI's date.
+// Reason: Saving a Draft PI stopped with "Delivery Date is required in every row" although the
+// user had asked for Delivery Date to be removed from the PI.
+//
+// CHANGE NOTE
+// Date: 2026-10-29
+// Change: The Draft PI is a Manav doctype of its own ("Make Draft PI" makes it); a Sales Order is the
+// Final PI only (show_pi_stage). The Draft PI's form has its own script (doctype/draft_pi/draft_pi.js).
+// Reason: The user asked for the Draft PI as a separate document before the Final PI (Sales Order).
+//
+// CHANGE NOTE
+// Date: 2026-11-02
+// Change: The Item Code search of a machine's line (no "Sub-Item of") offers only the principal's
+// Item Group, no longer the Options group; a sub-item line ("Sub-Item of" filled) still offers the
+// principal's group and Options. Sub-items come from the "+" button of their machine and spares from
+// "Spares for Machine", as before.
+// Reason: The user asked why ACF (an option, a sub-item) is offered in the Item Code list when no
+// spares / sub-items were asked for.
+//
+// CHANGE NOTE
+// Date: 2026-11-05
+// Change: The sub-items dialog shows each sub-item's price without decimals (25,000 not 25,000.000).
+// Reason: The user asked for no decimals in the sub-item list.
+//
+// CHANGE NOTE
+// Date: 2026-11-05
+// Change: The Item Code dropdown of the Items table offers every sales item of the Item Master on
+// every line; it is no longer limited to the principal's Item Group (or Options on sub-item lines).
+// Reason: The user asked for the full Item Master in the dropdown when adding a quotation item.
 
 const MANAV_QUOTATION = "manav.manav.quotation";
 
-frappe.ui.form.on("Quotation", {
+const quotation_events = {
 	setup(frm) {
 		setup_sub_item_buttons(frm);
 		add_rate_style();
@@ -126,6 +176,8 @@ frappe.ui.form.on("Quotation", {
 
 	refresh(frm) {
 		set_item_query(frm);
+		add_draft_pi_button(frm);
+		setup_machine_spares(frm);
 	},
 
 	custom_quotation_type(frm) {
@@ -142,10 +194,46 @@ frappe.ui.form.on("Quotation", {
 			if (defaults.custom_signed_by && !frm.doc.custom_signed_by) {
 				frm.set_value("custom_signed_by", defaults.custom_signed_by);
 			}
+			// 2026-10-29: a principal that is CIF by default makes the quotation CIF
+			// 2026-11-04: no tick any more: its CIF Charges (1500 without a default) are written,
+			// and custom_cif_charges below fills the port and Ex-Works From
+			if (defaults.custom_is_cif && !flt(frm.doc.custom_cif_charges) && frm.doc.docstatus === 0) {
+				frm.set_value("custom_cif_charges", flt(defaults.custom_cif_charges) || DEFAULT_CIF_CHARGES);
+			}
+			// 2026-11-04: Ex-Works From starts the price line ("Price <Ex-Works From> <Port> (1 NOS)"):
+			// an empty one gets the principal's Ex-Works From, else its Price Basis; the user changes it
+			const ex_works = defaults.custom_ex_works_from || defaults.price_basis;
+			if (ex_works && frm.fields_dict.custom_ex_works_from && !frm.doc.custom_ex_works_from && frm.doc.docstatus === 0) {
+				frm.set_value("custom_ex_works_from", ex_works);
+			}
 		});
 		if ((frm.doc.items || []).some((row) => row.item_code)) {
 			frappe.msgprint(__("The principal was changed. Check that the items belong to it."));
 		}
+	},
+
+	// CIF ticked: an empty CIF Port / Charges gets the principal's default (Quotation Type); the
+	// server does the same on saving (quotation.fill_cif_defaults). Added 2026-10-29.
+	// CHANGE NOTE
+	// Date: 2026-11-03
+	// Change: Charges are 1500 (DEFAULT_CIF_CHARGES) when the principal has no default; the field
+	// stays editable. Shared with the Final PI (Sales Order) form.
+	// Reason: The user asked for 1500 to be written when CIF is selected, with the option to change it.
+	// CHANGE NOTE
+	// Date: 2026-11-04
+	// Change: Runs when CIF Charges gets an amount (was: when CIF was ticked); the CIF tick is hidden
+	// and set by the server from the charges (quotation.fill_cif_defaults).
+	// Reason: The user asked to remove the CIF tick and to show the CIF fields directly.
+	custom_cif_charges(frm) {
+		if (!flt(frm.doc.custom_cif_charges) || frm.doc.docstatus !== 0) return;
+		load_type_defaults(frm).then((defaults) => {
+			defaults = defaults || {};
+			// 2026-11-03: port FTWZ Chennai when the principal has none; Ex-Works From from the principal
+			if (!frm.doc.custom_cif_port) frm.set_value("custom_cif_port", defaults.custom_cif_port || "FTWZ Chennai");
+			if (defaults.custom_ex_works_from && frm.fields_dict.custom_ex_works_from && !frm.doc.custom_ex_works_from) {
+				frm.set_value("custom_ex_works_from", defaults.custom_ex_works_from);
+			}
+		});
 	},
 
 	// ERPNext puts the customer's (or else the company's) currency and price list on the quotation
@@ -186,29 +274,199 @@ frappe.ui.form.on("Quotation", {
 		});
 	},
 
+	custom_machine_serial_no(frm) {
+		on_machine_serial_no(frm);
+	},
+
 	party_name(frm) {
 		// ERPNext now fills the customer's details, currency and price list among them.
 		keep_type_values(frm, true);
 		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
-		// The Haas Cust ID and the Account Manager both come from the chosen customer; another
-		// customer replaces them (the server fills the manager on saving only when it is empty).
-		frappe.db
-			.get_value("Customer", frm.doc.party_name, ["custom_haas_customer_id", "account_manager"])
-			.then((r) => {
-				const customer = r.message || {};
-				frm.set_value("custom_haas_customer_id", customer.custom_haas_customer_id || null);
-				// Only when the field is on the site (created by `bench migrate`); without the check
-				// Frappe shows "Field custom_account_manager not found".
-				if (frm.fields_dict.custom_account_manager) {
-					frm.set_value("custom_account_manager", customer.account_manager || null);
-				}
-			});
+		fill_customer_values(frm, frm.doc.party_name);
 	},
-});
+};
+
+// The Haas Cust ID and the Account Manager both come from the chosen customer; another customer
+// replaces them (the server fills the manager on saving only when it is empty). Used by the
+// quotation (party_name) and the PI (customer).
+// 2026-11-03: also the customer's old-system (Magic) code, Customer.custom_customer_code, shown in
+// Magic Cust Code.
+function fill_customer_values(frm, customer_name) {
+	frappe.db.get_value("Customer", customer_name, ["custom_haas_customer_id", "account_manager", "custom_customer_code"]).then((r) => {
+		const customer = r.message || {};
+		frm.set_value("custom_haas_customer_id", customer.custom_haas_customer_id || null);
+		if (frm.fields_dict.custom_magic_cust_code) {
+			frm.set_value("custom_magic_cust_code", customer.custom_customer_code || null);
+		}
+		// Only when the field is on the site (created by `bench migrate`); without the check
+		// Frappe shows "Field custom_account_manager not found".
+		if (frm.fields_dict.custom_account_manager) {
+			frm.set_value("custom_account_manager", customer.account_manager || null);
+		}
+	});
+}
+
+// The PI (Sales Order) works as the quotation does: sub-items, item search with rates, the
+// principal's currency and price list, Account Manager and Signed By. (2026-10-28)
+// CIF Charges written when CIF is ticked and the principal has no default (2026-11-03); the same
+// as quotation.DEFAULT_CIF_CHARGES on the server.
+const DEFAULT_CIF_CHARGES = 1500;
+
+const sales_order_events = {
+	setup: quotation_events.setup,
+	// 2026-11-03: the Final PI too: CIF ticked -> empty CIF Port / Charges filled (1500 by default)
+	// 2026-11-04: CIF Charges with an amount -> empty CIF Port / Ex-Works From filled (no tick)
+	custom_cif_charges: quotation_events.custom_cif_charges,
+	items_remove: quotation_events.items_remove,
+	custom_quotation_type: quotation_events.custom_quotation_type,
+	currency: quotation_events.currency,
+	selling_price_list: quotation_events.selling_price_list,
+	company: quotation_events.company,
+	custom_account_manager: quotation_events.custom_account_manager,
+	custom_machine_serial_no: quotation_events.custom_machine_serial_no,
+
+	refresh(frm) {
+		set_item_query(frm);
+		show_pi_stage(frm);
+		setup_machine_spares(frm);
+	},
+
+	// The PI has no Delivery Date for the user (hidden, 2026-10-28), but ERPNext's form makes the
+	// Items' Delivery Date compulsory (toggle_delivery_date) and stops the save. Frappe runs this
+	// "validate" before that check, so an empty date is filled with the PI's date here; the server
+	// does the same (pi.fill_delivery_date). Values are set on the rows directly, so ERPNext's
+	// delivery-date handlers do not run. (Checked on Frappe 16.33.1 / ERPNext 16.)
+	validate(frm) {
+		const date = frm.doc.transaction_date || frappe.datetime.get_today();
+		if (!frm.doc.delivery_date) frm.doc.delivery_date = date;
+		(frm.doc.items || []).forEach((row) => {
+			if (!row.delivery_date) row.delivery_date = frm.doc.delivery_date;
+		});
+	},
+
+	customer(frm) {
+		keep_type_values(frm, true);
+		if (frm.doc.customer) fill_customer_values(frm, frm.doc.customer);
+	},
+};
+
+// "Make Draft PI" on a submitted quotation that still has something to order: the quotation is
+// copied into a new Draft PI (Manav doctype; manav.manav.pi.make_draft_pi), opened unsaved.
+// CHANGE NOTE
+// Date: 2026-10-29
+// Change: Makes a Draft PI (Manav doctype) instead of a Sales Order (ERPNext's make_sales_order);
+// the Sales Order, the Final PI, is made from the Draft PI.
+// Reason: The user asked for the Draft PI as a separate document, not a Sales Order.
+function add_draft_pi_button(frm) {
+	if (frm.doc.docstatus !== 1 || ["Lost", "Ordered"].includes(frm.doc.status)) return;
+	if (!frappe.model.can_create("Draft PI")) return;
+	frm.add_custom_button(__("Make Draft PI"), () => {
+		frappe.model.open_mapped_doc({
+			method: "manav.manav.pi.make_draft_pi",
+			frm: frm,
+		});
+	}).addClass("btn-primary");
+}
+
+// Spares for the customer's machine (2026-10-28, user's request). The customer's machines are
+// ERPNext Serial Nos (serial number, machine model, customer). "Customer's Machine (Serial No)"
+// offers only the chosen customer's machines; on a draft with a machine, "Spares for Machine" lists
+// the spare parts linked to its model (Quotation Sub Item Master) to tick, and adds the ticked ones
+// as ordinary lines: setting item_code runs ERPNext's own item fetch, so name, unit and the price
+// from the quotation's price list come as for any line. Other spares are found as before through
+// the Item Code of a new line (all items of the principal's group, Spares).
+function setup_machine_spares(frm) {
+	if (!frm.fields_dict.custom_machine_serial_no) return;
+	frm.set_query("custom_machine_serial_no", () => {
+		const customer = frm.doc.doctype === "Sales Order" ? frm.doc.customer : frm.doc.quotation_to === "Customer" && frm.doc.party_name;
+		return customer ? { filters: { customer: customer } } : {};
+	});
+	if (frm.doc.docstatus === 0 && frm.doc.custom_machine_serial_no) {
+		frm.add_custom_button(__("Spares for Machine"), () => show_machine_spares_dialog(frm));
+	}
+}
+
+// The machine chosen: its serial number is also the old "Machine Number" field, and the button is shown.
+function on_machine_serial_no(frm) {
+	const serial_no = frm.doc.custom_machine_serial_no;
+	if (serial_no && frm.doc.custom_machine_number !== serial_no) {
+		frm.set_value("custom_machine_number", serial_no);
+	}
+	frm.refresh();
+}
+
+function show_machine_spares_dialog(frm) {
+	frappe.call({
+		method: `${MANAV_QUOTATION}.get_machine_spares`,
+		args: { serial_no: frm.doc.custom_machine_serial_no },
+		callback(r) {
+			const { model, spares } = r.message || {};
+			if (!spares || !spares.length) {
+				frappe.msgprint(
+					__("No spare parts are linked to {0} in Quotation Sub Item Master. Add them with a new line's Item Code.", [
+						model || frm.doc.custom_machine_serial_no,
+					])
+				);
+				return;
+			}
+			const on_quotation = new Set((frm.doc.items || []).map((row) => row.item_code));
+			const dialog = new frappe.ui.Dialog({
+				title: __("Spares for {0} ({1})", [model, frm.doc.custom_machine_serial_no]),
+				size: "extra-large",
+				fields: [
+					{
+						fieldtype: "MultiCheck",
+						fieldname: "spares",
+						columns: 2,
+						options: spares.map((spare) => ({
+							label: frappe.utils.escape_html(`${spare.item_code}: ${(spare.description || "").slice(0, 90)}`),
+							value: spare.item_code,
+							checked: on_quotation.has(spare.item_code) ? 1 : 0,
+						})),
+					},
+				],
+				secondary_action_label: __("Back"),
+				secondary_action() {
+					dialog.hide();
+				},
+				primary_action_label: __("Add"),
+				primary_action(values) {
+					const codes = (values.spares || []).filter((code) => !on_quotation.has(code));
+					dialog.hide();
+					// one after another, so that ERPNext's fetch of each line finishes before the next
+					frappe.run_serially(
+						codes.map((code) => () => {
+							const empty = (frm.doc.items || []).find((row) => !row.item_code);
+							const row = empty || frm.add_child("items");
+							return frappe.model.set_value(row.doctype, row.name, "item_code", code);
+						})
+					);
+				},
+			});
+			dialog.show();
+		},
+	});
+}
+
+// Which PI this Sales Order is, at the top of the form: since 2026-10-29 every Sales Order is the
+// Final PI (the Draft PI is the Manav doctype "Draft PI"), so a draft says to submit it.
+// CHANGE NOTE
+// Date: 2026-10-29
+// Change: "Final PI, not yet submitted" for a draft Sales Order (was "Draft PI").
+// Reason: The user asked for the Draft PI as a separate document before the Final PI.
+function show_pi_stage(frm) {
+	if (frm.doc.docstatus === 0) {
+		frm.set_intro(__("Final PI, not yet submitted: check it and submit it to confirm the order."), "blue");
+	} else if (frm.doc.docstatus === 1) {
+		frm.set_intro(__("Final PI."), "green");
+	} else {
+		frm.set_intro("");
+	}
+}
 
 // A line dragged to another place: the machine numbers, and so the sub-items' 1.1, 1.2, change.
 // (Frappe triggers "<table>_move" on the child doctype; checked on Frappe 16.33.1.)
-frappe.ui.form.on("Quotation Item", {
+const quotation_item_events = {
 	items_move(frm) {
 		number_sub_items(frm);
 		frm.refresh_field("items");
@@ -218,7 +476,17 @@ frappe.ui.form.on("Quotation Item", {
 	form_render(frm, cdt, cdn) {
 		add_row_form_buttons(frm, cdn);
 	},
-});
+};
+
+// Registered once, on the first run of this file (see the change note of 2026-10-28 above). The
+// handlers keep the functions of that first run.
+if (!frappe.manav_quotation_events_registered) {
+	frappe.manav_quotation_events_registered = true;
+	frappe.ui.form.on("Quotation", quotation_events);
+	frappe.ui.form.on("Quotation Item", quotation_item_events);
+	frappe.ui.form.on("Sales Order", sales_order_events);
+	frappe.ui.form.on("Sales Order Item", quotation_item_events);
+}
 
 // Back and Save on the panel of an Items line opened for editing, at its top and at its foot, so
 // that on a phone the panel can be closed or the quotation saved without scrolling back or
@@ -291,11 +559,13 @@ function add_row_buttons_style() {
 function add_rate_style() {
 	if (document.getElementById("manav-rate-style")) return;
 	$(`<style id="manav-rate-style">
-		.page-container[data-page-route="Quotation"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small {
+		.page-container[data-page-route="Quotation"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small,
+		.page-container[data-page-route="Sales Order"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small {
 			display: block;
 			white-space: pre-line;
 		}
-		.page-container[data-page-route="Quotation"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small::first-line {
+		.page-container[data-page-route="Quotation"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small::first-line,
+		.page-container[data-page-route="Sales Order"] .grid-row [data-fieldname="item_code"] .awesomplete li span.small::first-line {
 			font-weight: 700;
 			color: var(--text-color);
 		}
@@ -386,9 +656,10 @@ function restore_sub_item_rates(frm) {
 	});
 }
 
-// Offer only the items of the principal's Item Group, and the Options group. This replaces the
-// item query ERPNext sets on the form, so it is set again on every refresh. A quotation without
-// a principal keeps ERPNext's rule (all sales items).
+// The Item Code search of the Items table: every sales item (no variants templates) of the Item
+// Master, with its rate (2026-11-05; before: only the principal's Item Group, and Options on a
+// sub-item's line). This replaces the item query ERPNext sets on the form, so it is set again on
+// every refresh.
 function set_item_query(frm) {
 	const load_group = frm.doc.custom_quotation_type
 		? frappe.db.get_value("Quotation Type", frm.doc.custom_quotation_type, "item_group")
@@ -396,11 +667,11 @@ function set_item_query(frm) {
 	load_group.then((r) => {
 		frm.manav_item_group = (r.message || {}).item_group || null;
 	});
-	frm.set_query("item_code", "items", () => {
+	frm.set_query("item_code", "items", (doc, cdt, cdn) => {
+		// 2026-11-05: every sales item of the Item Master is offered, on any line; the Item Group
+		// filter (principal's group, Options only on sub-item lines, added 2026-11-02) is removed
+		// at the user's request. frm.manav_item_group is still loaded but no longer filters here.
 		const filters = { is_sales_item: 1, has_variants: 0 };
-		if (frm.manav_item_group) {
-			filters.item_group = ["in", [frm.manav_item_group, "Options"]];
-		}
 		// 2026-10-19: ERPNext's item search, with each item's rate in the drop-down. The three
 		// manav_ keys tell the server where to look the rate up; it takes them out of the filters
 		// before ERPNext's search runs (manav.manav.quotation.item_query_with_rate).
@@ -564,7 +835,8 @@ function show_options_dialog(frm, only_code) {
 					options: of_item.map((option) => {
 						by_key[option.key] = option;
 						const description = (option.description || "").slice(0, 90);
-						const rate = format_number(flt(option.rate));
+						// Whole number only (no decimals), as the user asked for this list.
+						const rate = format_number(flt(option.rate), null, 0);
 						const label = `${option.item_code}: ${description} (${rate})`;
 						return {
 							label: frappe.utils.escape_html(label),

@@ -1,0 +1,26 @@
+/*
+ * Login page: the company logo at a readable size (loaded on website pages through
+ * web_include_css in hooks.py; limited to the login page by body[data-path="login"]).
+ * Frappe's login page keeps its own look; Frappe draws the logo at most 32px high, which makes the
+ * wide Manav Marketing logo (Website Settings > App Logo, /assets/manav/images/manav_marketing_logo.png)
+ * hard to read. Upgrade note: uses the class of Frappe's login logo (img.app-logo), checked on
+ * Frappe 16.33.1.
+ *
+ * Created: 2026-10-28.
+ *
+ * CHANGE NOTE
+ * Date: 2026-10-28
+ * Change: Only the logo size is kept; the blue background, card, button and link styles of the
+ * same day were removed.
+ * Reason: The user asked for the login page back to Frappe's default, with the company logo shown
+ * properly.
+ */
+
+/* 2026-10-28: bigger (was at most 64px high / 240px wide), at the user's request; the wide logo
+   (2048 x 758) now shows about 300px wide, still inside the login card */
+body[data-path="login"] img.app-logo {
+	max-height: 120px;
+	max-width: 300px;
+	width: auto;
+	height: auto;
+}

@@ -21,6 +21,12 @@
 	decimals in the system's number format.
 
 	Created: 2026-10-19.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The letter head is printed at the top of every page, with its footer and "Page n of m" at
+	the foot (manav_page_frame.html), instead of once at the top.
+	Reason: The user asked for the header, footer and page number on every page of every print.
 -#}
 {%- macro ordinal(day) -%}
 	{#- the suffix raised, as on the letter: 11<sup>th</sup> -#}
@@ -54,8 +60,10 @@
 	.print-format .mal .sign td { width: 50%; text-align: center; }
 </style>
 
+{#- 2026-11-04: the letter is drawn into frame_body; manav_page_frame.html (end of this file) puts
+    the letter head at the top and its footer and "Page n of m" at the foot of every page -#}
+{% set frame_body %}
 <div class="mal">
-	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
 
 	<table class="head">
 		<tr>
@@ -123,3 +131,5 @@
 		</tr>
 	</table>
 </div>
+{% endset %}
+{% include "manav/templates/print_formats/manav_page_frame.html" %}

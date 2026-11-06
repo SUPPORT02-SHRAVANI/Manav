@@ -1,7 +1,7 @@
 {
  "chart_name": "Attendance This Month",
  "chart_type": "Group By",
- "color": "#2a78d6",
+ "color": "#16a34a",
  "creation": "2026-10-17 16:00:00.000000",
  "custom_options": "",
  "docstatus": 0,
@@ -14,7 +14,7 @@
  "idx": 0,
  "is_public": 1,
  "is_standard": 1,
- "modified": "2026-10-19 15:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Attendance This Month",

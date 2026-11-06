@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "autoname": "field:stage_name",
+ "creation": "2026-11-02 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["stage_name", "sequence", "days", "make_quotation"],
+ "fields": [
+  {"description": "The stage's name, e.g. Quote Followup. The order comes from Sequence.", "fieldname": "stage_name", "fieldtype": "Data", "in_list_view": 1, "label": "Stage", "reqd": 1, "unique": 1},
+  {"description": "Order of the stage on the Leads Board and in the dropdown.", "fieldname": "sequence", "fieldtype": "Int", "in_list_view": 1, "label": "Sequence"},
+  {"description": "A visit (or Next Stage) to this stage sets the next follow-up this many days later (unless a Next Visit Date is given).", "fieldname": "days", "fieldtype": "Int", "in_list_view": 1, "label": "Days"},
+  {"default": "0", "description": "Leads in this stage (like 04 RFQ) get a Make Quotation button that opens an ERPNext Quotation filled from the lead.", "fieldname": "make_quotation", "fieldtype": "Check", "in_list_view": 1, "label": "Show Make Quotation"}
+ ],
+ "links": [],
+ "modified": "2026-11-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Manav Lead Stage",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Manav Management", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Sales Manager", "share": 1, "write": 1},
+  {"read": 1, "role": "Sales User", "select": 1}
+ ],
+ "quick_entry": 1,
+ "search_fields": "days",
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": []
+}

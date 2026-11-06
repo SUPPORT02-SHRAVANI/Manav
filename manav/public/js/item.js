@@ -85,6 +85,48 @@
 // Change: A machine's form shows its sub-items as a tree in the section "Sub-Items" at the foot
 // of the Details tab (manav_show_sub_items_tree); the section is hidden for other items.
 // Reason: The user asked for the sub-items tree inside the Item form of that item.
+//
+// CHANGE NOTE
+// Date: 2026-11-02
+// Change: Specifications is hidden (item_fields.py), so its buttons are added only while the field
+// is shown. Under Description an "Add points" button opens a dialog: a title and the points, one
+// per line, filled in from the description; OK writes the description as the title and a bulleted
+// list, which the quotation prints as its "*" points (macro describe in the print templates).
+// Reason: The user asked to remove Specifications and to give a point-wise way to fill the
+// description.
+//
+// CHANGE NOTE
+// Date: 2026-11-03
+// Change: The "Add points" dialog is replaced by a "Description points" panel under Description:
+// the points are listed numbered on the form, each editable with a remove button, plus
+// "Add point" (and Enter in a point adds the next). Each change rewrites the description as before.
+// Reason: The user asked to see the description point-wise on the form with an option to add points.
+//
+// CHANGE NOTE
+// Date: 2026-11-03
+// Change: The Description rich-text editor is hidden (CSS on the field wrapper); the panel, now
+// labelled "Description", is the only editor. "Add point" is a primary (coloured) button.
+// Reason: The user asked to remove the big description box and to colour the add-point button.
+//
+// CHANGE NOTE
+// Date: 2026-11-03
+// Change: The panel has no "Description" label and no title box; a title already in a description
+// is shown (and saved) as the first point. The tabs Details and Description are coloured (blue,
+// green) by the same style element.
+// Reason: The user asked to remove the label and title box and to colour those two tabs.
+//
+// CHANGE NOTE
+// Date: 2026-11-04
+// Change: The item's full name is shown under the Description heading (manav_show_full_name),
+// in blue; the "Description" heading itself is removed (item_fields.py).
+// Reason: The user asked for the full name of the item under Description, in another colour,
+// without the Description heading.
+//
+// CHANGE NOTE
+// Date: 2026-11-06
+// Change: Item Name on a new item shows a dropdown of matching items from the Item Master
+// (manav_item_name_suggestions); picking one opens that item.
+// Reason: The user asked for an Item Master dropdown on Item Name.
 
 // Separates the cells of a line after the label (S.A.E. and Metric, or Units and value). Two bars,
 // because a single bar is used inside values on the maker's page (Taper: CT40 | BT40 | HSK-A63).
@@ -133,93 +175,254 @@ const MANAV_KEY_SPECIFICATIONS = {
 
 frappe.ui.form.on("Item", {
 	refresh(frm) {
+		manav_item_name_suggestions(frm);
 		manav_show_sub_items_tree(frm);
-		if (!frm.fields_dict.custom_specifications) return;
+		manav_show_full_name(frm);
+		// 2026-11-03: the Description is the rich-text editor again (no points panel); only the tab colours
+		manav_add_tab_style();
+		manav_bullets_by_default(frm);
+		// the Specifications buttons only while that field is shown (hidden since 2026-11-02)
+		const specs = frm.fields_dict.custom_specifications;
+		if (!specs || specs.df.hidden) return;
 		const group = __("Specifications");
 		frm.add_custom_button(__("Format: key specifications"), () => manav_apply_format(frm, true), group);
 		frm.add_custom_button(__("Format: all rows"), () => manav_apply_format(frm, false), group);
 		frm.add_custom_button(__("From screenshot"), () => manav_read_screenshot(frm), group);
 	},
+	item_name(frm) {
+		manav_show_full_name(frm);
+	},
 });
 
-// The machine's sub-items as a tree, in the HTML field custom_sub_items_tree (section "Sub-Items",
-// item_fields.py): the machine at the root, its sub-items under it with description, type and
-// price for this machine, in Sr No order. Uses Frappe's tree component (frappe.ui.Tree) with the
-// nodes of manav.manav.item_tree.get_tree_nodes, as the page Machine Sub-Items Tree does (whose
-// label code this follows). The section is hidden for an item without sub-items, for a new item,
-// and for a reader who may not read Quotation Sub Item Master (count_sub_items then gives 0).
-// Added 2026-10-19.
+// A dropdown of the Item Master under Item Name while a new item is typed in (2026-11-06, the
+// user's request): Item Name is a plain text field in ERPNext, so the list is made here with
+// Frappe's Awesomplete. After 2 letters it shows up to 20 items whose name or code contains the
+// text; picking one opens that existing item instead of making a duplicate. On a saved item
+// nothing is shown, the name is then only being corrected.
+function manav_item_name_suggestions(frm) {
+	const field = frm.fields_dict.item_name;
+	if (!field || !field.$input || field.$input.data("manav-suggestions")) return;
+	field.$input.data("manav-suggestions", 1);
+	const esc = frappe.utils.escape_html;
+	const awesomplete = new Awesomplete(field.$input.get(0), {
+		minChars: 2,
+		maxItems: 20,
+		autoFirst: false,
+		sort: false,
+		filter: () => true, // the server already filtered
+		replace: () => {}, // picking opens the item; the typed text stays
+		item: (suggestion) =>
+			$(`<li><a><strong>${esc(suggestion.label)}</strong><br>
+				<span class="small text-muted">${esc(suggestion.value)}</span></a></li>`).get(0),
+	});
+	field.$input.on(
+		"input",
+		frappe.utils.debounce(() => {
+			// the field's input is kept when the form shows another item; check each time
+			if (!frm.is_new()) return (awesomplete.list = []);
+			const text = (field.$input.val() || "").trim();
+			if (text.length < 2) return;
+			// read through the user's own permissions (frappe.client.get_list)
+			frappe.db
+				.get_list("Item", {
+					fields: ["name", "item_name"],
+					or_filters: [
+						["item_name", "like", `%${text}%`],
+						["name", "like", `%${text}%`],
+					],
+					limit: 20,
+					order_by: "item_name asc",
+				})
+				.then((items) => {
+					awesomplete.list = (items || []).map((i) => ({ label: i.item_name || i.name, value: i.name }));
+					awesomplete.evaluate();
+				});
+		}, 300)
+	);
+	field.$input.on("awesomplete-selectcomplete", (e) => {
+		const code = e.originalEvent && e.originalEvent.text && e.originalEvent.text.value;
+		if (code) frappe.set_route("Form", "Item", code);
+	});
+}
+
+// The item's full name (Item Name, else the code) under the Description heading, above Standard
+// Accessories, in the HTML field custom_item_full_name (item_fields.py). Added 2026-11-04, the
+// user's request.
+function manav_show_full_name(frm) {
+	const field = frm.fields_dict.custom_item_full_name;
+	if (!field) return; // the field is created by `bench migrate`
+	const name = frm.doc.item_name || frm.doc.item_code || "";
+	$(field.wrapper).html(
+		name
+			? `<div class="frappe-control">
+				<div class="control-label">${__("Item Name")}</div>
+				<div style="font-size: var(--text-lg); font-weight: 600; margin: 4px 0 12px; color: var(--blue-600);">${frappe.utils.escape_html(name)}</div>
+			</div>`
+			: ""
+	);
+}
+
+// An empty Description starts as a bullet list (2026-11-03, the user's request: the bullet button
+// "on" by default), so each Enter gives the next point; the prints read the list as points. Done
+// with "silent" so the form is not marked changed until the user types. Uses the Quill editor of
+// Frappe's Text Editor control (field.quill), checked on Frappe 16.54; without it nothing happens.
+function manav_bullets_by_default(frm) {
+	const field = frm.fields_dict.description;
+	const apply = () => {
+		const quill = field && field.quill;
+		if (!quill || quill.getText().trim() || quill.getFormat(0, 1).list) return;
+		quill.formatLine(0, 1, "list", "bullet", "silent");
+	};
+	// the editor is made when the field is first drawn: try now and when it gets the focus
+	setTimeout(apply, 300);
+	if (field && field.$wrapper && !field.$wrapper.data("manav-bullets")) {
+		field.$wrapper.data("manav-bullets", 1).on("focusin", () => setTimeout(apply, 0));
+	}
+}
+
+// The tabs Details (blue) and Standard Accessories (green) in colour (2026-11-03, the user's
+// request). Added once per page.
+// CHANGE NOTE
+// Date: 2026-11-03
+// Change: The points panel under Description (manav_add_points_button, manav_render_points,
+// manav_points_html, manav_description_points) is removed: the Description is Frappe's rich-text
+// editor again. Bullet lists typed in it still print as points (macro describe in the prints).
+// Reason: The user asked for the description as rich text ("make it RTF").
+function manav_add_tab_style() {
+	if ($("#manav-points-style").length) return;
+	$(`<style id="manav-points-style">
+		.page-container[data-page-route="Item"] .form-tabs-list .nav-link[data-fieldname="details"] {
+			color: var(--blue-600); background: var(--blue-100); border-radius: 6px 6px 0 0;
+		}
+		.page-container[data-page-route="Item"] .form-tabs-list .nav-link[data-fieldname="custom_description_tab"] {
+			color: var(--green-600); background: var(--green-100); border-radius: 6px 6px 0 0;
+		}
+		.page-container[data-page-route="Item"] .form-tabs-list .nav-link[data-fieldname="details"].active,
+		.page-container[data-page-route="Item"] .form-tabs-list .nav-link[data-fieldname="custom_description_tab"].active {
+			font-weight: 600;
+		}
+	</style>`).appendTo("head");
+}
+
+// The item's sub-items as a table, in the HTML field custom_sub_items_tree (section "Sub-Items",
+// item_fields.py): Sr No, code, description, type, qty, rate and an Active switch per row, read
+// from manav.manav.item_tree.get_sub_items; "+ Add Sub-Item" opens a dialog (add_sub_item) and the
+// switch turns a sub-item on or off for new quotations (set_sub_item_active). "Open full tree"
+// opens the page Machine Sub-Items Tree. Shown for every saved item, so a sub-item can be added to
+// an item that has none yet; hidden for a reader who may not read Quotation Sub Item Master.
+// Added 2026-10-19 as a tree (frappe.ui.Tree).
+// CHANGE NOTE
+// Date: 2026-11-03
+// Change: A table with add and Active switch instead of the tree.
+// Reason: The user asked for the sub-items in table form on the Item, with an option to add them and
+// to activate or deactivate each.
 function manav_show_sub_items_tree(frm) {
 	const field = frm.fields_dict.custom_sub_items_tree;
 	if (!field) return; // the field is created by `bench migrate`
 	frm.toggle_display("custom_sub_items_section", false);
 	if (frm.is_new()) return;
 	const code = frm.doc.name;
-	frappe
-		.call({ method: "manav.manav.item_tree.count_sub_items", args: { item_code: code } })
-		.then((r) => {
-			const count = r.message || 0;
-			// another item may have been opened meanwhile
-			if (frm.doc.name !== code || !count) return;
-			frm.toggle_display("custom_sub_items_section", true);
-			manav_add_sub_tree_style();
-			const esc = frappe.utils.escape_html;
-			const $wrapper = $(field.wrapper).empty();
-			$(`<div class="manav-item-tree-head">
-					<span class="text-muted">${esc(__("{0} sub-items, with their price for this machine", [count]))}</span>
-					<button type="button" class="btn btn-xs btn-default">${esc(__("Open full tree"))}</button>
-				</div>`)
-				.appendTo($wrapper)
-				.find("button")
-				.on("click", () => frappe.set_route("machine-sub-items", { search: code }));
-			const $tree = $('<div class="manav-sub-tree"></div>').appendTo($wrapper);
-			new frappe.ui.Tree({
-				parent: $tree,
-				label: code,
-				root_value: `machine::${code}`,
-				method: "manav.manav.item_tree.get_tree_nodes",
-				args: { search: "" },
-				get_label(node) {
-					if (node.is_root) {
-						const name = frm.doc.item_name && frm.doc.item_name !== code ? frm.doc.item_name : "";
-						return `<b>${esc(code)}</b>${name ? ` <span class="manav-tree-name">${esc(name)}</span>` : ""}`;
-					}
-					const d = node.data || {};
-					const description = (d.description || "").replace(/\s+/g, " ").trim();
-					return (
-						`<span class="manav-tree-code">${esc(d.title)}</span>` +
-						(description ? ` <span class="manav-tree-name">${esc(description)}</span>` : "") +
-						(d.sub_item_type ? ` <span class="manav-tree-type">${esc(d.sub_item_type)}</span>` : "") +
-						` <span class="manav-tree-rate">${esc(format_number(flt(d.rate), null, 2))}</span>`
-					);
-				},
-				toolbar: [
-					{
-						label: __("Open Item"),
-						condition: (node) => !node.is_root && (node.data || {}).item,
-						click: (node) => frappe.set_route("Form", "Item", node.data.item),
-					},
-				],
-			});
+	frappe.call({ method: "manav.manav.item_tree.get_sub_items", args: { item_code: code } }).then((r) => {
+		const data = r.message || {};
+		const rows = data.rows || [];
+		// another item may have been opened meanwhile; no table for a reader who may not see it
+		if (frm.doc.name !== code || (!rows.length && !data.can_create)) return;
+		frm.toggle_display("custom_sub_items_section", true);
+		manav_add_sub_tree_style();
+		const esc = frappe.utils.escape_html;
+		const active = rows.filter((row) => cint(row.active)).length;
+		const lines = rows
+			.map(
+				(row) => `<tr class="${cint(row.active) ? "" : "manav-sub-off"}">
+					<td class="manav-sub-no">${esc(String(row.sr_no || ""))}</td>
+					<td><a href="/app/item/${encodeURIComponent(row.sub_item_code)}" class="manav-tree-code">${esc(row.sub_item_code)}</a></td>
+					<td class="manav-tree-name">${esc((row.item_description || "").replace(/\s+/g, " ").trim())}</td>
+					<td>${row.sub_item_type ? `<span class="manav-tree-type">${esc(row.sub_item_type)}</span>` : ""}</td>
+					<td class="manav-tree-rate">${esc(format_number(flt(row.qty), null, 0))}</td>
+					<td class="manav-tree-rate">${esc(format_number(flt(row.rate), null, 2))}</td>
+					<td class="text-center"><input type="checkbox" data-name="${esc(row.name)}" ${cint(row.active) ? "checked" : ""} ${
+						data.can_write ? "" : "disabled"
+					} title="${esc(__("Active: offered on new quotations"))}"></td>
+				</tr>`
+			)
+			.join("");
+		const $wrapper = $(field.wrapper).empty();
+		$(`<div class="manav-item-tree-head">
+				<span class="text-muted">${esc(__("{0} sub-items, {1} active; with their price for this machine", [rows.length, active]))}</span>
+				<span>
+					${data.can_create ? `<button type="button" class="btn btn-xs btn-primary manav-sub-add">${esc(__("+ Add Sub-Item"))}</button>` : ""}
+					<button type="button" class="btn btn-xs btn-default manav-sub-tree-open">${esc(__("Open full tree"))}</button>
+				</span>
+			</div>
+			${
+				rows.length
+					? `<div class="manav-sub-scroll"><table class="table table-bordered manav-sub-table">
+						<thead><tr><th>${__("Sr")}</th><th>${__("Sub-Item")}</th><th>${__("Description")}</th><th>${__("Type")}</th>
+						<th class="text-right">${__("Qty")}</th><th class="text-right">${__("Rate")}</th><th class="text-center">${__("Active")}</th></tr></thead>
+						<tbody>${lines}</tbody></table></div>`
+					: `<div class="text-muted">${esc(__("No sub-items yet."))}</div>`
+			}`).appendTo($wrapper);
+		$wrapper.find(".manav-sub-tree-open").on("click", () => frappe.set_route("machine-sub-items", { search: code }));
+		$wrapper.find(".manav-sub-add").on("click", () => manav_add_sub_item_dialog(frm));
+		$wrapper.find("input[type=checkbox][data-name]").on("change", function () {
+			const $box = $(this);
+			frappe
+				.call({
+					method: "manav.manav.item_tree.set_sub_item_active",
+					args: { name: $box.attr("data-name"), active: $box.prop("checked") ? 1 : 0 },
+				})
+				.then(() => manav_show_sub_items_tree(frm))
+				// not saved (e.g. no permission): put the box back
+				.catch(() => $box.prop("checked", !$box.prop("checked")));
 		});
+	});
+}
+
+// "+ Add Sub-Item": an Item as a new sub-item of this item, with its qty and price for this machine.
+function manav_add_sub_item_dialog(frm) {
+	const dialog = new frappe.ui.Dialog({
+		title: __("Add Sub-Item to {0}", [frm.doc.name]),
+		fields: [
+			{ fieldname: "sub_item_code", fieldtype: "Link", options: "Item", label: __("Sub-Item"), reqd: 1 },
+			{ fieldname: "sub_item_type", fieldtype: "Data", label: __("Type"), description: __("e.g. Standard, Option") },
+			{ fieldname: "col", fieldtype: "Column Break" },
+			{ fieldname: "qty", fieldtype: "Float", label: __("Qty"), default: 1 },
+			{ fieldname: "rate", fieldtype: "Float", label: __("Rate for this machine") },
+			{ fieldname: "sec", fieldtype: "Section Break" },
+			{ fieldname: "item_description", fieldtype: "Small Text", label: __("Description"), description: __("Empty: the sub-item's own description") },
+		],
+		primary_action_label: __("Add"),
+		primary_action(values) {
+			frappe
+				.call({ method: "manav.manav.item_tree.add_sub_item", args: { item_code: frm.doc.name, ...values } })
+				.then(() => {
+					dialog.hide();
+					frappe.show_alert({ message: __("Sub-item {0} added", [values.sub_item_code]), indicator: "green" });
+					manav_show_sub_items_tree(frm);
+				});
+		},
+	});
+	dialog.show();
 }
 
 function manav_add_sub_tree_style() {
 	if (document.getElementById("manav-item-sub-tree-style")) return;
 	$(`<style id="manav-item-sub-tree-style">
 		.manav-item-tree-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-		.manav-sub-tree .tree-label { white-space: normal; }
-		.manav-sub-tree .manav-tree-name { color: var(--text-muted); }
-		.manav-sub-tree .manav-tree-type {
-			display: inline-block;
-			font-size: var(--text-xs);
-			padding: 0 6px;
-			border-radius: 8px;
-			background: var(--bg-gray);
-			color: var(--text-color);
+		.manav-item-tree-head .btn + .btn { margin-left: 6px; }
+		.manav-sub-scroll { max-height: 420px; overflow: auto; }
+		.manav-sub-table { margin: 0; font-size: var(--text-sm); }
+		.manav-sub-table th { position: sticky; top: 0; background: var(--subtle-fg, var(--bg-light-gray)); white-space: nowrap; }
+		.manav-sub-table td { vertical-align: middle; }
+		.manav-sub-table .manav-sub-no { width: 48px; color: var(--text-muted); }
+		.manav-sub-table tr.manav-sub-off td { opacity: 0.5; }
+		.manav-sub-table .manav-tree-name { color: var(--text-muted); }
+		.manav-sub-table .manav-tree-type {
+			display: inline-block; font-size: var(--text-xs); padding: 0 6px; border-radius: 8px;
+			background: var(--bg-gray); color: var(--text-color);
 		}
-		.manav-sub-tree .manav-tree-code { font-weight: 600; }
-		.manav-sub-tree .manav-tree-rate { font-variant-numeric: tabular-nums; margin-left: 4px; }
+		.manav-sub-table .manav-tree-code { font-weight: 600; }
+		.manav-sub-table .manav-tree-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 	</style>`).appendTo("head");
 }
 

@@ -1,0 +1,57 @@
+{#-
+	"Standard Accessories" block for the print formats made in Frappe's print format builder
+	(Manav Quotation Classic, Manav Quotation Bordered: an HTML element under the Items table that
+	includes this file). For each machine line of `doc` (a line without "Sub-Item of"), its name and
+	code, then the points of its description in two columns, read down the left column and then the
+	right. The description is the Item's Standard Accessories copied to the line (or changed on the
+	document); a bulleted / numbered list gives one point per item, bold items stay bold; a
+	description without a list is not repeated here (it is short, and the Items table has the name).
+
+	All styles are written into the tags, as the builder's page has its own style sheet.
+
+	Created: 2026-11-04, when the user asked for the Standard Accessories in the ERPNext-style
+	quotation prints (Quotation Classic printed them squeezed into its narrow Item column, Quotation
+	Bordered not at all).
+-#}
+{%- set acc_machines = [] -%}
+{%- for line in doc.get("items") or [] -%}
+	{%- if line.item_code and not line.get("custom_main_item_code") and "<li" in (line.description or "") -%}
+		{%- set points = [] -%}
+		{#- one piece per <li ...>; its text without tags; bold when it holds <strong> or <b> -#}
+		{%- for piece in (line.description or "").split("<li")[1:] -%}
+			{%- set body = piece.split("</li>")[0] -%}
+			{%- set text = frappe.utils.strip_html("<li" ~ body) | replace("&nbsp;", " ") | trim -%}
+			{%- if text -%}
+				{#- 2026-11-04: printed with its formatting from the rich-text editor (colour, italic ...):
+				    the list item's own HTML; Quill's empty marker span left out -#}
+				{%- set rich = (body.split(">", 1)[1] if ">" in body else text) | replace('<span class="ql-ui" contenteditable="false"></span>', "") | trim -%}
+				{%- set _ = points.append({"text": rich, "bold": ("<strong" in body or "<b>" in body or "<b " in body)}) -%}
+			{%- endif -%}
+		{%- endfor -%}
+		{%- if points -%}{%- set _ = acc_machines.append({"line": line, "points": points}) -%}{%- endif -%}
+	{%- endif -%}
+{%- endfor -%}
+{%- if acc_machines -%}
+<div style="margin: 4px 0 0 0; font-size: 9pt; color: #1f2328;">
+	<div style="font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 6px 0;">Standard Accessories</div>
+	{%- for machine in acc_machines %}
+	{%- set points = machine.points -%}
+	{%- set half = ((points | length) + 1) // 2 -%}
+	<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; margin: 0 0 8px 0; page-break-inside: auto;">
+		<div style="font-weight: 700; margin: 0 0 4px 0;">{{ machine.line.item_name or machine.line.item_code }}{% if machine.line.item_name and machine.line.item_name != machine.line.item_code %} <span style="font-weight: 400; color: #6b7280;">({{ machine.line.item_code }})</span>{% endif %}</div>
+		<table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+			{%- for i in range(half) %}
+			{%- set left = points[i] -%}
+			{%- set right = points[i + half] if (i + half) < (points | length) else None %}
+			<tr style="page-break-inside: avoid;">
+				<td style="width: 3%; padding: 1px 0; border: 0; vertical-align: top; color: #6b7280;">&#8226;</td>
+				<td style="width: 47%; padding: 1px 12px 1px 0; border: 0; vertical-align: top;{% if left.bold %} font-weight: 700;{% endif %}">{{ left.text }}</td>
+				<td style="width: 3%; padding: 1px 0; border: 0; vertical-align: top; color: #6b7280;">{% if right %}&#8226;{% endif %}</td>
+				<td style="width: 47%; padding: 1px 0; border: 0; vertical-align: top;{% if right and right.bold %} font-weight: 700;{% endif %}">{% if right %}{{ right.text }}{% endif %}</td>
+			</tr>
+			{%- endfor %}
+		</table>
+	</div>
+	{%- endfor %}
+</div>
+{%- endif -%}

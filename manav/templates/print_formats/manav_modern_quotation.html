@@ -1,0 +1,262 @@
+{#-
+	Manav Modern Quotation: print format of ERPNext's Quotation in the modern black and white
+	layout (the default print format of Quotation, set in manav/manav/erpnext_fields.py).
+
+	Working: the layout itself is the file
+	manav/templates/print_formats/manav_modern_quotation_body.html, which is shared with the
+	print format of the old quotations (Manav Modern Quotation Head). This print format only
+	gathers the values of a Quotation into the variable `q`, in the shape that file describes,
+	and then includes it:
+	- machines are the lines that are not options; the options of a machine are the lines whose
+	  "Option of Item" is the machine's code;
+	- a machine's picture is the Image of its quotation line (ERPNext copies it from the Item when
+	  the item is chosen), else the Image of the Item, for lines made before the Item had one;
+	- amounts are formatted by ERPNext in the quotation's currency;
+	- the reference fields are the customer's reference and its date, the sales engineer and the
+	  Haas Cust ID; all four are passed on, filled or not, and printed with their names;
+	- payment info is the payment schedule and the "valid till" date, when filled;
+	- the signing person is the sales person in "Signed By", with the designation from Employee
+	  Master through the sales person's old employee code.
+
+	Created: 2026-10-13.
+
+	CHANGE NOTE
+	Date: 2026-10-13
+	Change: The layout was moved out of this print format into the shared file named above;
+	this print format keeps only the gathering of the values. The page it prints is unchanged.
+	Reason: The user asked for the new layout on all quotations, which includes the old ones in
+	Quotation Head; one shared layout keeps the two from drifting apart. The earlier changes of
+	this day are listed in the shared file.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: The picture of each machine is passed on to the shared layout.
+	Reason: The user asked for the image of the item on the quotation.
+
+	CHANGE NOTE
+	Date: 2026-10-14
+	Change: A line without Specifications of its own prints the Specifications of its Item.
+	Reason: Specifications are copied to a line only when the item is chosen; the user had added
+	them to an Item after its quotation line was made, and they did not print.
+
+	CHANGE NOTE
+	Date: 2026-10-17
+	Change: A line whose "Sub-Item of" is empty is still printed as an option, under its machine,
+	when the Quotation Sub Item Master lists its item as a sub-item of another machine line on the
+	quotation. So the page shows each machine, then its options, then the next machine, whatever
+	order the lines were entered in.
+	Reason: The user's quotation had an option (ACF) added as an ordinary line; it printed as a
+	machine of its own, with a specification box, above the machine it belongs to.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: A machine's row shows one price: the machine with its sub-items (Price = that total
+	divided by the machine's quantity, Total = machine amount + its sub-items' amounts). The
+	sub-items under it are listed without price and total. Sub-items whose machine is not on the
+	quotation keep their own prices. The grand total is unchanged.
+	Reason: The user asked for the quotation to show only the machine's price in the total, not
+	the sub-items' prices.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: A quotation ticked CIF (custom_is_cif) prints GRAND TOTAL (CIF).
+	Reason: The user asked for the CIF option on the quotation too.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: CIF Charges (custom_cif_charges, with custom_cif_port) of a quotation ticked CIF are
+	printed as "CIF Charges - <port>" and added to the printed grand total.
+	Reason: The user asked for an amount to enter once CIF is ticked, printed as on the old
+	quotation ("CIF Charges - Chennai Sea Port ... US$ 5500.00").
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: Moved from the print format's HTML into this file (manav_modern_quotation.json only
+	includes it), next to the shared PI totals file it now includes.
+	The price line and totals are the PI's (manav_quotation_pi_totals.html): "Price <basis> (n NOS)
+	...... US$ <amount>" after the lines, then TOTAL, or TOTAL / taxes / CIF Charges / GRAND TOTAL;
+	no Subtotal and no "Tax / Duties: As Applicable" row.
+	Reason: The user asked for the quotation to print like the PI (price line and totals).
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: Each line shows its own price again: the machine row its own rate and amount, each option
+	row (1.1, 1.2 ...) its own rate and amount. Before (2026-10-28), the machine row showed the machine
+	with its options added and the options were listed without prices. The price line after the lines
+	still gives the machines with their options added (manav_quotation_pi_totals.html).
+	Reason: The user showed the old print with each option's price and chose the options to stay
+	added into the price, so the lines must show the parts that add up to it.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: No specifications any more: the "Equipment Specification" box is left out (no_specs) and
+	the machines follow one another (no_page_per_machine); each line's description is printed as
+	points in two columns under it, with "*" as on the old print (macro describe, the same as in
+	Manav Modern Quotation CIF; bullet "*"). The machine's picture stays beside its points.
+	Reason: The user asked for no specification in the quotation, only the description, as on the
+	old print's photo.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: describe reads a bulleted / numbered list in the description (the Item form's "Add
+	points"): the text before the list is the title (head), each list item a point.
+	Reason: The user asked for the description to be entered point-wise, with no Specifications.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: A bold item of the description's bulleted list (<strong> / <b>; the old system's
+	"Bold Print" of Quotation Sub Machine Mst) is marked "!" and printed bold.
+	Reason: The user had the machines' points loaded from the old table, with its bold lines.
+-#}
+{#- a sales person whose name was taken already is stored as "NAME (CODE)"; the code is not printed -#}
+{%- macro person(name) -%}{{ (name or "").split(" (")[0] }}{%- endmacro -%}
+{#- describe(html, out): splits the description of a quotation line into points, into out.points,
+    and its short title into out.head. "Title; a, b, c. d" is title Title and points a, b, c, d;
+    a description of several lines gives one point a line. A comma inside brackets ("(MM, SMM)")
+    or inside a number (12,000) does not cut. A one-line description without "; " is cut only
+    when it has six parts or more, so that the name of a part such as "CABLE, AXIS, BRUSHLESS"
+    stays whole; it then has no points and prints as before. -#}
+{%- macro describe(html, out) -%}
+	{%- set text = frappe.utils.strip_html((html or "") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n") | replace("</p>", "\n") | replace("</div>", "\n") | replace("</li>", "\n")) | replace("&nbsp;", " ") | replace("&amp;", "&") | replace("&quot;", '"') | replace("&#39;", "'") -%}
+	{%- set text_lines = text.split("\n") | map("trim") | select | list -%}
+	{%- set found = namespace(head="", body=[], cur="", rich=[]) -%}
+	{%- set raw = html or "" -%}
+	{%- if "<li" in raw -%}
+		{#- a bulleted / numbered list (the Item's "Add points", 2026-11-02): the text before the list
+		    is the title, each list item a point -#}
+		{%- set found.head = frappe.utils.strip_html(raw.split("<ul")[0].split("<ol")[0]) | replace("&nbsp;", " ") | replace("&amp;", "&") | trim -%}
+		{%- for piece in raw.split("<li")[1:] -%}
+			{%- set point = frappe.utils.strip_html("<li" ~ piece.split("</li>")[0]) | replace("&nbsp;", " ") | replace("&amp;", "&") | replace("&quot;", '"') | replace("&#39;", "'") | trim -%}
+			{#- 2026-11-03: a bold list item (<strong> / <b>, the old system's "Bold Print") is marked "!" and printed bold -#}
+			{%- set li_html = piece.split("</li>")[0] -%}
+			{#- 2026-11-04: the point keeps its formatting from the rich-text editor (colour, italic,
+			    underline, size ...): the list item's own HTML instead of its bare text; Quill's empty
+			    marker span is left out. The bare text above still decides whether there is a point. -#}
+			{%- set rich = (li_html.split(">", 1)[1] if ">" in li_html else "") | replace('<span class="ql-ui" contenteditable="false"></span>', "") | trim -%}
+			{%- if point and ("<strong" in li_html or "<b>" in li_html or "<b " in li_html) -%}{%- set rich = "!" ~ rich -%}{%- endif -%}
+			{%- if point -%}{%- set _ = found.rich.append(rich) -%}{%- endif -%}
+		{%- endfor -%}
+	{%- elif text_lines | length > 1 -%}
+		{%- set found.body = text_lines -%}
+	{%- elif text_lines -%}
+		{%- set halves = text_lines[0].split("; ", 1) -%}
+		{%- if halves | length > 1 -%}{%- set found.head = halves[0] | trim -%}{%- endif -%}
+		{%- set parts = [] -%}
+		{%- for piece in (halves | last).split(", ") -%}
+			{%- set found.cur = (found.cur ~ ", " ~ piece) if found.cur else piece -%}
+			{%- if found.cur.count("(") <= found.cur.count(")") -%}{%- set _ = parts.append(found.cur | trim) -%}{%- set found.cur = "" -%}{%- endif -%}
+		{%- endfor -%}
+		{%- if found.cur -%}{%- set _ = parts.append(found.cur | trim) -%}{%- endif -%}
+		{%- if halves | length > 1 or parts | length >= 6 -%}{%- set found.body = parts -%}{%- endif -%}
+	{%- endif -%}
+	{#- a point holding several sentences becomes one point a sentence -#}
+	{%- set points = [] -%}
+	{%- for part in found.body -%}
+		{%- set sentences = part.split(". ") -%}
+		{%- for sentence in sentences if sentence | trim -%}
+			{%- set _ = points.append((sentence | trim) ~ ("." if not loop.last and not sentence.endswith(".") else "")) -%}
+		{%- endfor -%}
+	{%- endfor -%}
+	{#- 2026-11-04: list items are points as they are (with their formatting), not cut into sentences -#}
+	{%- if found.rich -%}{%- set points = found.rich -%}{%- endif -%}
+	{%- set _ = out.update({"points": points, "head": found.head}) -%}
+{%- endmacro -%}
+{%- set lines = doc.get("items") or [] -%}
+{#- Lines marked "Sub-Item of" are options. An unmarked line is an option too when the Quotation
+    Sub Item Master lists its item as a sub-item of another unmarked line's item, and its own item
+    is not a machine there (has no sub-items). Codes are compared without case, as the database
+    does. parent_of: line idx -> item code of its machine. -#}
+{%- set unmarked = lines | rejectattr("custom_main_item_code") | list -%}
+{%- set unmarked_codes = unmarked | map(attribute="item_code") | select | list -%}
+{%- set sub_links = frappe.get_all("Quotation Sub Item Master", filters={"main_item_code": ["in", unmarked_codes]}, fields=["main_item_code", "sub_item_code"]) if unmarked_codes else [] -%}
+{%- set link_keys = [] -%}
+{%- set machine_keys = [] -%}
+{%- for link in sub_links -%}
+	{%- set _ = link_keys.append((link.main_item_code or "") | lower ~ "::" ~ (link.sub_item_code or "") | lower) -%}
+	{%- set _ = machine_keys.append((link.main_item_code or "") | lower) -%}
+{%- endfor -%}
+{%- set parent_of = {} -%}
+{%- for line in unmarked -%}
+	{%- set code = (line.item_code or "") | lower -%}
+	{%- if code and code not in machine_keys -%}
+		{%- for machine in unmarked -%}
+			{%- if line.idx not in parent_of and machine.idx != line.idx and ((machine.item_code or "") | lower ~ "::" ~ code) in link_keys -%}
+				{%- set _ = parent_of.update({line.idx: machine.item_code}) -%}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+{%- endfor -%}
+{%- set main_items = unmarked | rejectattr("idx", "in", parent_of.keys() | list) | list -%}
+{%- set main_codes = main_items | map(attribute="item_code") | list -%}
+{#- 2026-11-03: q.signature = the Signature image of the Signed By sales person (custom_signature), printed above the name. -#}
+{#- 2026-11-03: no signature image when Print Signature (custom_print_signature) is unticked -#}
+{%- set signer_code = frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_employee_code") if doc.custom_signed_by else None -%}
+{%- set contact_designation = frappe.db.get_value("Contact", doc.contact_person, "designation") if doc.contact_person else None -%}
+
+{%- set q = {
+	"company": doc.company,
+	"date": frappe.utils.getdate(doc.transaction_date) if doc.transaction_date else None,
+	"number": doc.name,
+	"customer_name": doc.customer_name or doc.party_name,
+	"address": doc.address_display,
+	"attn": (doc.contact_display ~ ((", " ~ contact_designation) if contact_designation else "")) if doc.contact_display else "",
+	"phone": doc.contact_mobile,
+	"issuer_address": doc.company_address_display,
+	"refs": [],
+	"notes": [],
+	"machines": [],
+	"loose_options": [],
+	"subtotal": doc.get_formatted("net_total"),
+	"taxes": [],
+	"grand_total": doc.get_formatted("grand_total"),
+	"grand_total_label": "GRAND TOTAL (CIF)" if doc.get("custom_is_cif") else "GRAND TOTAL",
+	"payment": [],
+	"terms": doc.terms,
+	"signer": person(doc.custom_signed_by) | trim,
+	"signature": frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_signature") if doc.custom_signed_by and doc.get("custom_print_signature") != 0 else None,
+	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
+	"no_specs": True,
+	"no_page_per_machine": True,
+	"bullet": "*",
+} -%}
+
+{#- the four reference fields of the old quotation header; all are given, filled or not -#}
+{%- set _ = q.refs.extend([
+	["Ref. No.", doc.custom_your_reference],
+	["Ref Dt.", frappe.utils.getdate(doc.custom_your_reference_date).strftime("%d/%m/%y") if doc.custom_your_reference_date else ""],
+	["Sales Engg.", person(doc.custom_sales_engineer) | trim],
+	["Cust ID", doc.custom_haas_customer_id],
+]) -%}
+
+{#- machines with their options, then the options whose machine is not on the quotation -#}
+{%- for item in main_items -%}
+	{%- set options = [] -%}
+	{%- for option in lines if option.custom_main_item_code == item.item_code or parent_of.get(option.idx) == item.item_code -%}
+		{%- set about = {} -%}{{- describe(option.description, about) -}}
+		{%- set _ = options.append({"points": about.points, "head": about.head, "code": option.item_code, "name": option.item_name, "description": option.description, "rate": option.get_formatted("rate", doc), "qty": option.get_formatted("qty", doc), "amount": option.get_formatted("amount", doc)}) -%}
+	{%- endfor -%}
+	{#- the picture copied to the line when the item was chosen, else the Item's picture now -#}
+	{%- set image = item.image or (frappe.db.get_value("Item", item.item_code, "image") if item.item_code else None) -%}
+	{#- The line's own Specifications, copied from the Item when the item was chosen. A line made
+	    before the Item had any has none: the Item's Specifications are used then. -#}
+	{#- no specifications are printed (no_specs, 2026-11-02): the description as points -#}
+	{%- set about = {} -%}{{- describe(item.description, about) -}}
+	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "options": options}) -%}
+{%- endfor -%}
+{%- for option in lines | selectattr("custom_main_item_code") | rejectattr("custom_main_item_code", "in", main_codes) -%}
+	{%- set about = {} -%}{{- describe(option.description, about) -}}
+	{%- set _ = q.loose_options.append({"points": about.points, "head": about.head, "code": option.item_code, "name": option.item_name, "description": option.description, "rate": option.get_formatted("rate", doc), "qty": option.get_formatted("qty", doc), "amount": option.get_formatted("amount", doc)}) -%}
+{%- endfor -%}
+
+{#- price line, taxes with an amount, CIF charges and the totals, as on the PI (2026-11-02;
+    before: Subtotal, the taxes or "Tax / Duties: As Applicable", CIF Charges, GRAND TOTAL) -#}
+{%- set with_taxes = True -%}
+{% include "manav/templates/print_formats/manav_quotation_pi_totals.html" %}
+
+{#- payment schedule and validity -#}
+{%- for row in doc.get("payment_schedule") or [] -%}
+	{%- set _ = q.payment.append("<b>" ~ (row.payment_term or row.description or "Payment") ~ ":</b>" ~ ((" " ~ ("%g" | format(row.invoice_portion)) ~ "%") if frappe.utils.flt(row.invoice_portion) else "") ~ ((" " ~ row.description) if row.description and row.payment_term and row.description != row.payment_term else "")) -%}
+{%- endfor -%}
+{%- if doc.valid_till -%}{%- set _ = q.payment.append("<b>Valid till:</b> " ~ frappe.utils.getdate(doc.valid_till).strftime("%d.%m.%Y")) -%}{%- endif -%}
+
+{% include "manav/templates/print_formats/manav_modern_quotation_body.html" %}

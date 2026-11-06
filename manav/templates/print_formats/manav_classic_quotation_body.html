@@ -14,6 +14,42 @@
 	there are charges; payment info; the terms; the signature; the footer line.
 
 	Created: 2026-10-19.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: Laid out and calculated exactly like the old print the user showed (FTG AEROSPACE,
+	26QX070717): title "Quotation"; plain bordered column heads; under each machine's points
+	"Prices : <price basis>  US$ <machine's own amount>" in plain digits; under the last machine
+	"CIF Charges - <port> . . . .  US$ <amount>" (and other charges the same way); then the machine's
+	"Options" in the same four columns (1, 2, 3 ... | code | description | price), each with its own
+	price, NOT added to anything. No Total row and no amount in words, as on the old print. Payment,
+	terms, signature and footer are unchanged. (Before: options as a small table 1.1, 1.2 under the
+	price, CIF charges after all options, and a Total of everything.)
+	Reason: The user asked for the quotation print to match the old one, "calculation and all", and
+	chose the old calculation: the price is the machine only, options are not added; also "don't add
+	the sub-items' price in the total".
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: "Page n of m" at the foot of every page of the PDF (manav_page_number.html).
+	Reason: The user asked for page numbers when printing quotations and PIs.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: The Payment block (payment terms, Valid till; q.payment) is no longer printed.
+	Reason: The user asked to remove it from every print.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The "Prices : <Ex-Works From> <Port>" text is not bold (its amount still is); at first
+	for the CIF line only, later the same day for every quotation's line. Then bold again, at the
+	user's request.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The letter head is printed at the top of every page, with its footer and "Page n of m" at
+	the foot (manav_page_frame.html), instead of the letter head once at the top.
+	Reason: The user asked for the header, footer and page number on every page of every print.
+	Reason: The user asked for the word Ex-Works not in bold.
 -#}
 <style>
 	.mcq { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -21,12 +57,25 @@
 	/* Frappe's print style forces 6px padding on every cell and a margin on every paragraph */
 	.print-format .mcq td, .print-format .mcq th { padding: 2px 5px !important; vertical-align: top; line-height: 1.35; }
 	.print-format .mcq p { margin: 0 !important; }
-	.mcq .title { text-align: center; font-family: "Times New Roman", serif; font-size: 15pt; font-weight: bold; letter-spacing: 0.08em; color: {{ theme.dark }}; margin: 4px 0 6px; }
+	.mcq .title { text-align: center; font-family: "Times New Roman", serif; font-size: 16pt; font-weight: bold; color: {{ theme.dark }}; margin: 4px 0 6px; }
 	.mcq .serif { font-family: "Times New Roman", serif; font-weight: bold; font-size: 11pt; }
 	.mcq .box { border: 1.5px solid {{ theme.dark }}; }
 	.mcq .box > tbody > tr > td { border: 1px solid {{ theme.dark }}; }
 	.mcq .box .key { color: {{ theme.dark }}; font-family: "Times New Roman", serif; font-weight: bold; width: 36%; }
-	.mcq .heads th { background: {{ theme.primary }}; color: #fff; border: 1px solid {{ theme.dark }}; font-family: "Times New Roman", serif; font-size: 11pt; text-align: center; padding: 4px 5px !important; }
+	/* 2026-11-02: plain bordered heads, as on the old print */
+	.mcq .heads th { background: #fff; color: {{ theme.dark }}; border: 1.5px solid {{ theme.dark }}; font-family: "Times New Roman", serif; font-size: 11pt; text-align: center; padding: 4px 5px !important; }
+	.mcq .heads th.left { text-align: left; }
+	/* the price lines: "Prices : ..." and charges with a dotted leader, the amount in the price column */
+	.mcq .price-lines { table-layout: fixed; margin-top: 6px; }
+	.print-format .mcq .price-lines td { padding: 1px 5px !important; font-family: "Times New Roman", serif; font-weight: bold; font-size: 11pt; }
+	.mcq .price-lines .cur { width: 30%; text-align: left; }
+	.mcq .price-lines .num { text-align: right; }
+	/* the options in the old print's four columns, with lines between the cells */
+	.mcq .opt { border: 1.5px solid {{ theme.dark }}; border-top: 0; page-break-inside: auto; }
+	.mcq .opt table { table-layout: fixed; }
+	.print-format .mcq .opt td { border: 1px solid {{ theme.dark }}; font-size: 9.5pt; padding: 1px 5px !important; }
+	.print-format .mcq .opt tr.opt-head td { border: 0; border-bottom: 1px solid {{ theme.dark }}; font-family: "Times New Roman", serif; font-weight: bold; font-size: 11pt; padding: 3px 5px !important; }
+	.mcq .opt tr { page-break-inside: avoid; }
 	.mcq .machine { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 4px 6px 6px; page-break-inside: auto; }
 	.mcq .machine.new-page { page-break-before: always; border-top: 1.5px solid {{ theme.dark }}; }
 	.mcq .machine-head td { padding-top: 4px !important; }
@@ -55,9 +104,11 @@
 	.mcq .small { font-size: 8pt; }
 </style>
 
+{#- 2026-11-04: the page is drawn into frame_body; manav_page_frame.html (end of this file) puts the
+    letter head at the top and its footer and "Page n of m" at the foot of every page -#}
+{% set frame_body %}
 <div class="mcq">
-	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
-	<div class="title">QUOTATION</div>
+	<div class="title">Quotation</div>
 
 	<table class="box">
 		<tr>
@@ -81,7 +132,7 @@
 	<table class="heads" style="margin-top: -1px;">
 		<tr>
 			<th style="width: 8%;">Sr.No</th>
-			<th style="width: 16%;">Item Code</th>
+			<th style="width: 16%;" class="left">Item Code</th>
 			<th>Particulars</th>
 			<th style="width: 20%;">Price in {{ q.currency_label }}</th>
 		</tr>
@@ -112,65 +163,63 @@
 		</table>
 		{% endif %}
 
-		<table class="price-row">
+		{#- "Prices : <basis>" with the machine's own amount (not its options), as on the old print -#}
+		<table class="price-lines">
 			<tr>
-				<td style="padding-left: 6%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
-				<td class="right amount" style="width: 30%;">{{ machine.amount_plain }}</td>
+				<td style="width: 8%;"></td>
+				{#- 2026-11-04: bold, as before (for a while that day it was not bold; the user asked for bold) -#}
+				<td style="width: 52%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
+				<td style="width: 20%;"></td>
+				<td style="width: 20%;"><table><tr><td class="cur">{{ machine.price_digits.split(" ")[0] }}</td><td class="num">{{ machine.price_digits.split(" ", 1)[1] }}</td></tr></table></td>
 			</tr>
+			{#- under the last machine: CIF charges and other charges, a dotted leader each -#}
+			{% if loop.last %}
+			{% for charge in ([[q.cif_line, q.cif_digits]] if q.cif_line else []) + q.tax_lines %}
+			<tr>
+				<td></td>
+				<td colspan="2" class="leader">{{ charge[0] }}</td>
+				<td><table><tr><td class="cur">{{ charge[1].split(" ")[0] }}</td><td class="num">{{ charge[1].split(" ", 1)[1] }}</td></tr></table></td>
+			</tr>
+			{% endfor %}
+			{% endif %}
 		</table>
+	</div>
 
-		{% if machine.options %}
-		<table class="options">
-			<tr><th style="width: 8%;">No.</th><th style="width: 18%;">Option</th><th>Description</th><th style="width: 20%;" class="right">Price</th></tr>
+	{#- the machine's options: own prices, not added to the price above (the old print) -#}
+	{% if machine.options %}
+	<div class="opt">
+		<table>
+			<tr class="opt-head"><td style="width: 8%;"></td><td style="width: 16%;">Options</td><td></td><td style="width: 20%;"></td></tr>
 			{% for option in machine.options %}
-			<tr{% if loop.index is even %} class="band"{% endif %}>
-				<td>{{ option.no }}</td>
-				<td><b>{{ option.code or "" }}</b></td>
+			<tr>
+				<td class="right">{{ loop.index }}</td>
+				<td>{{ option.code or "" }}</td>
 				<td>{{ option.description or "" }}</td>
-				<td class="right">{{ option.amount_plain }}</td>
+				<td class="right">{{ option.price_digits }}</td>
 			</tr>
 			{% endfor %}
 		</table>
-		{% endif %}
 	</div>
+	{% endif %}
 	{% endfor %}
 
 	{% if q.loose_options %}
-	<div class="block">
-		<div class="caps">Options</div>
-		<table class="options">
-			<tr><th style="width: 8%;">No.</th><th style="width: 18%;">Option</th><th>Description</th><th style="width: 20%;" class="right">Price</th></tr>
-			{% for option in q.loose_options %}
-			<tr{% if loop.index is even %} class="band"{% endif %}>
-				<td>{{ option.no }}</td><td><b>{{ option.code or "" }}</b></td><td>{{ option.description or "" }}</td><td class="right">{{ option.amount_plain }}</td>
-			</tr>
-			{% endfor %}
-		</table>
-	</div>
-	{% endif %}
-
-	{#- charges (CIF and so on) as dotted-leader lines, then the total -#}
-	{% if q.taxes %}
-	<div class="charges">
+	<div class="opt">
 		<table>
-			{% for tax in q.taxes %}
+			<tr class="opt-head"><td style="width: 8%;"></td><td style="width: 16%;">Options</td><td></td><td style="width: 20%;"></td></tr>
+			{% for option in q.loose_options %}
 			<tr>
-				<td class="leader" style="padding-left: 6%;"><b>{{ tax[0] }}</b></td>
-				<td class="right" style="width: 30%;"><b>{{ tax[2] }}</b></td>
+				<td class="right">{{ loop.index }}</td>
+				<td>{{ option.code or "" }}</td>
+				<td>{{ option.description or "" }}</td>
+				<td class="right">{{ option.price_digits }}</td>
 			</tr>
 			{% endfor %}
-			<tr class="grand"><td style="padding-left: 6%;">Total</td><td class="right">{{ q.grand_total_plain }}</td></tr>
 		</table>
-		{% if q.in_words %}<div class="small" style="padding: 3px 0 0 6%;">{{ q.in_words }}</div>{% endif %}
 	</div>
 	{% endif %}
 
-	{% if q.payment %}
-	<div class="block">
-		<div class="caps">Payment</div>
-		{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
-	</div>
-	{% endif %}
+	{#- 2026-11-03: no Payment / Valid till block (the user asked to remove it from every print) -#}
 
 	{% if q.terms %}
 	<div class="block terms">
@@ -181,7 +230,9 @@
 
 	<div class="block">
 		<div class="caps">For {{ q.company or "" }}</div>
-		<div style="height: 40px;"></div>
+		{#- 2026-11-03: the signer's Signature image (Sales Person) in the space left for signing -#}
+		{% if q.signature %}<div style="height: 40px;"><img src="{{ q.signature }}" style="max-height: 40px; max-width: 180px;"></div>
+		{% else %}<div style="height: 40px;"></div>{% endif %}
 		<div><b>{{ q.signer }}</b></div>
 		<div>{{ q.designation or "" }}</div>
 	</div>
@@ -193,3 +244,7 @@
 		</tr>
 	</table>
 </div>
+{% endset %}
+{#- 2026-11-03: "Page n of m" at the foot of every page of the PDF -#}
+{#- 2026-11-04: with the letter head on every page and its footer (manav_page_frame.html) -#}
+{% include "manav/templates/print_formats/manav_page_frame.html" %}

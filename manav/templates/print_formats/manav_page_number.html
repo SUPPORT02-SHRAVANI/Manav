@@ -1,0 +1,22 @@
+{#-
+	"Page 1 of 3" at the foot of every page of the PDF of a Manav quotation / PI print.
+
+	Working: Frappe's PDF maker (wkhtmltopdf, frappe/utils/pdf.py prepare_header_footer) takes the
+	element with the id footer-html out of the page and draws it at the foot of every page; its
+	footer page (pdf_header_footer.html) fills the elements with the classes page and topage with
+	the page number and the page count. The class visible-pdf hides it in the browser's print view.
+	Only one footer-html is used per page, so the Modern layout, which has the letter head's footer
+	there, puts this line inside its own footer instead of including this file.
+
+	Optional: page_footer_html, HTML put above the page number (e.g. a letter head footer).
+
+	Created: 2026-11-03, when the user asked for page numbers on the quotation and PI prints.
+-#}
+<div id="footer-html" class="visible-pdf">
+	{{ page_footer_html or "" }}
+	{#- Frappe's footer page pads its body 15 mm at the top; the letter head footer takes that back
+	    with margin-top -15mm (pdf_header_footer.html), so this line does the same when it is alone -#}
+	<div style="text-align: right; font-family: Inter, Helvetica, Arial, sans-serif; font-size: 8pt; color: #555; padding: 2px 4mm 0;{% if not page_footer_html %} margin-top: -15mm;{% endif %}">
+		Page <span class="page"></span> of <span class="topage"></span>
+	</div>
+</div>

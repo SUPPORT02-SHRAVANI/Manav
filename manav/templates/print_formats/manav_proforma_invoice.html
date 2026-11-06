@@ -1,0 +1,338 @@
+{#-
+	Manav PI print template: the Draft PI (Manav doctype, print format Manav Draft PI) and the Final
+	PI (ERPNext's Sales Order, print format Manav Proforma Invoice) both include this file.
+
+	Working: like the quotation print formats, it gathers the values of the document into `q` and
+	includes manav/templates/print_formats/manav_modern_quotation_body.html. It is Manav Modern
+	Quotation CIF with these differences:
+	- the title is PROFORMA INVOICE on the Final PI, DRAFT PROFORMA INVOICE on the Draft PI; the box
+	  says Invoice To and PI No. / Draft PI No.;
+	- the head has the phone and the Cust ID again;
+	- no taxes: one TOTAL row (the total before taxes), no subtotal, tax rows or "Tax / Duties";
+	  when the customer paid an advance: TOTAL, "Less: Advance Received" and BALANCE (see below);
+	- payment info is the payment schedule (the Final PI's; a Draft PI has none).
+	As in the CIF format: no specification boxes, an HSN Code column (Quotation Item Master), each
+	line's description as points in two columns, and the machine's picture beside its points.
+	The Draft PI has the field names of the Sales Order (draft_pi.json), apart from its quotation
+	(quotation instead of custom_quotation), so one template serves both.
+
+	Created: 2026-10-28 as the HTML of the print format Manav Proforma Invoice, when the user asked
+	for Quotation -> Draft PI -> Final PI.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: "Against Quotation No. ..." is printed under the head when the PI has its quotation
+	(see manav/manav/pi.py).
+	Reason: The user asked for the quotation number as reference on the PI.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: Moved from the print format into this file, shared by the Draft PI and the Final PI; the
+	Final PI also prints "Against Draft PI No. ..."; no taxes on either (subtotal, taxes and
+	"Tax / Duties: As Applicable" left out, TOTAL = the total before taxes).
+	Reason: The user asked for the Draft PI as a separate document with its own print, and for the
+	taxes to be taken off the print of both PIs.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: An advance is printed as TOTAL, "Less: Advance Received", BALANCE. The advance is, on the
+	Final PI, ERPNext's Advance Paid (Payment Entries against the Sales Order, in the party account
+	currency, converted to the PI's currency when that is the company currency), else its "Advance
+	Received" typed by hand (custom_advance_received, copied from the Draft PI); on the Draft PI its
+	"Advance Received" (advance_received).
+	Reason: The user asked that when the customer has paid an advance, the PI print shows the total,
+	minus the advance, and then the total to pay.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: A PI marked CIF (Draft PI is_cif, Final PI custom_is_cif) prints TOTAL (CIF) and
+	BALANCE (CIF); prices print as before.
+	Reason: The user asked for a CIF option on the PI.
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: CIF Charges with its port (Draft PI cif_charges / cif_port, Final PI custom_cif_charges /
+	custom_cif_port): TOTAL, "CIF Charges - <port>", GRAND TOTAL (CIF) = total + charges; with an
+	advance, then "Less: Advance Received" and BALANCE (CIF).
+	Reason: The user asked for an amount to enter once CIF is ticked, printed as on the old
+	quotation ("CIF Charges - Chennai Sea Port ... US$ 5500.00").
+
+	CHANGE NOTE
+	Date: 2026-10-31
+	Change: Under each machine's points a bold line "Price <Price Basis> (<qty> <UOM>) ...... US$
+	<machine's amount>". Price Basis is the PI's (custom_price_basis, pi.fill_price_basis), else
+	the principal's, else EX-WORKS FTWZ WAREHOUSE CHENNAI (pi.DEFAULT_PRICE_BASIS) for a PI saved
+	before the field existed.
+	Reason: The user asked for this line of the old print on both the Draft PI and the Final PI.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: The basis is the PI's Price Type and Port joined ("EX-WORKS FTWZ" "WAREHOUSE CHENNAI",
+	pi.fill_price_basis); a PI not saved since then prints its old Price Basis as before.
+	Reason: The user asked for this as the default with an option to set it, as the old program's
+	"Final price with: Price Type / Port".
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: The price line is printed once for the whole PI, before TOTAL: the machines' quantity
+	added up (the first machine's UOM) and the PI's total before advance and CIF charges (net_total).
+	Before, one line under each machine with its own amount.
+	Reason: The user said the line is one for the whole bill.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: describe reads a bulleted / numbered list in the description (the Item form's "Add
+	points"): the text before the list is the title (head), each list item a point.
+	Reason: The user asked for the description to be entered point-wise, with no Specifications.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: No TOTAL row when there are no CIF charges and no advance (q.no_totals): the price line
+	above it already gives the same amount. With CIF charges or an advance the totals stay
+	(TOTAL, CIF Charges / Less: Advance Received, GRAND TOTAL / BALANCE).
+	Reason: The user marked the lone TOTAL row as not needed in any print format.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: CIF: "Prices : Ex-Works, <Ex-Works From>." and "CIF Charges upto <CIF Port>" as on the old
+	print (price line, CIF row of the totals).
+	Reason: The user showed the old CIF print next to ours.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: A bold item of the description's bulleted list (<strong> / <b>; the old system's
+	"Bold Print" of Quotation Sub Machine Mst) is marked "!" and printed bold.
+	Reason: The user had the machines' points loaded from the old table, with its bold lines.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The CIF line "Prices : Ex-Works, <place>. (n NOS)" is printed not bold (q.price_plain).
+	Later the same day: bold again, at the user's request (price_plain no longer set).
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The PI always prints "Price <Price Type> <Port> (n NOS) ...... amount"; a CIF PI no longer
+	prints "Prices : Ex-Works, <place>." in its place (CIF Charges - <port> still follows).
+	Reason: The user asked for the "Prices : ..." line on the quotation only and this line on the
+	Draft PI and Final PI.
+	Reason: The user asked for the word Ex-Works not in bold.
+-#}
+{#- a sales person whose name was taken already is stored as "NAME (CODE)"; the code is not printed -#}
+{%- macro person(name) -%}{{ (name or "").split(" (")[0] }}{%- endmacro -%}
+{#- describe(html, out): splits the description of a quotation line into points, into out.points,
+    and its short title into out.head. "Title; a, b, c. d" is title Title and points a, b, c, d;
+    a description of several lines gives one point a line. A comma inside brackets ("(MM, SMM)")
+    or inside a number (12,000) does not cut. A one-line description without "; " is cut only
+    when it has six parts or more, so that the name of a part such as "CABLE, AXIS, BRUSHLESS"
+    stays whole; it then has no points and prints as before. -#}
+{%- macro describe(html, out) -%}
+	{%- set text = frappe.utils.strip_html((html or "") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n") | replace("</p>", "\n") | replace("</div>", "\n") | replace("</li>", "\n")) | replace("&nbsp;", " ") | replace("&amp;", "&") | replace("&quot;", '"') | replace("&#39;", "'") -%}
+	{%- set text_lines = text.split("\n") | map("trim") | select | list -%}
+	{%- set found = namespace(head="", body=[], cur="", rich=[]) -%}
+	{%- set raw = html or "" -%}
+	{%- if "<li" in raw -%}
+		{#- a bulleted / numbered list (the Item's "Add points", 2026-11-02): the text before the list
+		    is the title, each list item a point -#}
+		{%- set found.head = frappe.utils.strip_html(raw.split("<ul")[0].split("<ol")[0]) | replace("&nbsp;", " ") | replace("&amp;", "&") | trim -%}
+		{%- for piece in raw.split("<li")[1:] -%}
+			{%- set point = frappe.utils.strip_html("<li" ~ piece.split("</li>")[0]) | replace("&nbsp;", " ") | replace("&amp;", "&") | replace("&quot;", '"') | replace("&#39;", "'") | trim -%}
+			{#- 2026-11-03: a bold list item (<strong> / <b>, the old system's "Bold Print") is marked "!" and printed bold -#}
+			{%- set li_html = piece.split("</li>")[0] -%}
+			{#- 2026-11-04: the point keeps its formatting from the rich-text editor (colour, italic,
+			    underline, size ...): the list item's own HTML instead of its bare text; Quill's empty
+			    marker span is left out. The bare text above still decides whether there is a point. -#}
+			{%- set rich = (li_html.split(">", 1)[1] if ">" in li_html else "") | replace('<span class="ql-ui" contenteditable="false"></span>', "") | trim -%}
+			{%- if point and ("<strong" in li_html or "<b>" in li_html or "<b " in li_html) -%}{%- set rich = "!" ~ rich -%}{%- endif -%}
+			{%- if point -%}{%- set _ = found.rich.append(rich) -%}{%- endif -%}
+		{%- endfor -%}
+	{%- elif text_lines | length > 1 -%}
+		{%- set found.body = text_lines -%}
+	{%- elif text_lines -%}
+		{%- set halves = text_lines[0].split("; ", 1) -%}
+		{%- if halves | length > 1 -%}{%- set found.head = halves[0] | trim -%}{%- endif -%}
+		{%- set parts = [] -%}
+		{%- for piece in (halves | last).split(", ") -%}
+			{%- set found.cur = (found.cur ~ ", " ~ piece) if found.cur else piece -%}
+			{%- if found.cur.count("(") <= found.cur.count(")") -%}{%- set _ = parts.append(found.cur | trim) -%}{%- set found.cur = "" -%}{%- endif -%}
+		{%- endfor -%}
+		{%- if found.cur -%}{%- set _ = parts.append(found.cur | trim) -%}{%- endif -%}
+		{%- if halves | length > 1 or parts | length >= 6 -%}{%- set found.body = parts -%}{%- endif -%}
+	{%- endif -%}
+	{#- a point holding several sentences becomes one point a sentence -#}
+	{%- set points = [] -%}
+	{%- for part in found.body -%}
+		{%- set sentences = part.split(". ") -%}
+		{%- for sentence in sentences if sentence | trim -%}
+			{%- set _ = points.append((sentence | trim) ~ ("." if not loop.last and not sentence.endswith(".") else "")) -%}
+		{%- endfor -%}
+	{%- endfor -%}
+	{#- 2026-11-04: list items are points as they are (with their formatting), not cut into sentences -#}
+	{%- if found.rich -%}{%- set points = found.rich -%}{%- endif -%}
+	{%- set _ = out.update({"points": points, "head": found.head}) -%}
+{%- endmacro -%}
+{%- set lines = doc.get("items") or [] -%}
+{#- Lines marked "Sub-Item of" are options. An unmarked line is an option too when the Quotation
+    Sub Item Master lists its item as a sub-item of another unmarked line's item, and its own item
+    is not a machine there (has no sub-items). Codes are compared without case, as the database
+    does. parent_of: line idx -> item code of its machine. -#}
+{%- set unmarked = lines | rejectattr("custom_main_item_code") | list -%}
+{%- set unmarked_codes = unmarked | map(attribute="item_code") | select | list -%}
+{%- set sub_links = frappe.get_all("Quotation Sub Item Master", filters={"main_item_code": ["in", unmarked_codes]}, fields=["main_item_code", "sub_item_code"]) if unmarked_codes else [] -%}
+{%- set link_keys = [] -%}
+{%- set machine_keys = [] -%}
+{%- for link in sub_links -%}
+	{%- set _ = link_keys.append((link.main_item_code or "") | lower ~ "::" ~ (link.sub_item_code or "") | lower) -%}
+	{%- set _ = machine_keys.append((link.main_item_code or "") | lower) -%}
+{%- endfor -%}
+{%- set parent_of = {} -%}
+{%- for line in unmarked -%}
+	{%- set code = (line.item_code or "") | lower -%}
+	{%- if code and code not in machine_keys -%}
+		{%- for machine in unmarked -%}
+			{%- if line.idx not in parent_of and machine.idx != line.idx and ((machine.item_code or "") | lower ~ "::" ~ code) in link_keys -%}
+				{%- set _ = parent_of.update({line.idx: machine.item_code}) -%}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- endif -%}
+{%- endfor -%}
+{%- set main_items = unmarked | rejectattr("idx", "in", parent_of.keys() | list) | list -%}
+{%- set main_codes = main_items | map(attribute="item_code") | list -%}
+{#- 2026-11-03: q.signature = the Signature image of the Signed By sales person (custom_signature), printed above the name. -#}
+{#- 2026-11-03: no signature image when Print Signature (custom_print_signature) is unticked -#}
+{%- set signer_code = frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_employee_code") if doc.custom_signed_by else None -%}
+{#- HSN code of each item code (lower case) from Quotation Item Master; the principal's record wins -#}
+{%- set line_codes = lines | map(attribute="item_code") | select | list -%}
+{%- set hsn_of = {} -%}
+{%- for row in (frappe.get_all("Quotation Item Master", filters={"item_code": ["in", line_codes], "hsn_code": ["is", "set"]}, fields=["item_code", "quotation_type", "hsn_code"]) if line_codes else []) -%}
+	{%- set key = (row.item_code or "") | lower -%}
+	{%- if key not in hsn_of or row.quotation_type == doc.custom_quotation_type -%}{%- set _ = hsn_of.update({key: row.hsn_code}) -%}{%- endif -%}
+{%- endfor -%}
+{%- set contact_designation = frappe.db.get_value("Contact", doc.contact_person, "designation") if doc.contact_person else None -%}
+
+{#- the Final PI is the Sales Order; the other doctype printing this is the Draft PI -#}
+{%- set is_final_pi = doc.doctype == "Sales Order" -%}
+{%- set quotation_no = doc.get("custom_quotation") or doc.get("quotation") -%}
+{#- the advance in the PI's currency (see the change note of 2026-10-29) -#}
+{%- set advance = namespace(value=0) -%}
+{%- if is_final_pi and frappe.utils.flt(doc.get("advance_paid")) -%}
+	{%- set paid = frappe.utils.flt(doc.advance_paid) -%}
+	{%- if (doc.get("party_account_currency") or doc.currency) == doc.currency -%}
+		{%- set advance.value = paid -%}
+	{%- elif frappe.utils.flt(doc.get("conversion_rate")) -%}
+		{%- set advance.value = paid / frappe.utils.flt(doc.conversion_rate) -%}
+	{%- endif -%}
+{%- endif -%}
+{%- if not advance.value -%}
+	{%- set advance.value = frappe.utils.flt(doc.get("custom_advance_received") if is_final_pi else doc.get("advance_received")) -%}
+{%- endif -%}
+{%- set has_advance = advance.value > 0 -%}
+{#- CIF prices: " (CIF)" after the total's name (2026-10-29) -#}
+{%- set cif = " (CIF)" if (doc.get("custom_is_cif") if is_final_pi else doc.get("is_cif")) else "" -%}
+{#- CIF charges and port, printed as "CIF Charges - <port>" and added to the total (later 2026-10-29) -#}
+{%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges") if is_final_pi else doc.get("cif_charges")) if cif else 0 -%}
+{%- set cif_port = (doc.get("custom_cif_port") if is_final_pi else doc.get("cif_port")) or "" -%}
+{%- set extra_rows = [] -%}
+{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>"), as on the old print -#}
+{#- 2026-11-04: "CIF Charges - <port>" again, e.g. "CIF Charges - Chennai Sea Port" (the user's wording) -#}
+{%- if cif_amount -%}{%- set _ = extra_rows.append(["CIF Charges" ~ ((" - " ~ cif_port) if cif_port else ""), frappe.utils.fmt_money(cif_amount, currency=doc.currency)]) -%}{%- endif -%}
+{%- if has_advance -%}{%- set _ = extra_rows.append(["Less: Advance Received", "- " ~ frappe.utils.fmt_money(advance.value, currency=doc.currency)]) -%}{%- endif -%}
+{%- set to_pay = frappe.utils.flt(doc.net_total) + cif_amount - advance.value -%}
+{#- the price line under each machine (2026-10-31): the PI's Price Type and Port joined (2026-11-02),
+    else its old Price Basis, else the principal's, else the defaults of pi.DEFAULT_PRICE_TYPE and
+    DEFAULT_PRICE_PORT; the currency as on the old print (US$, Rs.) -#}
+{%- set price_basis = ([doc.get("custom_price_type"), doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) if (doc.get("custom_price_type") or doc.get("custom_price_port")) else None -%}
+{%- set price_basis = price_basis or doc.get("custom_price_basis") or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.get("custom_quotation_type") else None) or "EX-WORKS FTWZ WAREHOUSE CHENNAI" -%}
+{%- set currency_label = {"USD": "US$", "INR": "Rs."}.get(doc.currency, doc.currency) -%}
+{#- q.no_totals (2026-11-03): no TOTAL row when nothing is added to the price line (it only
+    repeated its amount); with CIF charges or an advance the rows down to GRAND TOTAL / BALANCE are
+    still printed -#}
+{%- set q = {
+	"company": doc.company,
+	"date": frappe.utils.getdate(doc.transaction_date) if doc.transaction_date else None,
+	"number": doc.name,
+	"customer_name": doc.customer_name or doc.get("party_name"),
+	"address": doc.address_display,
+	"attn": (doc.contact_display ~ ((", " ~ contact_designation) if contact_designation else "")) if doc.contact_display else "",
+	"phone": doc.contact_mobile,
+	"issuer_address": doc.company_address_display,
+	"refs": [],
+	"notes": [],
+	"machines": [],
+	"loose_options": [],
+	"subtotal": doc.get_formatted("net_total") if extra_rows else "",
+	"subtotal_label": "TOTAL" if cif_amount else "TOTAL" ~ cif,
+	"taxes": extra_rows,
+	"no_tax_line": True,
+	"grand_total": frappe.utils.fmt_money(to_pay, currency=doc.currency) if extra_rows else doc.get_formatted("net_total"),
+	"grand_total_label": ("BALANCE" if has_advance else ("GRAND TOTAL" if cif_amount else "TOTAL")) ~ cif,
+	"no_totals": not extra_rows,
+	"payment": [],
+	"terms": doc.terms,
+	"signer": person(doc.custom_signed_by) | trim,
+	"signature": frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_signature") if doc.custom_signed_by and doc.get("custom_print_signature") != 0 else None,
+	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
+	"no_specs": True,
+	"no_page_per_machine": True,
+	"show_hsn": True,
+	"doc_title": "PROFORMA INVOICE" if is_final_pi else "DRAFT PROFORMA INVOICE",
+	"to_label": "Invoice To",
+	"number_label": "PI No." if is_final_pi else "Draft PI No.",
+} -%}
+
+{#- the four reference fields of the old quotation header; all are given, filled or not -#}
+{%- set _ = q.refs.extend([
+	["Ref. No.", doc.custom_your_reference],
+	["Ref Dt.", frappe.utils.getdate(doc.custom_your_reference_date).strftime("%d/%m/%y") if doc.custom_your_reference_date else ""],
+	["Sales Engg.", person(doc.custom_sales_engineer) | trim],
+	["Cust ID", doc.custom_haas_customer_id],
+]) -%}
+
+{#- the quotation this PI was made from, as a line under the head (added 2026-10-28) -#}
+{%- if quotation_no -%}{%- set _ = q.notes.append("Against Quotation No. " ~ quotation_no) -%}{%- endif -%}
+{#- a Final PI: the Draft PI it was made from (added 2026-10-29) -#}
+{%- if is_final_pi and doc.get("custom_draft_pi") -%}{%- set _ = q.notes.append("Against Draft PI No. " ~ doc.custom_draft_pi) -%}{%- endif -%}
+
+{#- machines with their options, then the options whose machine is not on the quotation -#}
+{%- for item in main_items -%}
+	{%- set options = [] -%}
+	{%- for option in lines if option.custom_main_item_code == item.item_code or parent_of.get(option.idx) == item.item_code -%}
+		{%- set about = {} -%}{{- describe(option.description, about) -}}
+		{%- set _ = options.append({"points": about.points, "head": about.head, "code": option.item_code, "name": option.item_name, "description": option.description, "hsn": hsn_of.get((option.item_code or "") | lower), "rate": option.get_formatted("rate", doc), "qty": option.get_formatted("qty", doc), "amount": option.get_formatted("amount", doc)}) -%}
+	{%- endfor -%}
+	{#- the picture copied to the line when the item was chosen, else the Item's picture now -#}
+	{%- set image = item.image or (frappe.db.get_value("Item", item.item_code, "image") if item.item_code else None) -%}
+	{#- Pictures linked from Haas (assets.haascnc.com) are asked for as WebP, which the PDF maker
+	    (wkhtmltopdf) cannot show; their server gives the same picture as PNG with fmt=png -#}
+	{%- set image = image | replace("fmt=webp", "fmt=png") if image else image -%}
+	{#- no specifications are printed (no_specs), so none are read -#}
+	{%- set about = {} -%}{{- describe(item.description, about) -}}
+	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "hsn": hsn_of.get((item.item_code or "") | lower), "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "options": options}) -%}
+{%- endfor -%}
+{#- One price line for the whole PI (2026-11-02; under each machine from 2026-10-31):
+    "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS) ...... US$ 105100.00": the machines' quantity
+    added up, in the first machine's UOM, and the total before advance and CIF charges, in plain
+    digits as on the old print (105100.00), not the site's Indian grouping (1,05,100.00) -#}
+{%- set machine_qty = main_items | sum(attribute="qty") if main_items else 0 -%}
+{%- set price_uom = ((main_items[0].uom or main_items[0].get("stock_uom")) if main_items else None) or "Nos" -%}
+{%- if main_items -%}
+	{%- set _ = q.update({"price_line": "Price " ~ price_basis ~ " (" ~ ("%g" | format(frappe.utils.flt(machine_qty))) ~ " " ~ (price_uom | upper) ~ ")",
+		"price_amount": currency_label ~ " " ~ ("%.2f" | format(frappe.utils.flt(doc.net_total)))}) -%}
+	{#- 2026-11-03 to 2026-11-04: a CIF PI with Ex-Works From printed "Prices : Ex-Works, <place>. (n
+	    NOS)" here instead. Removed: the Draft PI and Final PI always print the line above, "Price
+	    <Price Type> <Port> (n NOS) ...... amount" (the user's request; the "Prices : ..." line is the
+	    quotation's) -#}
+{%- endif -%}
+{%- for option in lines | selectattr("custom_main_item_code") | rejectattr("custom_main_item_code", "in", main_codes) -%}
+	{%- set about = {} -%}{{- describe(option.description, about) -}}
+	{%- set _ = q.loose_options.append({"points": about.points, "head": about.head, "code": option.item_code, "name": option.item_name, "description": option.description, "hsn": hsn_of.get((option.item_code or "") | lower), "rate": option.get_formatted("rate", doc), "qty": option.get_formatted("qty", doc), "amount": option.get_formatted("amount", doc)}) -%}
+{%- endfor -%}
+
+{#- no taxes on the PI prints (2026-10-29, the user's request): q.taxes holds only the advance -#}
+
+{#- payment schedule and validity -#}
+{%- for row in doc.get("payment_schedule") or [] -%}
+	{%- set _ = q.payment.append("<b>" ~ (row.payment_term or row.description or "Payment") ~ ":</b>" ~ ((" " ~ ("%g" | format(row.invoice_portion)) ~ "%") if frappe.utils.flt(row.invoice_portion) else "") ~ ((" " ~ row.description) if row.description and row.payment_term and row.description != row.payment_term else "")) -%}
+{%- endfor -%}
+
+
+{% include "manav/templates/print_formats/manav_modern_quotation_body.html" %}

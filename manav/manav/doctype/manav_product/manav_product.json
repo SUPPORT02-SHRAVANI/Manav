@@ -1,0 +1,30 @@
+{
+ "actions": [],
+ "autoname": "field:product_name",
+ "creation": "2026-10-29 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["product_name", "product_type", "inactive"],
+ "fields": [
+  {"fieldname": "product_name", "fieldtype": "Data", "in_list_view": 1, "label": "Product", "reqd": 1, "unique": 1},
+  {"fieldname": "product_type", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Product Type", "options": "Manav Product Type"},
+  {"default": "0", "fieldname": "inactive", "fieldtype": "Check", "in_standard_filter": 1, "label": "Inactive"}
+ ],
+ "links": [],
+ "modified": "2026-10-29 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Manav Product",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Manav Management", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Sales Manager", "share": 1, "write": 1},
+  {"read": 1, "role": "Sales User", "select": 1}
+ ],
+ "search_fields": "product_type",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

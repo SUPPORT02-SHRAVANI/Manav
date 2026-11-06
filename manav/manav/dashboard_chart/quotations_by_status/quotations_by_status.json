@@ -1,9 +1,9 @@
 {
  "chart_name": "Quotations by Status",
  "chart_type": "Group By",
- "color": "#2a78d6",
+ "color": "#2563eb",
  "creation": "2026-10-17 16:00:00.000000",
- "custom_options": "",
+ "custom_options": "{\"colors\": [\"#94a3b8\", \"#f59e0b\", \"#16a34a\", \"#2563eb\", \"#7c3aed\", \"#dc2626\"], \"maxSlices\": 6}",
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Quotation",
@@ -14,7 +14,7 @@
  "idx": 0,
  "is_public": 1,
  "is_standard": 1,
- "modified": "2026-10-19 15:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Quotations by Status",
@@ -30,7 +30,7 @@
  "time_interval": "Monthly",
  "timeseries": 0,
  "timespan": "Last Year",
- "type": "Bar",
+ "type": "Donut",
  "use_report_chart": 0,
  "y_axis": []
 }

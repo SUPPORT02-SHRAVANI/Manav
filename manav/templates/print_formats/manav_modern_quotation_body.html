@@ -26,6 +26,25 @@
 	  payment   list of HTML lines for "Payment Info"
 	  terms     HTML: a table with one term to a row, or paragraphs / a list
 	  signer, designation
+	Optional switches (2026-10-28, for "Manav Modern Quotation CIF"; a print format that does not
+	give them prints as before):
+	  no_specs            the "Equipment Specification" box of each machine is left out
+	  no_page_per_machine the machines follow one another instead of each starting a new page
+	  show_hsn            the line tables get an HSN Code column, from the key "hsn" of each line
+	  no_tax_line         no "Tax / Duties: As Applicable" row when there are no taxes
+	  grand_total_label   the name of the grand total row (default "GRAND TOTAL")
+	  subtotal_label      the name of the subtotal row (default "Subtotal"; added 2026-10-29)
+	  subtotal may be empty: its row is then left out.
+  price_line, price_amount  one bold line "<price_line> ...... <price_amount>" after the lines,
+                      before the totals (the PI's price basis; 2026-11-02, under each machine
+                      from 2026-10-31)
+	  points, head        (keys of a machine or option) the description as a list of points,
+	                      printed in two columns under the line, and the short title to print
+	                      above them instead of the description (added later on 2026-10-28)
+	  With no_specs, a machine's image is printed in that row, on the left of its points.
+	  doc_title, to_label, number_label  the title of the box and the names of the customer and
+	                      the number (defaults QUOTATION, Quotation To, Quotation No.; the PI
+	                      prints PROFORMA INVOICE, Invoice To, PI No.)
 
 	Working, top to bottom:
 	1. Head of every page, as on the old printed quotation: the letter head (the principal's
@@ -181,7 +200,114 @@
 	machine 2 with its sub-items on page 2, and so on (marker mm-new-page, see 8.). The totals,
 	terms and signature still follow the last machine.
 	Reason: The user asked for a newly added item to go to the second page of the print.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: Optional switches no_specs, no_page_per_machine, show_hsn, no_tax_line and
+	grand_total_label, and an empty subtotal is not printed (see "Optional switches" above).
+	Without them the page is unchanged.
+	Reason: The user asked for a second quotation in this layout without the specifications,
+	Cust ID, phone, subtotal, tax and payment terms, with the HSN code and a CIF grand total
+	(print format Manav Modern Quotation CIF).
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: Optional switch subtotal_label (name of the subtotal row).
+	Reason: The PI prints TOTAL, Less: Advance Received and BALANCE when the customer paid an
+	advance (manav_proforma_invoice.html), at the user's request.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: A line that carries "points" gets a row under it with those points as a bulleted list
+	in two columns (first half left, second half right), and its title is "head" (else the item
+	name) instead of the whole description. Lines without points print as before.
+	Reason: The user asked for the description point by point, side by side, on the CIF quotation.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: With no_specs, a machine's picture is printed in the row under its line, on the left,
+	with the points beside it (before, the picture was only in the specification box).
+	Reason: The user asked for the photo on the CIF quotation too.
+
+	CHANGE NOTE
+	Date: 2026-10-28
+	Change: Optional doc_title, to_label and number_label for the head of the page.
+	Reason: The PI (print format Manav Proforma Invoice) uses this layout with its own title.
+
+	CHANGE NOTE
+	Date: 2026-10-31
+	Change: A machine that carries "price_line" and "price_amount" gets a bold row under its points:
+	"<price_line> ........ <price_amount>" (dotted leader). Without them nothing changes.
+	Reason: The user asked for the old print's line "Price EX-WORKS FTWZ WAREHOUSE CHENNAI (1 NOS)
+	...... US$ 105100.00" under each machine on the Draft PI and the Final PI.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: The price line is printed once for the whole document, after the last line table and
+	before the totals, from q.price_line / q.price_amount; the row under each machine is gone.
+	Reason: The user's print of 26DPI00002 showed the line under every machine; the user said it is
+	one line for the whole bill.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: Optional q.cif_line / q.cif_amount: a second dotted line under the price line (the
+	quotations' CIF charges). Without them nothing changes (the PI prints do not give them).
+	Reason: The user showed the old quotation, with "CIF Charges - Chennai Sea Port ...... US$ 5500.00"
+	under the price.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: The lines under the price are a list, q.charge_lines ([label, amount]: CIF charges and
+	other charges; replaces q.cif_line / q.cif_amount of earlier today). Optional q.no_totals: the
+	totals (subtotal, taxes, grand total) are left out, payment info stays. Optional q.currency_code:
+	the line tables' heads read "Price (USD)" / "Total (USD)". The PI prints give none of them and are
+	unchanged.
+	Reason: The user marked the quotation print: no total line, and the currency (INR or USD) with the
+	prices.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: Optional q.bullet: the sign in front of each point ("*" on the quotations, as on the old
+	print); without it the round bullet as before (PI prints).
+	Reason: The user asked for the quotation's description as on the old print's photo.
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: "Page n of m" at the foot of every page of the PDF (manav_page_number.html), under the letter head footer; the PDF's bottom margin 31 mm with a footer (was 26).
+	Reason: The user asked for page numbers when printing quotations and PIs.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: The signing block starts with "For <company>" instead of "Account Manager"; the signature
+	image is left out when the document's Print Signature is unticked (q.signature empty).
+	Reason: The user asked for the company name at the bottom of every print, Account Manager
+	removed everywhere, and a choice whether to print the signature.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: The Payment block (payment terms, Valid till; q.payment) is no longer printed.
+	Reason: The user asked to remove it from every print.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: CIF: "Prices : Ex-Works, <Ex-Works From>." and "CIF Charges upto <CIF Port>" as on the old
+	print; a price line without an amount gets no dots.
+	Reason: The user showed the old CIF print next to ours.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: A bold item of the description's bulleted list (<strong> / <b>; the old system's
+	"Bold Print" of Quotation Sub Machine Mst) is marked "!" and printed bold.
+	Reason: The user had the machines' points loaded from the old table, with its bold lines.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: A price line marked q.price_plain (the CIF "Prices : Ex-Works, ..." line) is not bold.
+	Reason: The user asked for the word Ex-Works not in bold.
+	Later the same day: q.price_no_dots prints the price line without dots (the quotation's
+	"Prices : <Ex-Works From>"), as on the old quotation print.
 -#}
+{#- one point of a description: "!text" (a bold list item, 2026-11-03) in bold, else as it is -#}
+{%- macro point_html(point) -%}{%- if (point or "").startswith("!") -%}<b>{{ point[1:] }}</b>{%- else -%}{{ point }}{%- endif -%}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
 {%- macro plain(html) -%}
 	{{- frappe.utils.strip_html((html or "") | replace("</p>", "\n") | replace("</div>", "\n") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n")) | replace("&nbsp;", " ") | trim -}}
@@ -245,17 +371,49 @@
 
 {#- kind: "machine" (blue row, "1."), "option" (indented under its machine, "1.1") or "" (a loose
     option, "3.") -#}
-{%- macro line_row(number, line, title, kind="") -%}
+{#- pic: the line's picture is printed in the row under it (with no_specs, see below) -#}
+{%- macro line_row(number, line, title, kind="", hsn=False, pic=False) -%}
 	<tr{% if kind %} class="mm-{{ kind }}-row"{% endif %}>
 		<td class="mm-no">{{ number }}{% if kind != "option" %}.{% endif %}</td>
 		<td class="mm-desc">
 			<div class="mm-code">{{ line.code or "" }}</div>
 			{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}
 		</td>
+		{% if hsn %}<td class="mm-hsn">{{ line.hsn or "" }}</td>{% endif %}
 		<td class="mm-num">{{ line.rate }}</td>
 		<td class="mm-qty">{{ line.qty }}</td>
 		<td class="mm-num mm-strong">{{ line.amount }}</td>
 	</tr>
+	{#- the description as points in two columns, reading down the left column first; the
+	    picture, when given, on their left -#}
+	{% set image = line.image if pic else "" %}
+	{% if line.points or image %}
+	{% set points = line.points or [] %}
+	{% set half = ((points | length) / 2) | round(0, "ceil") | int %}
+	<tr class="mm-points-row{% if kind %} mm-{{ kind }}-points{% endif %}">
+		<td></td>
+		<td colspan="{{ 5 if hsn else 4 }}">
+			<table class="mm-points-wrap">
+				<tr>
+					{% if image %}<td class="mm-points-pic"><img src="{{ image }}" alt="{{ line.code or '' }}"></td>{% endif %}
+					<td class="mm-points-text">
+						{% if points %}
+						<table class="mm-points">
+							{% for i in range(half) %}
+							<tr>
+								{#- 2026-11-03: a point marked "!" (bold list item) is printed bold -#}
+								<td>{{ q.bullet or "&bull;" }} {{ point_html(points[i]) }}</td>
+								<td>{% if i + half < points | length %}{{ q.bullet or "&bull;" }} {{ point_html(points[i + half]) }}{% endif %}</td>
+							</tr>
+							{% endfor %}
+						</table>
+						{% endif %}
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	{% endif %}
 {%- endmacro -%}
 {#- A line table: entries is a list of [line, title]. Each line is a piece of its own (a small
     table of one row, the first with the column headings), so that a page can end between two
@@ -263,8 +421,9 @@
     machine_no given: the first entry is machine number machine_no ("1.", a blue row) and the
     others are its options, numbered machine_no.1, machine_no.2 ... and indented.
     machine_no empty: loose options, numbered start + 1, start + 2 ... as before.
-    (2026-10-19: machine_no added; before every line was numbered start + n.) -#}
-{%- macro lines_table(entries, start, machine_no=None) -%}
+    (2026-10-19: machine_no added; before every line was numbered start + n.)
+    hsn: True adds the HSN Code column (2026-10-28). -#}
+{%- macro lines_table(entries, start, machine_no=None, hsn=False, pic=False) -%}
 	{% for entry in entries %}
 		{% if loop.first %}
 	</div><!--mm-cut--><div class="mm">
@@ -273,9 +432,10 @@
 			<tr>
 				<th style="width: 6%; text-align: center;">No</th>
 				<th>Item Description</th>
-				<th style="width: 17%; text-align: right;">Price</th>
+				{% if hsn %}<th style="width: 12%; text-align: center;">HSN Code</th>{% endif %}
+				<th style="width: 17%; text-align: right;">Price{% if q.currency_code %} ({{ q.currency_code }}){% endif %}</th>
 				<th style="width: 11%; text-align: center;">Quantity</th>
-				<th style="width: 17%; text-align: right;">Total</th>
+				<th style="width: 17%; text-align: right;">Total{% if q.currency_code %} ({{ q.currency_code }}){% endif %}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -287,11 +447,11 @@
 		<tbody>
 		{% endif %}
 			{% if not machine_no %}
-			{{ line_row(start + loop.index, entry[0], entry[1]) }}
+			{{ line_row(start + loop.index, entry[0], entry[1], "", hsn) }}
 			{% elif loop.first %}
-			{{ line_row(machine_no, entry[0], entry[1], "machine") }}
+			{{ line_row(machine_no, entry[0], entry[1], "machine", hsn, pic) }}
 			{% else %}
-			{{ line_row(machine_no ~ "." ~ (loop.index - 1), entry[0], entry[1], "option") }}
+			{{ line_row(machine_no ~ "." ~ (loop.index - 1), entry[0], entry[1], "option", hsn) }}
 			{% endif %}
 		{% if loop.last %}
 		</tbody>
@@ -342,6 +502,7 @@
 	.print-format .mm .mm-lines .mm-no { width: 6%; text-align: center; color: #6b7280; font-weight: 600; padding-left: 2px !important; padding-right: 2px !important; }
 	.print-format .mm .mm-lines .mm-num { width: 17%; text-align: right; color: #374151; white-space: nowrap; }
 	.print-format .mm .mm-lines .mm-qty { width: 11%; text-align: center; color: #374151; }
+	.print-format .mm .mm-lines .mm-hsn { width: 12%; text-align: center; color: #374151; white-space: nowrap; }
 	.mm .mm-code { font-weight: 700; color: #111827; }
 	.mm .mm-sub { font-size: 8pt; color: #6b7280; }
 	/* 2026-10-19: a machine's line is blue; its options are indented under it: the number moved a
@@ -353,6 +514,25 @@
 	.print-format .mm .mm-lines .mm-option-row td.mm-no { padding-left: 16px !important; }
 	.print-format .mm .mm-lines .mm-option-row td.mm-desc { padding-left: 22px !important; }
 	.mm .mm-strong { font-weight: 700; color: #111827 !important; }
+	/* 2026-10-28: the description points under a line, two columns, hanging bullets */
+	.print-format .mm .mm-lines tr.mm-points-row > td { padding-top: 4px !important; padding-bottom: 6px !important; }
+	.mm table.mm-points { table-layout: fixed; }
+	.print-format .mm .mm-lines .mm-points td { width: 50%; padding: 1px 12px 1px 10px !important; text-indent: -9px; border-bottom: 0; font-size: 8pt; color: #374151; line-height: 1.35; }
+	.print-format .mm .mm-lines .mm-option-points .mm-points { margin-left: 14px; }
+	/* the machine's picture on the left of its points */
+	.print-format .mm .mm-lines .mm-points-wrap > tbody > tr > td { padding: 0 !important; border-bottom: 0; vertical-align: top; }
+	.print-format .mm .mm-lines .mm-points-wrap > tbody > tr > td.mm-points-pic { width: 30%; padding: 2px 12px 0 0 !important; text-align: center; }
+	.mm .mm-points-pic img { max-width: 100%; max-height: 40mm; height: auto; }
+	/* 2026-10-31: the PI's "Price <basis> (1 NOS) ...... US$ <amount>" line; since 2026-11-02 once
+	   for the whole document, between the last line table and the totals */
+	.mm table.mm-price-line { margin-top: 10px; border-bottom: 1px solid #111827; page-break-inside: avoid; }
+	/* 2026-11-02: heavier and a little larger (the user: "make this bold"), as the old print's bold lines */
+	.print-format .mm .mm-price-line td { padding: 0 0 6px 0 !important; border: 0; font-size: 10.5pt; font-weight: 800; color: #000; vertical-align: bottom; }
+	.print-format .mm .mm-price-line td.mm-price-text { white-space: nowrap; padding-left: 10px !important; }
+	/* 2026-11-04: the CIF "Prices : Ex-Works, ..." line, not bold (q.price_plain) */
+	.print-format .mm .mm-price-line td.mm-price-text.mm-price-plain { font-weight: 400; }
+	.print-format .mm .mm-price-line td.mm-price-dots { width: 100%; max-width: 0; overflow: hidden; white-space: nowrap; font-weight: 400; letter-spacing: 1px; padding-left: 4px !important; }
+	.print-format .mm .mm-price-line td.mm-price-amount { white-space: nowrap; text-align: right; padding-left: 12px !important; font-weight: 900; }
 
 	.mm .mm-sum { margin-top: 14px; page-break-inside: avoid; }
 	.print-format .mm .mm-sum > tbody > tr > td { width: 50%; }
@@ -473,11 +653,11 @@
 {% else %}<div style="font-size: 15pt; font-weight: 800; text-transform: uppercase; color: #000; text-align: center; margin: 0 0 2mm 0;">{{ q.company or "" }}</div>{% endif %}
 <table class="mm-head-box" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #9ca3af; border-radius: 6px; font-size: 8.5pt; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
 	<tr>
-		<td colspan="2" style="padding: 1px 14px !important; border: 0; background: #1f2937; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: center; font-size: 10pt; font-weight: 900; letter-spacing: 0.2em; color: #fff; line-height: 1.3;">QUOTATION</td>
+		<td colspan="2" style="padding: 1px 14px !important; border: 0; background: #1f2937; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: center; font-size: 10pt; font-weight: 900; letter-spacing: 0.2em; color: #fff; line-height: 1.3;">{{ q.doc_title or "QUOTATION" }}</td>
 	</tr>
 	<tr>
 		<td style="width: 57%; padding: 4px 14px 4px 14px !important; vertical-align: top; border: 0; border-right: 1px solid #d1d5db;">
-			<div style="{{ head_label }}">Quotation To</div>
+			<div style="{{ head_label }}">{{ q.to_label or "Quotation To" }}</div>
 			<div style="font-size: 10pt; font-weight: 800; color: #000; margin: 2px 0 1px 0; line-height: 1.25;">{{ q.customer_name or "" }}</div>
 			{% if customer_address %}<div style="color: #4b5563; line-height: 1.3; font-size: 8pt;">{{ customer_address }}</div>{% endif %}
 			<div style="margin-top: 3px; color: #111827; line-height: 1.35;"><span style="{{ head_label }}">Kind Attn:</span> {{ q.attn or "" }}{% if q.phone %} &nbsp; <span style="white-space: nowrap;"><span style="{{ head_label }}">Ph:</span> {{ q.phone }}</span>{% endif %}</div>
@@ -485,7 +665,7 @@
 		<td style="padding: 3px 12px 3px 12px !important; vertical-align: top; border: 0;">
 			<table style="width: 100%; border-collapse: collapse;">
 				<tr>
-					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; vertical-align: middle; white-space: nowrap; {{ head_label }}">Quotation No.</td>
+					<td style="width: 21%; padding: 1px 4px 1px 0 !important; border: 0; vertical-align: middle; white-space: nowrap; {{ head_label }}">{{ q.number_label or "Quotation No." }}</td>
 					<td colspan="3" style="padding: 1px 0 !important; border: 0; vertical-align: middle; font-size: 11pt; font-weight: 900; color: #000; letter-spacing: 0.02em; line-height: 1.2;">{{ q.number }}</td>
 				</tr>
 				{#- The reference fields of the old header, placed so that no value has to wrap: Date with
@@ -559,10 +739,15 @@
 	{% set short_title = feature_title or (machine_name if machine_name | length <= 70 else "") %}
 	{% if short_title == machine.code %}{% set short_title = "" %}{% endif %}
 	{% set _ = machine.update({"title": short_title or machine_name}) %}
+	{#- with the description as points, the title is the short head of the description -#}
+	{% if machine.points %}{% set _ = machine.update({"title": machine.head or machine_name}) %}{% endif %}
 
 	{#- Every machine after the first starts a new page (2026-10-19): its piece carries the marker
 	    mm-new-page, which section 8 turns into a page break in each copy. -#}
-	</div><!--mm-cut--><div class="mm{% if not loop.first %} mm-new-page{% endif %}">{% if not loop.first %}<!--mm-new-page-->{% endif %}
+	{% set new_page = not loop.first and not q.no_page_per_machine %}
+	</div><!--mm-cut--><div class="mm{% if new_page %} mm-new-page{% endif %}">{% if new_page %}<!--mm-new-page-->{% endif %}
+	{#- no_specs (2026-10-28): the box is left out; the machine's line table follows directly -#}
+	{% if not q.no_specs %}
 	<div class="mm-spec">
 		<table class="mm-spec-head">
 			<tr>
@@ -659,40 +844,65 @@
 		{% endif %}
 		{% if machine.image %}</td></tr></table>{% endif %}
 	</div>
+	{% endif %}
 
 	{#- 5. the machine's line and its options, right under its box -#}
 	{% set machine_lines = [[machine, machine.title]] %}
-	{% for option in machine.options %}{% set _ = machine_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
+	{% for option in machine.options %}{% set _ = machine_lines.append([option, ((option.head or option.name) if option.points else plain(option.description)) or option.name]) %}{% endfor %}
 	{#- machine 1 is "1.", its options "1.1", "1.2"; numbered.count counts the machines -#}
 	{% set numbered.count = numbered.count + 1 %}
-	{{ lines_table(machine_lines, 0, numbered.count) }}
+	{{ lines_table(machine_lines, 0, numbered.count, q.show_hsn, q.no_specs) }}
 	{% endfor %}
 
 	{#- 5. the options whose machine is not on the quotation, after the last machine -#}
 	{% set loose_lines = [] %}
-	{% for option in q.loose_options %}{% set _ = loose_lines.append([option, plain(option.description) or option.name]) %}{% endfor %}
-	{{ lines_table(loose_lines, numbered.count) }}
+	{% for option in q.loose_options %}{% set _ = loose_lines.append([option, ((option.head or option.name) if option.points else plain(option.description)) or option.name]) %}{% endfor %}
+	{{ lines_table(loose_lines, numbered.count, None, q.show_hsn) }}
+
+	{#- the price line of the whole document (PI prints, 2026-11-02): text, dotted leader, amount;
+	    a table, as the PDF maker knows no flexbox -#}
+	{% if q.price_line %}
+	</div><!--mm-cut--><div class="mm">
+	<table class="mm-price-line">
+		<tr>
+			<td class="mm-price-text{{ ' mm-price-plain' if q.price_plain else '' }}">{{ q.price_line }}</td>
+			{#- dots as text, cut to the space left (a dotted border is not drawn by the PDF maker);
+			    none when the line has no amount (CIF "Prices : Ex-Works, ...", 2026-11-03) -#}
+			{#- 2026-11-04: no dots on the quotation's "Prices : ..." line (q.price_no_dots), as the old print -#}
+			<td class="mm-price-dots">{{ (" ." * 120) if (q.price_amount and not q.price_no_dots) else "" }}</td>
+			<td class="mm-price-amount">{{ q.price_amount }}</td>
+		</tr>
+		{#- CIF and other charges, lines of the same kind under the price (quotations, 2026-11-02) -#}
+		{% for charge in q.charge_lines or [] %}
+		<tr>
+			<td class="mm-price-text">{{ charge[0] }}</td>
+			<td class="mm-price-dots">{{ " ." * 120 }}</td>
+			<td class="mm-price-amount">{{ charge[1] }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	{% endif %}
 
 	{#- 6. payment info on the left, totals on the right -#}
 	</div><!--mm-cut--><div class="mm">
 	<table class="mm-sum">
 		<tr>
 			<td class="mm-pay">
-				{% if q.payment %}
-				<div class="mm-label" style="margin-bottom: 5px;">Payment Info:</div>
-				{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
-				{% endif %}
+				{#- 2026-11-03: no Payment / Valid till block (the user asked to remove it from every print) -#}
 			</td>
 			<td>
+				{#- q.no_totals (quotations, 2026-11-02): no totals, as on the old print -#}
+				{% if not q.no_totals %}
 				<table class="mm-totals">
-					<tr><td class="mm-tk">Subtotal:</td><td class="mm-tv">{{ q.subtotal }}</td></tr>
+					{% if q.subtotal %}<tr><td class="mm-tk">{{ q.subtotal_label or "Subtotal" }}:</td><td class="mm-tv">{{ q.subtotal }}</td></tr>{% endif %}
 					{% for tax in q.taxes %}
 					<tr><td class="mm-tk">{{ tax[0] }}:</td><td class="mm-tv">{{ tax[1] }}</td></tr>
 					{% else %}
-					<tr><td class="mm-tk">Tax / Duties:</td><td class="mm-tv">As Applicable</td></tr>
+					{% if not q.no_tax_line %}<tr><td class="mm-tk">Tax / Duties:</td><td class="mm-tv">As Applicable</td></tr>{% endif %}
 					{% endfor %}
-					<tr class="mm-grand"><td>GRAND TOTAL:</td><td class="mm-tv">{{ q.grand_total }}</td></tr>
+					<tr class="mm-grand"><td>{{ q.grand_total_label or "GRAND TOTAL" }}:</td><td class="mm-tv">{{ q.grand_total }}</td></tr>
 				</table>
+				{% endif %}
 			</td>
 		</tr>
 	</table>
@@ -762,8 +972,12 @@
 
 	</div><!--mm-cut--><div class="mm">
 	<div class="mm-sign">
-		<div class="mm-label">Account Manager</div>
-		<div class="mm-sign-name">{{ q.signer or "" }}</div>
+		{#- 2026-11-03: "For <company>" instead of the label "Account Manager" (the user asked for
+		    the company name at the bottom of every print and Account Manager removed) -#}
+		<div class="mm-label" style="font-size: 9pt;">For {{ q.company or "" }}</div>
+		{#- 2026-11-03: the signer's Signature image (Sales Person) instead of the name in italics -#}
+		{% if q.signature %}<div style="margin: 8px 0 2px 0;"><img src="{{ q.signature }}" style="max-height: 44px; max-width: 200px;"></div>
+		{% else %}<div class="mm-sign-name">{{ q.signer or "" }}</div>{% endif %}
 		<div class="mm-label">{{ q.signer or "" }}</div>
 		<div class="mm-muted" style="text-transform: uppercase; font-size: 7.5pt;">{{ q.designation or "" }}</div>
 	</div>
@@ -820,7 +1034,8 @@
 {% set address_lines = [[((customer_address | length) / 60) | round(0, "ceil") | int, 1] | max, 4] | min %}
 {% set head_box_mm = 27 + 3.6 * address_lines %}
 {% set pdf_margin_top = (28 if page_letter_head else 23) + head_box_mm + 4 %}
-{% set pdf_margin_bottom = 26 if page_footer else 15 %}
+{#- 2026-11-03: a few mm more for the page number line under the footer -#}
+{% set pdf_margin_bottom = 31 if page_footer else 15 %}
 <style>
 	.print-format { margin-top: {{ "%.0f" | format(pdf_margin_top) }}mm; margin-bottom: {{ pdf_margin_bottom }}mm; }
 	.print-format.print-format { margin-top: 0 !important; margin-bottom: 0 !important; }
@@ -829,5 +1044,7 @@
 	{#- the head of the pages likewise: the element with the id header-html is put at the top of every page -#}
 	<div id="header-html">{{ page_head }}</div>
 	{{ page | replace("<!--mm-cut-->", "") }}
-	{% if page_footer %}<div id="footer-html"><div class="letter-head-footer">{{ page_footer }}</div></div>{% endif %}
+	{#- 2026-11-03: "Page n of m" under the letter head footer (manav_page_number.html), on every page -#}
+	{% set page_footer_html = ('<div class="letter-head-footer">' ~ page_footer ~ '</div>') if page_footer else "" %}
+	{% include "manav/templates/print_formats/manav_page_number.html" %}
 </div>

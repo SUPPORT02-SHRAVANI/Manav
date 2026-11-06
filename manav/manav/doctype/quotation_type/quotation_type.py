@@ -21,6 +21,18 @@ Change: Added the field Price Basis (price_basis), printed by the Classic quotat
 "Prices : <price basis>" before a machine's price.
 Reason: The user's old quotation prints "Prices : Ex-Works, Oxnard, USA."; the text depends on
 the principal.
+
+CHANGE NOTE
+Date: 2026-10-29
+Change: Added CIF by Default (cif_default), Default CIF Port (cif_port) and Default CIF Charges
+(cif_charges), put on the principal's quotations (quotation.get_type_defaults, fill_cif_defaults).
+Reason: The user asked for the CIF port and charges to be filled in by default.
+
+CHANGE NOTE
+Date: 2026-11-03
+Change: "Default Ex-Works From" (ex_works_from, quotation_type.json), copied to a CIF quotation's
+Ex-Works From and printed as "Prices : Ex-Works, <this>.".
+Reason: The user showed the old CIF print ("Prices : Ex-Works, Oxnard, USA.").
 """
 
 # import frappe

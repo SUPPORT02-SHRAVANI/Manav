@@ -1,0 +1,436 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "creation": "2026-10-29 12:00:00.000000",
+ "default_print_format": "Manav Draft PI",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "customer_name",
+  "quotation",
+  "final_pi",
+  "custom_price_type",
+  "custom_price_port",
+  "custom_price_basis",
+  "column_break_main",
+  "transaction_date",
+  "status",
+  "company",
+  "currency",
+  "selling_price_list",
+  "is_cif",
+  "cif_charges",
+  "cif_port",
+  "ex_works_from",
+  "manav_section",
+  "custom_quotation_type",
+  "custom_branch",
+  "custom_your_reference",
+  "custom_your_reference_date",
+  "custom_machine_serial_no",
+  "column_break_manav",
+  "custom_sales_engineer",
+  "custom_signed_by",
+  "custom_account_manager",
+  "custom_print_signature",
+  "custom_haas_customer_id",
+  "address_section",
+  "customer_address",
+  "address_display",
+  "contact_person",
+  "contact_display",
+  "contact_mobile",
+  "column_break_address",
+  "company_address",
+  "company_address_display",
+  "items_section",
+  "items",
+  "custom_standard_accessories",
+  "totals_section",
+  "total_qty",
+  "column_break_totals",
+  "net_total",
+  "advance_received",
+  "terms_section",
+  "tc_name",
+  "terms"
+ ],
+ "fields": [
+  {
+   "description": "Empty when the quotation was made for a Lead or Prospect; the Final PI then makes the Customer, as ERPNext does",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fetch_if_empty": 1,
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "reqd": 1
+  },
+  {
+   "description": "The quotation this Draft PI was made from",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Quotation No.",
+   "options": "Quotation",
+   "read_only": 1
+  },
+  {
+   "description": "The Final PI (Sales Order) made from this Draft PI",
+   "fieldname": "final_pi",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Final PI No.",
+   "no_copy": 1,
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Draft\nFinal PI Made",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "remember_last_selected_value": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "description": "Rates of items added on the Draft PI are taken from it",
+   "fieldname": "selling_price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List"
+  },
+  {
+   "description": "Price Basis of a PI saved before 2026-11-02; moved into Price Type when the PI is saved again",
+   "fieldname": "custom_price_basis",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Price Basis (old)",
+   "read_only": 1
+  },
+  {
+   "description": "Final price with: printed once before the total as Price <Price Type> <Port> (qty) ...... total. Filled with the principal's Price Basis, else EX-WORKS FTWZ; can be changed",
+   "fieldname": "custom_price_type",
+   "fieldtype": "Data",
+   "label": "Final price with: Price Type"
+  },
+  {
+   "description": "Printed after the Price Type, e.g. WAREHOUSE CHENNAI (the default); can be changed or left empty",
+   "fieldname": "custom_price_port",
+   "fieldtype": "Data",
+   "label": "Port"
+  },
+  {
+   "default": "0",
+   "description": "Set on saving: ticked when CIF Charges has an amount. Prints TOTAL (CIF) / BALANCE (CIF); copied to the Final PI",
+   "fieldname": "is_cif",
+   "fieldtype": "Check",
+   "label": "CIF",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "description": "An amount here makes the prices CIF: printed as CIF Charges - <port> and added to the printed total. Copied to the Final PI",
+   "fieldname": "cif_charges",
+   "fieldtype": "Currency",
+   "label": "CIF Charges",
+   "options": "currency"
+  },
+  {
+   "description": "Printed as CIF Charges - <port>, e.g. Chennai Sea Port",
+   "fieldname": "cif_port",
+   "fieldtype": "Data",
+   "label": "CIF Port"
+  },
+  {
+   "description": "Printed as Prices : Ex-Works, <this>. e.g. Oxnard, USA. Copied to the Final PI",
+   "fieldname": "ex_works_from",
+   "fieldtype": "Data",
+   "label": "Ex-Works From"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "manav_section",
+   "fieldtype": "Section Break",
+   "label": "Manav Details"
+  },
+  {
+   "fieldname": "custom_quotation_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Principal (Quotation Type)",
+   "options": "Quotation Type"
+  },
+  {
+   "fieldname": "custom_branch",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "custom_your_reference",
+   "fieldtype": "Data",
+   "label": "Customer Ref. No."
+  },
+  {
+   "fieldname": "custom_your_reference_date",
+   "fieldtype": "Date",
+   "label": "Customer Ref. Date"
+  },
+  {
+   "fieldname": "custom_machine_serial_no",
+   "fieldtype": "Link",
+   "label": "Customer's Machine (Serial No)",
+   "options": "Serial No"
+  },
+  {
+   "fieldname": "column_break_manav",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "custom_sales_engineer",
+   "fieldtype": "Link",
+   "label": "Discussion With (Sales Engineer)",
+   "options": "Sales Person"
+  },
+  {
+   "description": "Signs the PI",
+   "fieldname": "custom_signed_by",
+   "fieldtype": "Link",
+   "label": "Signed By",
+   "options": "Sales Person"
+  },
+  {
+   "fieldname": "custom_account_manager",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User",
+   "hidden": 1
+  },
+  {
+   "default": "1",
+   "description": "Untick to print without the signature. Copied to the Final PI",
+   "fieldname": "custom_print_signature",
+   "fieldtype": "Check",
+   "label": "Print Signature"
+  },
+  {
+   "fieldname": "custom_haas_customer_id",
+   "fieldtype": "Data",
+   "label": "Haas Cust ID"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "Address and Contact"
+  },
+  {
+   "fieldname": "customer_address",
+   "fieldtype": "Link",
+   "label": "Customer Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "address_display",
+   "fieldtype": "Text Editor",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Contact Person",
+   "options": "Contact"
+  },
+  {
+   "fieldname": "contact_display",
+   "fieldtype": "Small Text",
+   "label": "Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact_mobile",
+   "fieldtype": "Data",
+   "label": "Mobile No",
+   "options": "Phone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_address",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company_address",
+   "fieldtype": "Link",
+   "label": "Company Address",
+   "options": "Address"
+  },
+  {
+   "fieldname": "company_address_display",
+   "fieldtype": "Text Editor",
+   "label": "Company Address Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Draft PI Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "custom_standard_accessories",
+   "fieldtype": "HTML",
+   "label": "Standard Accessories"
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Float",
+   "label": "Total Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Before taxes; taxes are worked out on the Final PI",
+   "fieldname": "net_total",
+   "fieldtype": "Currency",
+   "label": "Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "description": "Advance the customer has paid, in this PI's currency; printed as Less: Advance Received, then the BALANCE. Copied to the Final PI",
+   "fieldname": "advance_received",
+   "fieldtype": "Currency",
+   "label": "Advance Received",
+   "no_copy": 1,
+   "options": "currency"
+  },
+  {
+   "fieldname": "terms_section",
+   "fieldtype": "Tab Break",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "tc_name",
+   "fieldtype": "Link",
+   "label": "Terms Template",
+   "options": "Terms and Conditions"
+  },
+  {
+   "fieldname": "terms",
+   "fieldtype": "Text Editor",
+   "label": "Terms and Conditions"
+  }
+ ],
+ "links": [
+  {
+   "link_doctype": "Sales Order",
+   "link_fieldname": "custom_draft_pi"
+  }
+ ],
+ "modified": "2026-11-04 13:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Draft PI",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "customer_name,quotation",
+ "show_title_field_in_link": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

@@ -1,0 +1,76 @@
+{#-
+	The letter head at the top of every page, its footer at the foot of every page and "Page n of m"
+	in the PDF, for the Manav prints that are not the Modern layout (Classic, Banded, Colour
+	quotations; the appointment letter). The Modern layout (Modern, Quotation with HSN Code, Draft
+	PI, PI) does the same in its own body file, with its quotation box in the head as well.
+
+	Use: draw the page without the letter head into `frame_body`, then include this file:
+		{% set frame_body %} ... {% endset %}
+		{% include "manav/templates/print_formats/manav_page_frame.html" %}
+
+	Working: as in manav_modern_quotation_body.html ("8."), the page is put out twice and each way
+	of printing sees only its own copy (Frappe's classes hidden-pdf and visible-pdf):
+	- printed from the browser: a table whose head row (the letter head) and foot row (the letter
+	  head footer) the browser repeats on every page; the page margin is set to nothing so that the
+	  browser prints no date, address or page number of its own, and is given back by the cells;
+	- the PDF made on the server (wkhtmltopdf, frappe/utils/pdf.py prepare_header_footer): the
+	  element with the id header-html is drawn at the top of every page and footer-html at the
+	  foot (manav_page_number.html, with "Page n of m"). Frappe takes the PDF's page margins from a
+	  rule ".print-format { margin-top; margin-bottom }"; they are made room for the letter head
+	  (pictures at most 27 mm high) and the footer. The rule with two classes keeps the page itself
+	  without those margins in every view, as Frappe does not read it.
+	Without a letter head (none chosen, or "no letterhead"), nothing is repeated at the top and the
+	foot has only the page number.
+
+	Created: 2026-11-04, when the user asked for the header, the footer and the page number on every
+	page, in whichever format is printed.
+-#}
+{% set frame_letter_head = letter_head if letter_head and not no_letterhead else "" %}
+{% set frame_footer = footer if footer and not no_letterhead else "" %}
+{% set frame_head %}
+<style>
+	.mf-head .letter-head img { max-height: 27mm !important; width: auto !important; max-width: 100% !important; }
+	.mf-head .letter-head { text-align: center; }
+</style>
+<div class="mf-head">{% if frame_letter_head %}<div class="letter-head" style="margin: 0 0 2mm 0;">{{ frame_letter_head }}</div>{% endif %}</div>
+{% endset %}
+<style>
+	.print-format table.mf-sheet { width: 100%; border-collapse: collapse; border: 0; margin: 0; }
+	.print-format table.mf-sheet > thead > tr > td,
+	.print-format table.mf-sheet > tbody > tr > td,
+	.print-format table.mf-sheet > tfoot > tr > td { padding: 0 !important; border: 0; vertical-align: top; }
+	/* Frappe's standard.css turns every tfoot into a head group; this one must stay at the foot */
+	.print-format table.mf-sheet > thead { display: table-header-group !important; }
+	.print-format table.mf-sheet > tfoot { display: table-footer-group !important; }
+	@media screen {
+		/* on the screen the letter head is shown once, the footer after the page */
+		.print-format table.mf-sheet > tfoot > tr > td { padding-top: 16px !important; }
+	}
+	@media print {
+		@page { margin: 0; }
+		.print-format table.mf-sheet > thead > tr > td { padding: 6mm 12mm 2mm 12mm !important; }
+		.print-format table.mf-sheet > tbody > tr > td { padding: 0 12mm !important; }
+		.print-format table.mf-sheet > tfoot > tr > td { padding: 3mm 12mm 6mm 12mm !important; }
+	}
+</style>
+
+{#- printed from the browser -#}
+<div class="hidden-pdf">
+	<table class="mf-sheet">
+		<thead><tr><td>{{ frame_head }}</td></tr></thead>
+		<tfoot><tr><td>{% if frame_footer %}<div class="letter-head-footer">{{ frame_footer }}</div>{% endif %}</td></tr></tfoot>
+		<tbody><tr><td>{{ frame_body }}</td></tr></tbody>
+	</table>
+</div>
+
+{#- the PDF made on the server -#}
+<style>
+	.print-format { margin-top: {{ 34 if frame_letter_head else 15 }}mm; margin-bottom: {{ 31 if frame_footer else 15 }}mm; }
+	.print-format.print-format { margin-top: 0 !important; margin-bottom: 0 !important; }
+</style>
+<div class="visible-pdf">
+	{% if frame_letter_head %}<div id="header-html">{{ frame_head }}</div>{% endif %}
+	{{ frame_body }}
+	{% set page_footer_html = ('<div class="letter-head-footer">' ~ frame_footer ~ '</div>') if frame_footer else "" %}
+	{% include "manav/templates/print_formats/manav_page_number.html" %}
+</div>

@@ -22,6 +22,10 @@
   "item_group",
   "terms_template",
   "price_basis",
+  "cif_default",
+  "cif_port",
+  "ex_works_from",
+  "cif_charges",
   "terms_section",
   "terms",
   "counters_section",
@@ -126,6 +130,32 @@
    "description": "Printed before a machine's price on the Classic quotation: \"Prices : <this>\", e.g. Ex-Works, Oxnard, USA. Empty: \"Price :\"."
   },
   {
+   "fieldname": "cif_default",
+   "fieldtype": "Check",
+   "label": "CIF by Default",
+   "default": "0",
+   "description": "New quotations of this principal start with CIF ticked"
+  },
+  {
+   "fieldname": "cif_port",
+   "fieldtype": "Data",
+   "label": "Default CIF Port",
+   "description": "Put on a quotation when CIF is ticked and its CIF Port is empty, e.g. Chennai Sea Port"
+  },
+  {
+   "description": "CIF prints: \"Prices : Ex-Works, <this>.\", e.g. Oxnard, USA. Copied to a CIF quotation's Ex-Works From",
+   "fieldname": "ex_works_from",
+   "fieldtype": "Data",
+   "label": "Default Ex-Works From"
+  },
+  {
+   "fieldname": "cif_charges",
+   "fieldtype": "Currency",
+   "label": "Default CIF Charges",
+   "options": "currency",
+   "description": "Put on a quotation when CIF is ticked and its CIF Charges are empty"
+  },
+  {
    "description": "Copied into a new quotation of this type",
    "fieldname": "terms_section",
    "fieldtype": "Section Break",
@@ -182,7 +212,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-22 12:00:00.000000",
+ "modified": "2026-11-03 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Quotation Type",

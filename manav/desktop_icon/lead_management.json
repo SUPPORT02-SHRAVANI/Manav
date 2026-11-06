@@ -1,0 +1,20 @@
+{
+ "app": "manav",
+ "creation": "2026-10-29 12:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "crm",
+ "icon_type": "Link",
+ "idx": 5,
+ "label": "Lead Management",
+ "link_to": "Lead Management",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-10-29 12:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Lead Management",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

@@ -36,6 +36,49 @@
 	     electrics, dimensions / shipping and axis motors left out): a heading "#Title" is a bold
 	     bullet, "label : a || b" reads "label : a (b)", "label : a" as is.
 	   A line starting with ! is bold (the old print's highlighted line).
+
+	CHANGE NOTE
+	Date: 2026-10-29
+	Change: CIF Charges (custom_cif_charges, with custom_cif_port) of a quotation ticked CIF are
+	printed as "CIF Charges - <port>" and added to the printed grand total (Classic, Colour
+	and Banded), and the amount in words follows.
+	Reason: The user asked for an amount to enter once CIF is ticked, printed as on the old
+	quotation ("CIF Charges - Chennai Sea Port ... US$ 5500.00").
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: New keys for Manav Classic Quotation, laid out exactly like the old print: price_digits
+	(machine: "US$ 105100.00", option: "9200.00", plain digits as on the old print), cif_line /
+	cif_digits (the CIF charges line), tax_lines (other charges as [label, digits]). The keys used by
+	Banded and Colour are unchanged.
+	Reason: The user showed the old quotation print and its entry screen and asked for the print to
+	match it, calculation too: the price is the machine only, the options are listed with their own
+	prices and not added, CIF charges are a line under the price.
+
+	CHANGE NOTE
+	Date: 2026-11-02
+	Change: A machine's bullets come only from its description: a bulleted / numbered list (the Item
+	form's "Add points") gives one bullet per item; the key Specifications are no longer used when the
+	description has no list.
+	Reason: The user asked to remove Specifications and print only the description, point-wise.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: CIF: "Prices : Ex-Works, <Ex-Works From>." and "CIF Charges upto <CIF Port>" as on the old
+	print (price_basis, cif_line, the CIF row of q.taxes).
+	Reason: The user showed the old CIF print next to ours.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: A bold item of the description's bulleted list (<strong> / <b>; the old system's
+	"Bold Print" of Quotation Sub Machine Mst) is marked "!" and printed bold.
+	Reason: The user had the machines' points loaded from the old table, with its bold lines.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: price_basis (Classic "Prices : ...") is the quotation's Ex-Works From and Port when typed,
+	CIF or not (was "Ex-Works, <place>." for CIF only, else the principal's Price Basis).
+	Reason: The user asked for the price text to be typed on the quotation, not fixed.
 -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
@@ -69,9 +112,14 @@
 {%- endfor -%}
 {%- set main_items = unmarked | rejectattr("idx", "in", parent_of.keys() | list) | list -%}
 {%- set main_codes = main_items | map(attribute="item_code") | list -%}
+{#- 2026-11-03: q.signature = the Signature image of the Signed By sales person (custom_signature), printed above the name. -#}
+{#- 2026-11-03: no signature image when Print Signature (custom_print_signature) is unticked -#}
 {%- set signer_code = frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_employee_code") if doc.custom_signed_by else None -%}
 {%- set contact_designation = frappe.db.get_value("Contact", doc.contact_person, "designation") if doc.contact_person else None -%}
 
+{#- price_basis (2026-11-03): a CIF quotation with Ex-Works From prints "Prices : Ex-Works, <place>." -#}
+{#- 2026-11-04: now on every quotation: Ex-Works From, then Port when typed ("EX-WORKS FTWZ WAREHOUSE
+    CHENNAI"), else (older quotations) the principal's Price Basis -#}
 {%- set q = {
 	"company": doc.company,
 	"number": doc.name,
@@ -88,17 +136,19 @@
 	],
 	"currency": currency,
 	"currency_label": currency_label,
-	"price_basis": frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None,
+	"price_basis": ([doc.get("custom_ex_works_from"), doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
 	"machines": [],
 	"loose_options": [],
 	"subtotal": doc.get_formatted("net_total"),
 	"taxes": [],
+	"tax_lines": [],
 	"grand_total": doc.get_formatted("grand_total"),
 	"grand_total_plain": amount_plain(doc.grand_total),
 	"in_words": doc.in_words,
 	"payment": [],
 	"terms": doc.terms,
 	"signer": person(doc.custom_signed_by),
+	"signature": frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_signature") if doc.custom_signed_by and doc.get("custom_print_signature") != 0 else None,
 	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
 	"sales_engineer": person(doc.custom_sales_engineer),
 } -%}
@@ -112,7 +162,21 @@
 	{%- set halves = sentence.split("; ", 1) -%}
 	{%- set parts = (halves | last | replace("; ", ", ")).split(", ") | map("trim") | select | list -%}
 	{%- set features = [] -%}
-	{%- if description_lines | length > 1 -%}
+	{%- set raw = item.description or "" -%}
+	{%- if "<li" in raw -%}
+		{#- a bulleted / numbered list (the Item's "Add points", 2026-11-02): each list item a bullet -#}
+		{%- for piece in raw.split("<li")[1:] -%}
+			{%- set point = frappe.utils.strip_html("<li" ~ piece.split("</li>")[0]) | replace("&nbsp;", " ") | replace("&amp;", "&") | trim -%}
+			{#- 2026-11-03: a bold list item (<strong> / <b>) is marked "!" = printed bold (below) -#}
+			{%- set li_html = piece.split("</li>")[0] -%}
+			{#- 2026-11-04: the point keeps its formatting from the rich-text editor (colour, italic,
+			    underline, size ...): the list item's own HTML instead of its bare text; Quill's empty
+			    marker span is left out. The bare text above still decides whether there is a point. -#}
+			{%- set rich = (li_html.split(">", 1)[1] if ">" in li_html else "") | replace('<span class="ql-ui" contenteditable="false"></span>', "") | trim -%}
+			{%- if point and ("<strong" in li_html or "<b>" in li_html or "<b " in li_html) -%}{%- set rich = "!" ~ rich -%}{%- endif -%}
+			{%- if point -%}{%- set _ = features.append(rich) -%}{%- endif -%}
+		{%- endfor -%}
+	{%- elif description_lines | length > 1 -%}
 		{%- set features = description_lines[1:] -%}
 	{%- elif halves | length > 1 and parts | length >= 3 -%}
 		{%- set features = parts -%}
@@ -124,34 +188,7 @@
 		{%- set bold = text.startswith("!") -%}
 		{%- if text -%}{%- set _ = bullets.append({"text": (text[1:] if bold else text) | trim, "bold": bold}) -%}{%- endif -%}
 	{%- endfor -%}
-	{%- if not bullets -%}
-		{%- set spec_text = item.custom_specifications or (frappe.db.get_value("Item", item.item_code, "custom_specifications") if item.item_code else None) -%}
-		{#- Only the key blocks, as "Format: key specifications" on the Item keeps them
-		    (MANAV_KEY_SPECIFICATIONS in public/js/item.js): blocks about air, electrics,
-		    dimensions / shipping and axis motors are left out, and so are the bare labels
-		    "... specifications" that the maker's page puts between blocks. -#}
-		{%- set block = namespace(dropped=False) -%}
-		{%- for spec in (spec_text or "").split("\n") | map("trim") | select -%}
-			{%- set words = spec | lower -%}
-			{%- if spec.startswith("#") -%}
-				{%- set block.dropped = ("air requirement" in words or "electrical" in words or "dimension" in words or "shipping" in words or "axis motor" in words) -%}
-			{%- endif -%}
-			{%- if block.dropped or (" : " not in spec and not spec.startswith("#") and words.endswith("specifications")) -%}
-				{#- left out -#}
-			{%- elif spec.startswith("#") -%}
-				{%- set _ = bullets.append({"text": (spec[1:].split(" || ") | first) | trim, "bold": True}) -%}
-			{%- else -%}
-				{%- set bold = spec.startswith("!") -%}
-				{%- set text = (spec[1:] if bold else spec) | trim -%}
-				{%- set cells = text.split(" : ", 1) -%}
-				{%- if cells | length == 2 -%}
-					{%- set values = cells[1].split(" || ") | map("trim") | list -%}
-					{%- set text = cells[0] | trim ~ " : " ~ values[0] ~ ((" (" ~ values[1] ~ ")") if values | length > 1 and values[1] else "") -%}
-				{%- endif -%}
-				{%- set _ = bullets.append({"text": text, "bold": bold}) -%}
-			{%- endif -%}
-		{%- endfor -%}
-	{%- endif -%}
+	{#- no Specifications fallback any more (2026-11-02): only the description is printed -#}
 
 	{%- set options = [] -%}
 	{%- for option in lines if option.custom_main_item_code == item.item_code or parent_of.get(option.idx) == item.item_code -%}
@@ -163,6 +200,7 @@
 			"qty": option.get_formatted("qty", doc),
 			"amount": option.get_formatted("amount", doc),
 			"amount_plain": amount_plain(option.amount),
+			"price_digits": "%.2f" | format(frappe.utils.flt(option.amount)),
 		}) -%}
 	{%- endfor -%}
 	{%- set _ = q.machines.append({
@@ -177,6 +215,7 @@
 		"show_qty": frappe.utils.flt(item.qty) != 1,
 		"amount": item.get_formatted("amount", doc),
 		"amount_plain": amount_plain(item.amount),
+		"price_digits": currency_label ~ " " ~ ("%.2f" | format(frappe.utils.flt(item.amount))),
 		"options": options,
 	}) -%}
 {%- endfor -%}
@@ -189,6 +228,7 @@
 		"qty": option.get_formatted("qty", doc),
 		"amount": option.get_formatted("amount", doc),
 		"amount_plain": amount_plain(option.amount),
+		"price_digits": "%.2f" | format(frappe.utils.flt(option.amount)),
 	}) -%}
 {%- endfor -%}
 
@@ -199,7 +239,20 @@
 		tax.get_formatted("tax_amount", doc),
 		amount_plain(tax.tax_amount),
 	]) -%}
+	{#- the same charge as a plain-digit line, for Classic (2026-11-02) -#}
+	{%- set _ = q.tax_lines.append([q.taxes[-1][0], currency_label ~ " " ~ ("%.2f" | format(frappe.utils.flt(tax.tax_amount)))]) -%}
 {%- endfor -%}
+
+{#- CIF charges (later 2026-10-29): a line, and added to the printed grand total -#}
+{%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges")) if doc.get("custom_is_cif") else 0 -%}
+{%- if cif_amount -%}
+	{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>"), as on the old print -#}
+	{#- 2026-11-04: "CIF Charges - <port>" again, e.g. "CIF Charges - Chennai Sea Port" (the user's wording) -#}
+	{%- set _ = q.taxes.append(["CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), frappe.utils.fmt_money(cif_amount, currency=doc.currency), amount_plain(cif_amount)]) -%}
+	{%- set cif_total = frappe.utils.flt(doc.grand_total) + cif_amount -%}
+	{%- set _ = q.update({"grand_total": frappe.utils.fmt_money(cif_total, currency=doc.currency), "grand_total_plain": amount_plain(cif_total), "in_words": frappe.utils.money_in_words(cif_total, doc.currency)}) -%}
+	{%- set _ = q.update({"cif_line": "CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), "cif_digits": currency_label ~ " " ~ ("%.2f" | format(cif_amount))}) -%}
+{%- endif -%}
 
 {#- payment schedule and validity -#}
 {%- for row in doc.get("payment_schedule") or [] -%}

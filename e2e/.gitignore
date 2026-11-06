@@ -1,0 +1,6 @@
+# Playwright output and saved logins (contain session cookies)
+node_modules/
+.auth/
+test-results/
+playwright-report/
+.env

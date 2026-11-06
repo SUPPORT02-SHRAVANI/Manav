@@ -15,6 +15,31 @@
 	Tables only (no flexbox / grid), because the PDF maker (wkhtmltopdf) knows neither.
 
 	Created: 2026-10-19.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: "Page n of m" at the foot of every page of the PDF (manav_page_number.html).
+	Reason: The user asked for page numbers when printing quotations and PIs.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: The Payment block (payment terms, Valid till; q.payment) is no longer printed.
+	Reason: The user asked to remove it from every print.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: A machine's Standard Accessories are printed in rows of their own under the machine's
+	row, across the table, two points a row (read down the left column, then the right) under the
+	heading "Standard Accessories", instead of inside the machine's description cell; the machine's
+	name is on its own line under the code.
+	Reason: The user said the Standard Accessories did not look right in the black and the colour
+	print formats: a long list was squeezed into one cell that could not run onto the next page.
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The letter head is printed at the top of every page, with its footer and "Page n of m" at
+	the foot (manav_page_frame.html), instead of the letter head once at the top.
+	Reason: The user asked for the header, footer and page number on every page of every print.
 -#}
 <style>
 	.mbq { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1f2937; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -54,9 +79,21 @@
 	.print-format .mbq .items tr.option td.desc { padding-left: 22px !important; }
 	.mbq .items tr.option .code { font-weight: 700; }
 	.mbq .items tr.option td.no { font-weight: 500; color: #4b5563; }
-	.mbq .features { margin-top: 4px; }
-	.print-format .mbq .features td { padding: 1px 4px 1px 0 !important; border: 0 !important; background: transparent !important; font-size: 8pt; color: #374151; width: 50%; }
-	.mbq .features .dot { color: {{ theme.primary }}; font-weight: 800; }
+	.mbq .items tr.machine .name { margin-top: 2px; }
+	/* 2026-11-04: Standard Accessories rows under the machine (two points a row, no row lines) */
+	.print-format .mbq .items tr.acc-head td {
+		padding: 7px 8px 3px !important; border-bottom: 0; font-size: 7.5pt; font-weight: 800;
+		text-transform: uppercase; letter-spacing: 0.08em; color: {{ theme.primary }};
+	}
+	.print-format .mbq .items tr.acc > td { padding: 0 8px !important; border-bottom: 0; }
+	.mbq .acc-pair { table-layout: fixed; }
+	.print-format .mbq .acc-pair td { border: 0 !important; background: transparent !important; font-size: 8.5pt; line-height: 1.35; }
+	/* the bullet, a small square in the theme colour, in a narrow cell of its own */
+	.print-format .mbq .acc-pair td.acc-dot { width: 3%; padding: 1.5px 0 1.5px 2px !important; color: {{ theme.primary }}; font-size: 8pt; }
+	.print-format .mbq .acc-pair td.acc-cell { width: 47%; padding: 1.5px 14px 1.5px 2px !important; color: #374151; }
+	.mbq .acc-pair td.acc-cell b { color: {{ theme.dark }}; }
+	/* a little space after the last point, closed by the table's line */
+	.print-format .mbq .items tr.acc-end td { padding: 0 0 6px !important; }
 
 	/* totals */
 	.mbq .bottom { margin-top: 12px; page-break-inside: avoid; }
@@ -78,8 +115,10 @@
 	.mbq .sign .for { font-weight: 700; color: {{ theme.dark }}; }
 </style>
 
+{#- 2026-11-04: the page is drawn into frame_body; manav_page_frame.html (end of this file) puts the
+    letter head at the top and its footer and "Page n of m" at the foot of every page -#}
+{% set frame_body %}
 <div class="mbq">
-	{% if letter_head and not no_letterhead %}<div class="letter-head">{{ letter_head }}</div>{% endif %}
 
 	<table class="band-head">
 		<tr>
@@ -126,22 +165,39 @@
 				<td class="no">{{ machine.no }}</td>
 				<td class="desc">
 					<span class="code">{{ machine.code or "" }}</span>
-					{% if machine.name and machine.name != machine.code %}&nbsp; <span class="name">{{ machine.name }}</span>{% endif %}
-					{% if machine.bullets %}
-					<table class="features">
-						{% for pair in machine.bullets | batch(2) %}
-						<tr>
-							{% for bullet in pair %}<td><span class="dot">&#8226;</span> {% if bullet.bold %}<b>{{ bullet.text }}</b>{% else %}{{ bullet.text }}{% endif %}</td>{% endfor %}
-							{% if pair | length == 1 %}<td></td>{% endif %}
-						</tr>
-						{% endfor %}
-					</table>
-					{% endif %}
+					{% if machine.name and machine.name != machine.code %}<div class="name">{{ machine.name }}</div>{% endif %}
 				</td>
 				<td class="num">{{ machine.qty }}</td>
 				<td class="num">{{ machine.rate }}</td>
 				<td class="num"><b>{{ machine.amount }}</b></td>
 			</tr>
+			{#- 2026-11-04: the Standard Accessories in rows of their own across the whole table (were
+			    squeezed into the description cell of the machine's row, which could not break over a
+			    page): a heading, then two points per row, numbered down the first column then the
+			    second, so a long list reads in order and may run onto the next page -#}
+			{% if machine.bullets %}
+			{% set half = ((machine.bullets | length) + 1) // 2 %}
+			<tr class="acc-head">
+				<td></td>
+				<td colspan="4">Standard Accessories</td>
+			</tr>
+			{% for i in range(half) %}
+			{% set left = machine.bullets[i] %}
+			{% set right = machine.bullets[i + half] if (i + half) < (machine.bullets | length) else None %}
+			<tr class="acc">
+				<td></td>
+				<td colspan="4">
+					<table class="acc-pair"><tr>
+						<td class="acc-dot">&#9642;</td>
+						<td class="acc-cell">{% if left.bold %}<b>{{ left.text }}</b>{% else %}{{ left.text }}{% endif %}</td>
+						<td class="acc-dot">{% if right %}&#9642;{% endif %}</td>
+						<td class="acc-cell">{% if right %}{% if right.bold %}<b>{{ right.text }}</b>{% else %}{{ right.text }}{% endif %}{% endif %}</td>
+					</tr></table>
+				</td>
+			</tr>
+			{% endfor %}
+			<tr class="acc-end"><td colspan="5"></td></tr>
+			{% endif %}
 			{% for option in machine.options %}
 			<tr class="option{% if loop.index is even %} band{% endif %}">
 				<td class="no">{{ option.no }}</td>
@@ -175,10 +231,7 @@
 	<table class="bottom">
 		<tr>
 			<td style="width: 48%; padding-right: 12px !important;">
-				{% if q.payment %}
-				<div class="label">Payment</div>
-				{% for line in q.payment %}<div>{{ line }}</div>{% endfor %}
-				{% endif %}
+				{#- 2026-11-03: no Payment / Valid till block (the user asked to remove it from every print) -#}
 			</td>
 			<td>
 				<table class="totals">
@@ -201,8 +254,14 @@
 
 	<div class="sign">
 		<div class="for">For {{ q.company or "" }}</div>
-		<div style="height: 38px;"></div>
+		{#- 2026-11-03: the signer's Signature image (Sales Person) in the space left for signing -#}
+		{% if q.signature %}<div style="height: 38px;"><img src="{{ q.signature }}" style="max-height: 38px; max-width: 180px;"></div>
+		{% else %}<div style="height: 38px;"></div>{% endif %}
 		<div><b>{{ q.signer }}</b></div>
 		<div>{{ q.designation or "" }}</div>
 	</div>
 </div>
+{% endset %}
+{#- 2026-11-03: "Page n of m" at the foot of every page of the PDF -#}
+{#- 2026-11-04: with the letter head on every page and its footer (manav_page_frame.html) -#}
+{% include "manav/templates/print_formats/manav_page_frame.html" %}

@@ -66,6 +66,44 @@ Change: Added keep_sub_item_rates (validate): sub-item lines get their machine's
 item_query_with_rate puts the rate on a line of its own, so the form can print it bold.
 Reason: On a MACHINES quotation the sub-items showed converted INR prices in USD after ERPNext
 re-priced the lines from the USD price list; the user also asked for the rate in bold.
+
+CHANGE NOTE
+Date: 2026-10-28
+Change: Added get_machine_spares (the model of a customer's machine, an ERPNext Serial No, and its
+linked spare parts).
+Reason: The user asked for spare parts quotations for the machine the customer bought; the
+customer's machines are kept as ERPNext Serial Nos (chosen by the user).
+
+CHANGE NOTE
+Date: 2026-11-03
+Change: fill_cif_defaults writes DEFAULT_CIF_CHARGES (1500) in an empty CIF Charges when the
+principal has no default charges (also without a principal).
+Reason: The user asked for 1500 to be written when CIF is selected, with the option to change it.
+
+CHANGE NOTE
+Date: 2026-11-03
+Change: fill_account_manager also puts the Customer's old-system code (custom_customer_code) in
+Magic Cust Code (custom_magic_cust_code); added get_quotation_dashboard (Connections: Draft PI and
+Final PI).
+Reason: The user asked for the customer's Magic code on the quotation, and the Draft PI and Final
+PI in the quotation's connections.
+get_options leaves out sub-items switched off (Quotation Sub Item Master.active), as the user asked
+to activate / deactivate sub-items on the Item. CIF: the principal's "Default Ex-Works From"
+(get_type_defaults, fill_cif_defaults) and CIF Port FTWZ Chennai when the principal has none
+(DEFAULT_CIF_PORT), for the old print's CIF lines.
+
+CHANGE NOTE
+Date: 2026-11-04
+Change: fill_cif_defaults sets the (now hidden) CIF tick from CIF Charges: an amount means CIF.
+It no longer writes 1500 itself, and it also runs for the Final PI (Sales Order).
+Reason: The user asked to remove the CIF tick and to show the CIF fields directly.
+
+CHANGE NOTE
+Date: 2026-11-04
+Change: get_type_defaults also returns the principal's Price Basis (price_basis); the form puts the
+principal's Ex-Works From, else that Price Basis, in an empty Ex-Works From, which now starts the
+price line of every quotation ("Price <Ex-Works From> <Port> (1 NOS)").
+Reason: The quotation's price line is typed on the quotation instead of a fixed text.
 """
 
 import json
@@ -93,7 +131,54 @@ def get_type_defaults(quotation_type):
 		"tc_name": doc.terms_template,
 		"item_group": doc.item_group,
 		"custom_signed_by": signed_by,
+		# 2026-10-29: the principal's CIF defaults (fill_cif_defaults; quotation.js)
+		"custom_is_cif": doc.get("cif_default"),
+		"custom_cif_port": doc.get("cif_port"),
+		"custom_cif_charges": doc.get("cif_charges"),
+		# 2026-11-03: printed as "Prices : Ex-Works, <this>." on CIF prints
+		"custom_ex_works_from": doc.get("ex_works_from"),
+		# 2026-11-04: an empty Ex-Works From (the start of the price line) gets the principal's
+		# Ex-Works From, else its Price Basis (quotation.js)
+		"price_basis": doc.get("price_basis"),
 	}
+
+
+# CIF Charges when CIF is ticked and the principal (Quotation Type) has no default (2026-11-03);
+# the same number is in quotation.js and draft_pi.js.
+DEFAULT_CIF_CHARGES = 1500
+# CIF Port (where the CIF charges run to) when the principal has none (2026-11-03, the old print's
+# "CIF Charges upto FTWZ Chennai"); the same text is in quotation.js and draft_pi.js.
+DEFAULT_CIF_PORT = "FTWZ Chennai"
+
+
+def fill_cif_defaults(doc, method=None):
+	"""Quotation, Draft PI and Final PI (Sales Order) validate: a CIF document whose CIF Port or
+	Ex-Works From is empty gets its principal's defaults (Quotation Type). Values typed on the
+	document are kept. Added 2026-10-29: the user asked for the port and charges to be filled by
+	default. (The Draft PI's fields have no prefix, the ERPNext doctypes' are custom_*.)
+
+	2026-11-04: the CIF tick is hidden (the user's request); a document is CIF when CIF Charges has
+	an amount, and the hidden tick is set from that here, so the prints, which read the tick, stay
+	as they are. Charges are no longer filled with 1500 here (that would make every document CIF);
+	the form fills them when the principal is CIF by default (quotation.js, draft_pi.js)."""
+	prefix = "" if doc.doctype == "Draft PI" else "custom_"
+	if not doc.meta.has_field(prefix + "is_cif"):
+		return
+	is_cif = 1 if flt(doc.get(prefix + "cif_charges")) else 0
+	doc.set(prefix + "is_cif", is_cif)
+	if not is_cif:
+		return
+	port, charges, ex_works = (
+		frappe.db.get_value("Quotation Type", doc.custom_quotation_type, ["cif_port", "cif_charges", "ex_works_from"])
+		if doc.get("custom_quotation_type")
+		else None
+	) or (None, None, None)
+	# 2026-11-03: FTWZ Chennai when the principal has no port
+	if not doc.get(prefix + "cif_port"):
+		doc.set(prefix + "cif_port", port or DEFAULT_CIF_PORT)
+	# 2026-11-03: Ex-Works From (Quotation custom_ex_works_from, Draft PI ex_works_from) from the principal
+	if ex_works and doc.meta.has_field(prefix + "ex_works_from") and not doc.get(prefix + "ex_works_from"):
+		doc.set(prefix + "ex_works_from", ex_works)
 
 
 @frappe.whitelist()
@@ -112,7 +197,8 @@ def get_options(main_item_codes):
 
 	options = frappe.get_all(
 		"Quotation Sub Item Master",
-		filters={"main_item_code": ["in", main_item_codes]},
+		# 2026-11-03: switched-off sub-items (Active unticked on the Item's Sub-Items table) are not offered
+		filters={"main_item_code": ["in", main_item_codes], "active": 1},
 		fields=["main_item_code", "sub_item_code", "item_description", "sub_item_type", "rate", "sr_no"],
 		order_by="main_item_code asc, sr_no asc",
 	)
@@ -142,6 +228,27 @@ def get_options(main_item_codes):
 			}
 		)
 	return result
+
+
+@frappe.whitelist()
+def get_machine_spares(serial_no):
+	"""The machine model of a customer's machine (its ERPNext Serial No) and the spare parts linked
+	to that model in Quotation Sub Item Master (the sub-items whose Item is in the group Spares).
+	Used by the "Spares for Machine" button of a spares quotation (public/js/quotation.js). Added
+	2026-10-28: the user asked for spare parts quotations for the machine the customer bought."""
+	frappe.has_permission("Serial No", "read", serial_no, throw=True)
+	model = frappe.db.get_value("Serial No", serial_no, "item_code")
+	if not model:
+		return {"model": None, "spares": []}
+	options = get_options([model])
+	spare_codes = set(
+		frappe.get_all(
+			"Item",
+			filters={"name": ["in", [o["item_code"] for o in options]], "item_group": "Spares"},
+			pluck="name",
+		)
+	)
+	return {"model": model, "spares": [o for o in options if o["item_code"] in spare_codes]}
 
 
 def number_sub_items(doc, method=None):
@@ -201,6 +308,13 @@ def fill_account_manager(doc, method=None):
 	# (the form already does this when the manager is set; one chosen by hand is kept).
 	if doc.get("custom_account_manager") and not doc.get("custom_signed_by"):
 		doc.custom_signed_by = sales_person_for_user(doc.custom_account_manager)
+
+	# 2026-11-03: the customer's code in the old (Magic) system, shown on the quotation
+	if doc.meta.has_field("custom_magic_cust_code"):
+		code = None
+		if doc.get("quotation_to") == "Customer" and doc.get("party_name") and frappe.get_meta("Customer").has_field("custom_customer_code"):
+			code = frappe.db.get_value("Customer", doc.party_name, "custom_customer_code")
+		doc.custom_magic_cust_code = code
 
 
 @frappe.whitelist()
@@ -408,3 +522,18 @@ def last_number(prefix):
 		if last:
 			highest = max(highest, cint(last[len(prefix) :]))
 	return highest
+
+
+def get_quotation_dashboard(data):
+	"""override_doctype_dashboards (hooks.py), added 2026-11-03: the Quotation's Connections also
+	list its Draft PIs (Draft PI.quotation) and Final PIs (Sales Order.custom_quotation, set by
+	pi.make_final_pi). ERPNext's own Sales Order link (prevdoc_docname of the lines) is replaced by
+	custom_quotation, as Manav's Final PIs are made from the Draft PI."""
+	data = data or {}
+	data.setdefault("non_standard_fieldnames", {})
+	data["non_standard_fieldnames"]["Draft PI"] = "quotation"
+	data["non_standard_fieldnames"]["Sales Order"] = "custom_quotation"
+	transactions = [t for t in data.get("transactions", []) if "Sales Order" not in t.get("items", [])]
+	transactions.insert(0, {"label": _("PI"), "items": ["Draft PI", "Sales Order"]})
+	data["transactions"] = transactions
+	return data

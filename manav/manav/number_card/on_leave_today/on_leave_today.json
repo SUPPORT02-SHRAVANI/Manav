@@ -1,6 +1,6 @@
 {
  "aggregate_function_based_on": "",
- "color": "#2a78d6",
+ "color": "#d97706",
  "creation": "2026-10-17 16:00:00.000000",
  "docstatus": 0,
  "doctype": "Number Card",
@@ -12,7 +12,7 @@
  "is_public": 1,
  "is_standard": 1,
  "label": "On Leave Today",
- "modified": "2026-10-17 16:00:00.000000",
+ "modified": "2026-11-03 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "On Leave Today",

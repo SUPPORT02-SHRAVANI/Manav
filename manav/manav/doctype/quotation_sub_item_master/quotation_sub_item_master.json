@@ -10,6 +10,7 @@
   "main_item_code",
   "sub_item_code",
   "sr_no",
+  "active",
   "sub_item_type",
   "uom",
   "column_break_main",
@@ -48,6 +49,15 @@
    "fieldtype": "Int",
    "label": "Sub Item Sr No",
    "non_negative": 1
+  },
+  {
+   "default": "1",
+   "description": "Untick to stop offering this sub-item on new quotations (the Item form's Sub-Items table switches it)",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
   },
   {
    "fieldname": "sub_item_type",
@@ -138,7 +148,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-22 12:00:00.000000",
+ "modified": "2026-11-03 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Quotation Sub Item Master",

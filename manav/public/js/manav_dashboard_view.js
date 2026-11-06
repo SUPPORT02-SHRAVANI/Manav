@@ -22,6 +22,14 @@
 // code below on it. The web page /manav-dashboard now redirects to the desk page.
 // Reason: The user asked that the dashboard opens inside the Frappe desk, not as a web page, and
 // that every sales employee sees their own figures there.
+//
+// CHANGE NOTE
+// Date: 2026-11-04
+// Change: The look of the Lead Dashboard (styles in public/css/manav_dashboard.css): a greeting
+// header holding the date filters, pill tabs, tiles with a coloured icon (a click opens the
+// matching Quotation list within the dates), bar rows with hover (a status or customer row opens
+// its quotations) and a loading shimmer. The data and the tabs are unchanged.
+// Reason: The user asked for the quotation dashboard to match the Leads page and the Lead Dashboard.
 
 window.manav_dashboard_view = window.manav_dashboard_view || {};
 window.manav_dashboard_view.mount = function (root) {
@@ -66,14 +74,37 @@ window.manav_dashboard_view.mount = function (root) {
 	const hideTip = () => (tip.hidden = true);
 
 	// ---------- pieces ----------
+	// 2026-11-04: small line icons for the tiles, as on the Lead Dashboard (stroke = currentColor)
+	const ICONS = {
+		file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
+		money: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+		check: '<path d="M20 6 9 17l-5-5"/>',
+		clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+		x: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
+		trend: '<path d="m23 6-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/>',
+		users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+		calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+		alert: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
+	};
+	const icon = (name) =>
+		`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ICONS.file}</svg>`;
+
+	// 2026-11-04: tiles as on the Lead Dashboard: label and a coloured icon (i.ic, i.c) on top, the
+	// large figure, a sub-line; with i.go a click opens the matching list.
 	function tiles(el, items) {
 		el.innerHTML = items
-			.map((i) => `<div class="md-tile"><div class="md-tile-label">${esc(i.label)}</div><div class="md-tile-value">${esc(i.value)}</div>${i.sub ? `<div class="md-tile-sub">${esc(i.sub)}</div>` : ""}</div>`)
+			.map(
+				(i, n) => `<div class="md-tile${i.go ? " md-go" : ""}" data-n="${n}" style="--c:${esc(i.c || "#2a78d6")}">
+					<div class="md-tile-top"><span class="md-tile-label">${esc(i.label)}</span><span class="md-tile-ic">${icon(i.ic)}</span></div>
+					<div class="md-tile-value">${esc(i.value)}</div>${i.sub ? `<div class="md-tile-sub">${esc(i.sub)}</div>` : ""}</div>`
+			)
 			.join("");
+		el.querySelectorAll(".md-tile.md-go").forEach((tile) => tile.addEventListener("click", () => items[Number(tile.dataset.n)].go()));
 	}
 
-	// Horizontal bars: label | bar scaled to the largest value | value text.
-	function barList(el, rows, fmt, sub) {
+	// Horizontal bars: label | bar scaled to the largest value | value text. 2026-11-04: one row
+	// element per entry (hover, as on the Lead Dashboard); with go(row) a click opens its list.
+	function barList(el, rows, fmt, sub, go) {
 		if (!rows || !rows.length) {
 			el.innerHTML = `<div class="md-empty">${esc(t("No data in this range"))}</div>`;
 			return;
@@ -83,14 +114,27 @@ window.manav_dashboard_view.mount = function (root) {
 			`<div class="md-bars">` +
 			rows
 				.map(
-					(r) =>
+					(r, n) =>
+						`<div class="md-bar-row${go ? " md-go" : ""}" data-n="${n}">` +
 						`<div class="md-bar-label" title="${esc(r.label)}">${esc(r.label)}</div>` +
 						`<div class="md-bar-track"><div class="md-bar-fill" style="width:${((100 * r.value) / max).toFixed(1)}%"></div></div>` +
-						`<div class="md-bar-value">${esc(fmt(r.value))}${sub ? ` <span class="md-muted">${esc(sub(r))}</span>` : ""}</div>`
+						`<div class="md-bar-value">${esc(fmt(r.value))}${sub ? ` <span class="md-muted">${esc(sub(r))}</span>` : ""}</div>` +
+						`</div>`
 				)
 				.join("") +
 			`</div>`;
+		if (go) el.querySelectorAll(".md-bar-row").forEach((row) => row.addEventListener("click", () => go(rows[Number(row.dataset.n)])));
 	}
+
+	// 2026-11-04: open a list with filters (the tiles and bar rows), within the chosen dates
+	function openList(doctype, filters, date_field) {
+		if (!window.frappe || !frappe.set_route) return;
+		const options = Object.assign({}, filters || {});
+		if (date_field) options[date_field] = ["between", [$("md-from").value, $("md-to").value]];
+		frappe.route_options = options;
+		frappe.set_route("List", doctype);
+	}
+	const openQuotations = (filters) => openList("Quotation", filters, "transaction_date");
 
 	// Column chart of one measure per month; hover shows the month's details.
 	function columnChart(el, rows, valueOf, tipOf) {
@@ -149,36 +193,40 @@ window.manav_dashboard_view.mount = function (root) {
 	function renderSales(s, prefix) {
 		if (!s) return;
 		const el = (part) => $(`md-${prefix}-${part}`);
+		// 2026-11-04: each tile with its icon and colour; a click opens the quotations in the dates
 		tiles(el("tiles"), [
-			{ label: t("Quotations"), value: fmtInt(s.count), sub: t("drafts + submitted") },
-			{ label: t("Quoted value"), value: fmtShort(s.value), sub: fmtMoney(s.value) },
-			{ label: t("Won (ordered)"), value: fmtInt(s.won_count), sub: fmtMoney(s.won_value) },
-			{ label: t("Open / replied"), value: fmtInt(s.open_count) },
-			{ label: t("Lost"), value: fmtInt(s.lost_count) },
-			{ label: t("Conversion"), value: s.conversion == null ? "–" : s.conversion + "%", sub: t("won ÷ submitted") },
+			{ label: t("Quotations"), value: fmtInt(s.count), sub: t("drafts + submitted"), ic: "file", c: "#2a78d6", go: () => openQuotations({}) },
+			{ label: t("Quoted value"), value: fmtShort(s.value), sub: fmtMoney(s.value), ic: "money", c: "#6250d6", go: () => openQuotations({}) },
+			{ label: t("Won (ordered)"), value: fmtInt(s.won_count), sub: fmtMoney(s.won_value), ic: "check", c: "#1baf7a", go: () => openQuotations({ status: "Ordered" }) },
+			{ label: t("Open / replied"), value: fmtInt(s.open_count), ic: "clock", c: "#eda100", go: () => openQuotations({ status: ["in", ["Open", "Replied"]] }) },
+			{ label: t("Lost"), value: fmtInt(s.lost_count), ic: "x", c: "#e34948", go: () => openQuotations({ status: "Lost" }) },
+			{ label: t("Conversion"), value: s.conversion == null ? "–" : s.conversion + "%", sub: t("won ÷ submitted"), ic: "trend", c: "#eb6834" },
 		]);
 		columnChart(el("month"), s.by_month, (r) => r.value, (r) => `<b>${esc(monthName(r.month))}</b>${esc(fmtMoney(r.value))}<br>${esc(fmtInt(r.count))} ${esc(t("quotations"))}`);
 		table(el("month-table"), [t("Month"), t("Quotations"), t("Value")], s.by_month.map((r) => [monthName(r.month), fmtInt(r.count), fmtMoney(r.value)]));
 		const countSub = (r) => `(${fmtInt(r.count)})`;
-		barList(el("status"), s.by_status, fmtShort, countSub);
+		// 2026-11-04: a status or customer row opens its quotations ("Others (n)" rows do not)
+		const real = (go) => (r) => (/^Others \(\d+\)$/.test(r.label) ? null : go(r));
+		barList(el("status"), s.by_status, fmtShort, countSub, real((r) => openQuotations({ status: r.label })));
 		barList(el("principal"), s.by_principal, fmtShort, countSub);
 		if (el("engineer")) barList(el("engineer"), s.by_engineer, fmtShort, countSub);
-		barList(el("customer"), s.by_customer, fmtShort, countSub);
+		barList(el("customer"), s.by_customer, fmtShort, countSub, real((r) => openQuotations({ customer_name: r.label })));
 	}
 
 	function renderHr(h) {
 		if (!h) return;
 		const today = (h.today && h.today.by_status) || {};
-		const items = [{ label: t("Active employees"), value: fmtInt(h.active) }];
+		// 2026-11-04: icons and colours as on the Lead Dashboard
+		const items = [{ label: t("Active employees"), value: fmtInt(h.active), ic: "users", c: "#2a78d6" }];
 		if (h.today) {
 			items.push(
-				{ label: t("Present today"), value: fmtInt((today["Present"] || 0) + (today["Work From Home"] || 0)), sub: today["Work From Home"] ? `${fmtInt(today["Work From Home"])} ${t("work from home")}` : "" },
-				{ label: t("On leave today"), value: fmtInt(today["On Leave"] || 0) },
-				{ label: t("Absent today"), value: fmtInt((today["Absent"] || 0) + (today["Half Day"] || 0)), sub: today["Half Day"] ? `${fmtInt(today["Half Day"])} ${t("half day")}` : "" },
-				{ label: t("Not marked today"), value: fmtInt(h.today.not_marked) }
+				{ label: t("Present today"), value: fmtInt((today["Present"] || 0) + (today["Work From Home"] || 0)), sub: today["Work From Home"] ? `${fmtInt(today["Work From Home"])} ${t("work from home")}` : "", ic: "check", c: "#1baf7a" },
+				{ label: t("On leave today"), value: fmtInt(today["On Leave"] || 0), ic: "calendar", c: "#6250d6" },
+				{ label: t("Absent today"), value: fmtInt((today["Absent"] || 0) + (today["Half Day"] || 0)), sub: today["Half Day"] ? `${fmtInt(today["Half Day"])} ${t("half day")}` : "", ic: "x", c: "#e34948" },
+				{ label: t("Not marked today"), value: fmtInt(h.today.not_marked), ic: "alert", c: "#eda100" }
 			);
 		}
-		if (h.open_leaves != null) items.push({ label: t("Leave applications to approve"), value: fmtInt(h.open_leaves) });
+		if (h.open_leaves != null) items.push({ label: t("Leave applications to approve"), value: fmtInt(h.open_leaves), ic: "clock", c: "#eb6834" });
 		tiles($("md-hr-tiles"), items);
 		if (h.month) {
 			$("md-hr-month-title").textContent = `${t("Attendance in")} ${monthName(h.month.month)} (${t("records")})`;
@@ -196,9 +244,9 @@ window.manav_dashboard_view.mount = function (root) {
 	function renderPayroll(p) {
 		if (!p) return;
 		tiles($("md-pay-tiles"), [
-			{ label: t("Salary slips (submitted)"), value: fmtInt(p.slips), sub: p.draft_slips ? `${fmtInt(p.draft_slips)} ${t("still draft")}` : "" },
-			{ label: t("Gross pay"), value: fmtShort(p.gross), sub: fmtMoney(p.gross) },
-			{ label: t("Net pay"), value: fmtShort(p.net), sub: fmtMoney(p.net) },
+			{ label: t("Salary slips (submitted)"), value: fmtInt(p.slips), sub: p.draft_slips ? `${fmtInt(p.draft_slips)} ${t("still draft")}` : "", ic: "file", c: "#2a78d6" },
+			{ label: t("Gross pay"), value: fmtShort(p.gross), sub: fmtMoney(p.gross), ic: "money", c: "#6250d6" },
+			{ label: t("Net pay"), value: fmtShort(p.net), sub: fmtMoney(p.net), ic: "check", c: "#1baf7a" },
 		]);
 		columnChart(
 			$("md-pay-month"),
@@ -260,9 +308,18 @@ window.manav_dashboard_view.mount = function (root) {
 
 	// ---------- loading ----------
 	const status = $("md-status");
+	// 2026-11-04: a greeting, as on the Lead Dashboard
+	(() => {
+		const h = new Date().getHours();
+		const part = h < 12 ? t("Good morning") : h < 17 ? t("Good afternoon") : t("Good evening");
+		const boot = window.frappe && frappe.boot && frappe.boot.user;
+		const name = (boot && boot.first_name) || (window.frappe && frappe.session && frappe.session.user_fullname) || "";
+		$("md-hello").textContent = name ? `${part}, ${name}` : part;
+	})();
+	const skeleton = status.innerHTML;
 	async function load() {
 		const from = $("md-from").value, to = $("md-to").value;
-		status.textContent = t("Loading…");
+		status.innerHTML = skeleton;
 		status.classList.remove("md-error");
 		status.hidden = false;
 		try {
@@ -323,6 +380,7 @@ function manav_dashboard_markup(t) {
 <div class="md-root" id="md-root">
 	<header class="md-head">
 		<div>
+			<h2 class="md-hello" id="md-hello">${t("Quotation Dashboard")}</h2>
 			<p class="md-muted" id="md-range-note"></p>
 		</div>
 		<form class="md-filters" id="md-filters">
@@ -345,11 +403,15 @@ function manav_dashboard_markup(t) {
 		<button type="button" role="tab" id="md-tab-payroll" data-panel="md-payroll" aria-controls="md-payroll" aria-selected="false" hidden>${t("Payroll")}</button>
 	</nav>
 
-	<p class="md-status" id="md-status">${t("Loading…")}</p>
+	<div class="md-status" id="md-status">
+		<div class="md-tiles"><div class="md-skel" style="height:118px"></div><div class="md-skel" style="height:118px"></div><div class="md-skel" style="height:118px"></div></div>
+		<div class="md-skel" style="height:280px"></div>
+	</div>
 
 	<section class="md-section" id="md-mine" role="tabpanel" aria-labelledby="md-tab-mine" hidden>
 		<h2>${t("My Quotations")}</h2>
-		<p class="md-muted md-section-note">${t("Quotations you created or are Account Manager of")}</p>
+		<!-- 2026-11-03: no "Account Manager" in the text (removed everywhere at the user's request) -->
+		<p class="md-muted md-section-note">${t("Quotations you created or that are for your customers")}</p>
 		<div class="md-tiles" id="md-mine-tiles"></div>
 		<div class="md-card md-wide">
 			<h3>${t("My quotation value by month")} <span class="md-muted" data-unit></span></h3>

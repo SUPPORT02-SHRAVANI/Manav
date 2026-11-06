@@ -56,12 +56,25 @@ import_quotation_setup, and put them in import_all.
 Reason: Everything is to be used in ERPNext's own doctypes: zones as Territory, the old employees as
 Sales Person, contact persons as Contact, rates as Item Price, and each principal's currency, price
 list, item group and standard terms as the ERPNext records a Quotation uses.
+
+CHANGE NOTE
+Date: 2026-10-28
+Change: Added import_item_groups (the 21 item groups of the old Magic system as ERPNext Item Groups
+under "Magic Item Groups"; items are not moved), and put it in import_all.
+Reason: The user asked for the old item group master (20_item_group_mst) to be imported.
+
+CHANGE NOTE
+Date: 2026-11-06
+Change: import_item_groups drops the 8-digit tariff code from the group names ("01 MACHINES"
+instead of "01 MACHINES - 16301000") and renames the groups already made.
+Reason: The user asked for the number to be removed from the Item Group dropdown.
 """
 
 import gzip
 import html
 import json
 import os
+import re
 from collections import Counter
 
 import frappe
@@ -803,6 +816,57 @@ def import_quotation_setup():
 	print("Quotation Type: currency, price list, item group and terms template set where empty")
 
 
+MAGIC_ITEM_GROUPS = "Magic Item Groups"
+
+# The old group names end with an 8-digit tariff code ("MACHINES - 16301000",
+# "INSPECTION EQUIPMENT 13400000"); it is not part of the name the users want to see.
+TARIFF_CODE_SUFFIX = re.compile(r"\s*-?\s*\d{8}\s*$")
+
+
+def item_group_name(row):
+	"""ERPNext Item Group name of an old Magic group: "<code> <name>" without the tariff code,
+	e.g. "01 MACHINES". Added 2026-11-06."""
+	return f"{row['code']} {TARIFF_CODE_SUFFIX.sub('', row['group_name'])}"
+
+
+def import_item_groups():
+	"""Make an ERPNext Item Group for each of the 21 item groups of the old Magic system (file
+	legacy_data/item_group.json, from 20_item_group_mst), under one parent "Magic Item Groups".
+	Each is named by its old code and name without the tariff code ("01 MACHINES"; before
+	2026-11-06 "01 MACHINES - 16301000", renamed when this runs again), so it cannot clash with the
+	groups the quotations use (Machines, Spares, Options ...). Items are not moved into them: the
+	principals' item lists on quotations depend on the current groups (chosen with the user on
+	2026-10-28). Safe to run again. Added 2026-10-28.
+
+	bench --site manav.local execute manav.manav.import_legacy.import_item_groups
+	"""
+	root = get_root_of("Item Group")
+	if not root:
+		frappe.throw("No root Item Group found. Complete the ERPNext setup wizard first.")
+	if not frappe.db.exists("Item Group", MAGIC_ITEM_GROUPS):
+		frappe.get_doc(
+			{"doctype": "Item Group", "item_group_name": MAGIC_ITEM_GROUPS, "parent_item_group": root, "is_group": 1}
+		).insert(ignore_permissions=True)
+
+	added = renamed = 0
+	for row in load("item_group"):
+		old_name = f"{row['code']} {row['group_name']}"
+		name = item_group_name(row)
+		# 2026-11-06: groups made before this date carry the tariff code; rename them in place
+		# (rename_doc also updates every Item that links to the old name).
+		if old_name != name and frappe.db.exists("Item Group", old_name) and not frappe.db.exists("Item Group", name):
+			frappe.rename_doc("Item Group", old_name, name, force=True)
+			renamed += 1
+		if frappe.db.exists("Item Group", name):
+			continue
+		frappe.get_doc(
+			{"doctype": "Item Group", "item_group_name": name, "parent_item_group": MAGIC_ITEM_GROUPS, "is_group": 0}
+		).insert(ignore_permissions=True)
+		added += 1
+	frappe.db.commit()
+	print(f"  {added} item groups added, {renamed} renamed, under {MAGIC_ITEM_GROUPS}")
+
+
 def import_all():
 	"""Run every import in the order the tables depend on each other. Safe to run again.
 
@@ -821,6 +885,7 @@ def import_all():
 	import_contacts()
 	import_quotation_items()
 	import_quotation_sub_items()
+	import_item_groups()
 	import_items()
 	import_item_prices()
 	import_quotation_setup()

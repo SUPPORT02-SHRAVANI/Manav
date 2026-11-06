@@ -10,6 +10,14 @@ Quotation Item Master records. No custom logic is needed, so the class is empty.
 loaded by manav/manav/import_legacy.py.
 
 Created: 2026-10-12, from the old table "Quotation Sub Item Master".
+
+CHANGE NOTE
+Date: 2026-11-03
+Change: Added "Active" (active, ticked by default): an inactive sub-item is no longer offered on new
+quotations (quotation.get_options, quotation_head.get_options); the Item form's Sub-Items table
+adds sub-items and switches them on and off (item_tree.py).
+Reason: The user asked for sub-items in table form on the Item, with adding and activate /
+deactivate.
 """
 
 # import frappe

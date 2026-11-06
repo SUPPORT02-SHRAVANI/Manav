@@ -1,0 +1,24 @@
+{
+ "content": null,
+ "creation": "2026-10-29 12:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-10-29 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "manav-lead-dashboard",
+ "owner": "Administrator",
+ "page_name": "manav-lead-dashboard",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "Manav Management"},
+  {"role": "Sales Manager"},
+  {"role": "Sales User"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Lead Dashboard"
+}

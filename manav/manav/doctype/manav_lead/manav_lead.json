@@ -1,0 +1,481 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-10-29 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "sec_visiting_card",
+  "visiting_card",
+  "scan_front_camera",
+  "scan_front_upload",
+  "col_visiting_card",
+  "visiting_card_back",
+  "scan_back_camera",
+  "scan_back_upload",
+  "sec_scan_now",
+  "scan_now",
+  "sec_customer",
+  "company_name",
+  "mobile_no",
+  "location",
+  "address",
+  "col_customer",
+  "contact_person",
+  "contact_position",
+  "email_id",
+  "website",
+  "sec_customer_location",
+  "latitude",
+  "col_customer_location",
+  "longitude",
+  "sec_lead_info",
+  "lead_date",
+  "haas_cust_id",
+  "magic_cust_id",
+  "col_lead_info",
+  "status",
+  "sale_engineer",
+  "sale_manager",
+  "sec_source",
+  "source",
+  "source_name",
+  "sec_product",
+  "product_type",
+  "product",
+  "product_free_hand",
+  "col_product",
+  "currency",
+  "quantity",
+  "rate",
+  "amount",
+  "sec_profile",
+  "customer_profile",
+  "sector",
+  "type_of_company",
+  "col_profile",
+  "business_size",
+  "supplying_to_vendor",
+  "existing_machine",
+  "sec_notes",
+  "other_information_notes",
+  "sec_conversion",
+  "quotation",
+  "tab_visits",
+  "visits_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "LEAD-.#####",
+   "default": "LEAD-.#####"
+  },
+  {
+   "fieldname": "sec_visiting_card",
+   "fieldtype": "Section Break",
+   "label": "Visiting Card"
+  },
+  {
+   "description": "Add the front (and the back below if needed), then click Scan Now: the AI reads the card and fills the customer details. Use the buttons, or the field's own Attach.",
+   "fieldname": "visiting_card",
+   "fieldtype": "Attach Image",
+   "label": "Visiting Card (Front)"
+  },
+  {
+   "fieldname": "scan_front_camera",
+   "fieldtype": "Button",
+   "label": "Front: Take Photo"
+  },
+  {
+   "fieldname": "scan_front_upload",
+   "fieldtype": "Button",
+   "label": "Front: Upload File"
+  },
+  {
+   "fieldname": "col_visiting_card",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Only if the card has details on the back; both sides are read together.",
+   "fieldname": "visiting_card_back",
+   "fieldtype": "Attach Image",
+   "label": "Visiting Card (Back)"
+  },
+  {
+   "fieldname": "scan_back_camera",
+   "fieldtype": "Button",
+   "label": "Back: Take Photo"
+  },
+  {
+   "fieldname": "scan_back_upload",
+   "fieldtype": "Button",
+   "label": "Back: Upload File"
+  },
+  {
+   "fieldname": "sec_scan_now",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Read the uploaded card(s) and fill the customer details.",
+   "fieldname": "scan_now",
+   "fieldtype": "Button",
+   "label": "Scan Now"
+  },
+  {
+   "fieldname": "sec_lead_info",
+   "fieldtype": "Section Break",
+   "label": "Lead Info"
+  },
+  {
+   "default": "Today",
+   "fieldname": "lead_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Lead Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "haas_cust_id",
+   "fieldtype": "Data",
+   "label": "Haas Cust ID"
+  },
+  {
+   "fieldname": "magic_cust_id",
+   "fieldtype": "Data",
+   "label": "Magic Cust ID"
+  },
+  {
+   "fieldname": "col_lead_info",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nPending to Qualify\nQualified\nClosed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sale_engineer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sales Engineer",
+   "options": "Sales Person",
+   "description": "The Sales Person handling the lead (the quotation made from it gets this Sales Engineer). Filled with your own Sales Person."
+  },
+  {
+   "fieldname": "sale_manager",
+   "fieldtype": "Data",
+   "label": "Sale Manager"
+  },
+  {
+   "fieldname": "sec_customer",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Company Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile No",
+   "reqd": 1
+  },
+  {
+   "default": "BANGALORE",
+   "fieldname": "location",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Location",
+   "options": "BANGALORE\nFTWZ\nCHENNAI\nCOIMBATORE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "col_customer",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contact_position",
+   "fieldtype": "Data",
+   "label": "Contact Position",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "label": "Email ID",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "options": "URL"
+  },
+  {
+   "collapsible": 1,
+   "description": "Where the customer is. Visits are checked against it (within 500 m). Empty: the Address is looked up at each check-in; a manager can set it from a visit (Set as Customer Location).",
+   "fieldname": "sec_customer_location",
+   "fieldtype": "Section Break",
+   "label": "Customer Location",
+   "hidden": 1
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "7"
+  },
+  {
+   "fieldname": "col_customer_location",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "7"
+  },
+  {
+   "fieldname": "sec_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Source",
+   "options": "Manav Lead Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "sec_product",
+   "fieldtype": "Section Break",
+   "label": "Product"
+  },
+  {
+   "fieldname": "product_type",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Product Type",
+   "options": "Manav Product Type",
+   "hidden": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Manav Product",
+   "hidden": 1
+  },
+  {
+   "description": "Free-text product when it is not in the Product master.",
+   "fieldname": "product_free_hand",
+   "fieldtype": "Data",
+   "label": "Product"
+  },
+  {
+   "fieldname": "col_product",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "1",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "options": "currency"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_profile",
+   "fieldtype": "Section Break",
+   "label": "Customer Profile"
+  },
+  {
+   "fieldname": "customer_profile",
+   "fieldtype": "Small Text",
+   "label": "Customer Profile"
+  },
+  {
+   "fieldname": "sector",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Sector",
+   "options": "\nAerospace/defense\nAfter Market Transportation\nTransportation\nEducation\nElectrical Component\nEnergy\nGeneral Job Shop\nFirearms\nHeavy Industries\nHobby/Craft\nMachinery\nMedical/Dental\nMold and Die\nPrecision Mechanics"
+  },
+  {
+   "fieldname": "type_of_company",
+   "fieldtype": "Select",
+   "label": "Type of Company",
+   "options": "\nOriginal Equipment Manufacturer\nContract/Job Shop\nEducation\nTier 1 Supplier\nTier 2 / Tier 3 Supplier\nTool Room\nDie and Mould Maker\nGovernment / PSU\nDefence\nR&D / Testing Lab\nMaintenance and Repair (MRO)\nIn-house Manufacturing\nTrader / Dealer\nStartup\nOthers"
+  },
+  {
+   "fieldname": "col_profile",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "business_size",
+   "fieldtype": "Select",
+   "label": "Business Size",
+   "options": "\n000\n0-10 Employees\n11-50 Employees\n51-100 Employees\n101-250 Employees\n250+ Employees\nState Owned"
+  },
+  {
+   "fieldname": "supplying_to_vendor",
+   "fieldtype": "Data",
+   "label": "Supplying To Vendor"
+  },
+  {
+   "fieldname": "existing_machine",
+   "fieldtype": "Small Text",
+   "label": "Existing Machine"
+  },
+  {
+   "fieldname": "sec_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "other_information_notes",
+   "fieldtype": "Small Text",
+   "label": "Other Information Notes"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_conversion",
+   "fieldtype": "Section Break",
+   "label": "Conversion"
+  },
+  {
+   "description": "The ERPNext Quotation this lead turned into, once it is qualified.",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "label": "Quotation",
+   "options": "Quotation"
+  },
+  {
+   "fieldname": "tab_visits",
+   "fieldtype": "Tab Break",
+   "label": "Visits"
+  },
+  {
+   "fieldname": "visits_html",
+   "fieldtype": "HTML",
+   "label": "Visits"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-04 13:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Manav Lead",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manav Management",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "company_name,mobile_no,contact_person,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "company_name",
+ "track_changes": 1
+}

@@ -36,6 +36,30 @@
    "indent": 0,
    "keep_closed": 0,
    "show_arrow": 0,
+   "label": "Draft PI",
+   "type": "Link",
+   "link_type": "DocType",
+   "icon": "notepad-text-dashed",
+   "link_to": "Draft PI"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "label": "Final PI",
+   "type": "Link",
+   "link_type": "DocType",
+   "icon": "file-check",
+   "link_to": "Sales Order"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
    "label": "Customer",
    "type": "Link",
    "link_type": "DocType",
@@ -48,11 +72,35 @@
    "indent": 0,
    "keep_closed": 0,
    "show_arrow": 0,
+   "label": "Customer Dashboard",
+   "type": "Link",
+   "link_type": "Page",
+   "icon": "chart",
+   "link_to": "customer-dashboard"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
    "label": "Item",
    "type": "Link",
    "link_type": "DocType",
    "icon": "stock",
    "link_to": "Item"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "show_arrow": 0,
+   "label": "Sub-Items",
+   "type": "Link",
+   "link_type": "Page",
+   "icon": "list-tree",
+   "link_to": "machine-sub-items"
   },
   {
    "child": 0,
@@ -225,10 +273,10 @@
    "indent": 0,
    "keep_closed": 0,
    "show_arrow": 0,
-   "label": "Machine Sub-Items Tree",
+   "label": "Sub-Item List",
    "type": "Link",
-   "link_type": "Page",
-   "link_to": "machine-sub-items"
+   "link_type": "DocType",
+   "link_to": "Quotation Sub Item Master"
   },
   {
    "child": 1,
@@ -418,7 +466,7 @@
    "link_to": "Quotation Head"
   }
  ],
- "modified": "2026-10-22 13:00:00.000000",
+ "modified": "2026-11-04 12:30:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav",

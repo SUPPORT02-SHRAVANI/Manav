@@ -2,22 +2,74 @@
 	Custom HTML Block "Manav Dashboard Tabs" (CSS part). The block is drawn in a shadow root that
 	links Frappe's desk CSS, so Frappe's colour variables apply (light and dark theme).
 	Written into the block by manav/manav/workspace_tabs.py on every migrate. Created: 2026-10-19.
+
+	CHANGE NOTE
+	Date: 2026-11-03
+	Change: The underline tabs are now a segmented pill bar: a soft grey track, the chosen tab a
+	raised white pill with a coloured dot (blue Quotations / Sales, green HR & Attendance, orange
+	Payroll, purple Masters & Records, by position); the bar's scrollbar is hidden (it showed as
+	small arrows on Windows) and it still scrolls sideways on narrow screens.
+	Reason: The user asked for a better-looking workspace (screenshot of Manav Marketing - Bangalore).
+
+	CHANGE NOTE
+	Date: 2026-11-04
+	Change: The chosen tab is filled with its colour (white text and dot, a soft coloured shadow), as
+	on the Leads page; on a phone the bar takes the full width and the tabs are a little smaller.
+	Reason: The user asked for the home dashboard to match the Leads page / Lead Dashboard.
 */
-.mwt-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+.mwt-bar {
+	display: inline-flex;
+	max-width: 100%;
+	gap: 4px;
+	padding: 4px;
+	border-radius: 12px;
+	background: var(--subtle-fg, var(--gray-100));
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.mwt-bar::-webkit-scrollbar { display: none; }
 .mwt-bar:empty { display: none; }
 .mwt-tab {
+	--mwt-accent: var(--blue-500, #2563eb);
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 	flex: none;
 	border: 0;
-	border-bottom: 2px solid transparent;
-	margin-bottom: -1px;
-	background: none;
-	padding: 8px 14px;
+	border-radius: 9px;
+	background: transparent;
+	padding: 7px 14px;
 	font-size: var(--text-base, 14px);
 	font-weight: 500;
 	color: var(--text-muted);
 	white-space: nowrap;
 	cursor: pointer;
+	transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
-.mwt-tab:hover { color: var(--text-color); }
-.mwt-tab[aria-selected="true"] { color: var(--text-color); border-bottom-color: var(--primary); font-weight: 600; }
-.mwt-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+/* a dot in the tab's colour, by position */
+.mwt-tab::before {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--mwt-accent);
+	opacity: 0.45;
+}
+.mwt-tab:nth-child(2) { --mwt-accent: var(--green-500, #16a34a); }
+.mwt-tab:nth-child(3) { --mwt-accent: var(--orange-500, #ea580c); }
+.mwt-tab:nth-child(4) { --mwt-accent: var(--purple-500, #7c3aed); }
+.mwt-tab:nth-child(5) { --mwt-accent: var(--cyan-500, #0891b2); }
+.mwt-tab:hover { color: var(--text-color); background: var(--fg-hover-color, rgba(0, 0, 0, 0.04)); }
+/* 2026-11-04: the chosen tab filled with its colour, as the Leads page's filter tiles */
+.mwt-tab[aria-selected="true"] {
+	color: #fff;
+	font-weight: 600;
+	background: var(--mwt-accent);
+	box-shadow: 0 6px 16px color-mix(in srgb, var(--mwt-accent) 30%, transparent);
+}
+.mwt-tab[aria-selected="true"]::before { opacity: 1; background: #fff; }
+@media (max-width: 767px) {
+	.mwt-bar { display: flex; }
+	.mwt-tab { padding: 7px 12px; font-size: 13px; }
+}
+.mwt-tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }

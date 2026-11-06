@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 21:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_followup",
+  "send_followup_email"
+ ],
+ "fields": [
+  {"fieldname": "sec_followup", "fieldtype": "Section Break", "label": "Follow-up Reminders"},
+  {"default": "0", "description": "When ticked, the follow-up reminder (day before the Next Visit Date, and on the due day / after until the visit is made) is also e-mailed to the sale engineer. Needs an outgoing Email Account. The in-app bell notification is always sent. Keep this OFF while testing.", "fieldname": "send_followup_email", "fieldtype": "Check", "label": "Send Follow-up Reminder Email"}
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-30 21:00:00",
+ "modified_by": "Administrator",
+ "module": "Manav",
+ "name": "Manav Lead Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "print": 1, "read": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "print": 1, "read": 1, "role": "Manav Management", "share": 1, "write": 1},
+  {"read": 1, "write": 1, "role": "Sales Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

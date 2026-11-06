@@ -42,6 +42,11 @@ Date: 2026-10-13
 Change: The default print format (quotation_head.json) is "Manav Modern Quotation Head"; before it
 was "Manav Quotation", which stays selectable in the print window. No logic here changed.
 Reason: The user asked for the new quotation layout on all quotations, the old ones included.
+
+CHANGE NOTE
+Date: 2026-11-03
+Change: get_sub_items offers only active sub-items (Quotation Sub Item Master.active).
+Reason: The user asked to activate / deactivate sub-items on the Item.
 """
 
 import json
@@ -234,7 +239,8 @@ def get_sub_items(main_item_codes):
 		return []
 	return frappe.get_all(
 		"Quotation Sub Item Master",
-		filters={"main_item_code": ["in", main_item_codes]},
+		# 2026-11-03: only active sub-items (Active, Item form's Sub-Items table)
+		filters={"main_item_code": ["in", main_item_codes], "active": 1},
 		fields=[
 			"name",
 			"main_item_code",
