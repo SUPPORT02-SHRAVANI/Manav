@@ -4,6 +4,18 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-06
 
+**Workspaces: title card and greeting line removed.**
+
+- Summary: the workspaces with the "Manav Dashboard Tabs" block (e.g. Bangalore) no longer show
+  the title as a tinted card with "Good morning, <name> · <date>" under it; the title is Frappe's
+  own heading again. Tabs, tile and chart styling are unchanged.
+- Reason: the user did not want that part; the card also overlapped the first row of shortcuts.
+- Files: `manav/manav/workspace_tabs_block/tabs.js`.
+- Testing: `node --check` on the server: OK; `setup_workspace_tabs` run on manav.local and the
+  saved block read back (no greeting function, no title-card style); cache cleared. Not tested:
+  the workspace in a browser.
+- Pending: the live site gets this only after the code is deployed there and migrated.
+
 **Item form: Item Name shows an Item Master dropdown on a new item.**
 
 - Summary: while typing Item Name on a new Item, a dropdown lists up to 20 existing items whose

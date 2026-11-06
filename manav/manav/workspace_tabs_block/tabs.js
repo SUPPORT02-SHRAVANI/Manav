@@ -24,6 +24,13 @@
 // saved with the workspace, removed in edit mode), number cards with an icon chip, number cards and
 // shortcuts in the chosen tab's colour (data-mws-tab), and no "Last synced" line under the charts.
 // Reason: The user asked to make the (Bangalore) workspace better.
+//
+// CHANGE NOTE
+// Date: 2026-11-06
+// Change: Removed the title card (the workspace title as a tinted box) and the "Good morning,
+// <name> · <date>" line under it; tabs, tiles and charts keep their look.
+// Reason: The user asked why that part was there and did not want it; the card also overlapped
+// the first row of shortcuts.
 (function manavWorkspaceTabs() {
 	const host = root_element.host;
 	const bar = root_element.querySelector(".mwt-bar");
@@ -76,12 +83,7 @@
 		style.id = "manav-ws-style";
 		style.textContent = `
 			.manav-ws { --mws-accent: #2a78d6; }
-			/* the workspace's title block as the greeting card of the Lead Dashboard */
-			.manav-ws > .ce-block:first-child .ce-header {
-				padding: 20px 24px; border: 1px solid var(--border-color); border-radius: 16px;
-				background: linear-gradient(120deg, color-mix(in srgb, var(--mws-accent) 12%, var(--card-bg, #fff)), var(--card-bg, #fff) 65%);
-			}
-			.manav-ws > .ce-block:first-child .ce-header .h4 { font-size: 22px; font-weight: 700; color: var(--heading-color); }
+			/* 2026-11-06: the title block is Frappe's own heading again (the tinted title card was removed) */
 			/* cards: 16 px corners, a thin line, no shadow; tiles lift on hover */
 			.manav-ws .widget { border-radius: 16px; border: 1px solid var(--border-color); box-shadow: none; }
 			.manav-ws .number-widget-box, .manav-ws .shortcut-widget-box { padding: 14px 16px; transition: transform 0.15s, box-shadow 0.15s; }
@@ -115,16 +117,8 @@
 			.manav-ws .shortcut-widget-box .indicator-pill { border-radius: 999px; font-weight: 600; }
 			/* charts: no "Last synced just now" line under the title */
 			.manav-ws .dashboard-widget-box .widget-subtitle { display: none; }
-			/* the greeting line added under the title (tabs.js, not part of the saved workspace) */
-			.manav-ws .mws-greet { margin: -6px 0 0; padding: 0 24px 18px; font-size: 13px; color: var(--text-muted); }
-			.manav-ws > .ce-block:first-child:has(.mws-greet) .ce-header { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 0; padding-bottom: 8px; }
-			.manav-ws .mws-greet { border: 1px solid var(--border-color); border-top: 0; border-radius: 0 0 16px 16px;
-				background: linear-gradient(120deg, color-mix(in srgb, var(--mws-accent) 12%, var(--card-bg, #fff)), var(--card-bg, #fff) 65%); }
-			.manav-ws .mws-greet b { color: var(--heading-color); font-weight: 600; }
-			/* phone: a smaller title card, two tiles a row (the tabs still hide what is not chosen) */
+			/* phone: two tiles a row (the tabs still hide what is not chosen) */
 			@media (max-width: 767px) {
-				.manav-ws > .ce-block:first-child .ce-header { padding: 16px; }
-				.manav-ws > .ce-block:first-child .ce-header .h4 { font-size: 19px; }
 				.manav-ws > .ce-block:has(.number-widget-box), .manav-ws > .ce-block:has(.shortcut-widget-box) {
 					flex: 0 0 50% !important; max-width: 50% !important; width: 50% !important;
 				}
@@ -132,42 +126,19 @@
 				.manav-ws .number-widget-box .number { font-size: 22px; }
 				.manav-ws .number-widget-box::after, .manav-ws .number-widget-box::before { display: none; }
 				.manav-ws .number-widget-box .widget-head { padding-right: 0; }
-				.manav-ws .mws-greet { padding: 0 16px 14px; }
 			}
 		`;
 		document.head.appendChild(style);
 	}
 
-	// Later 2026-11-04: "Good afternoon, <name> · <date>" under the workspace's title, as on the Lead
-	// Dashboard. Put next to the title (not inside it), so it is never saved with the workspace,
-	// and taken away while the workspace is edited.
-	function greet(list, editing) {
-		const first = list.querySelector(":scope > .ce-block");
-		const header = first && first.querySelector(".ce-header");
-		const old = list.querySelector(".mws-greet");
-		if (editing || !header) {
-			if (old) old.remove();
-			return;
-		}
-		if (old) return;
-		const h = new Date().getHours();
-		const part = h < 12 ? __("Good morning") : h < 17 ? __("Good afternoon") : __("Good evening");
-		const name = (frappe.boot.user && frappe.boot.user.first_name) || frappe.session.user_fullname || "";
-		const line = document.createElement("div");
-		line.className = "mws-greet";
-		const who = document.createElement("b");
-		who.textContent = name ? `${part}, ${name}` : part;
-		line.appendChild(who);
-		line.appendChild(document.createTextNode(` · ${frappe.datetime.str_to_user(frappe.datetime.get_today())}`));
-		header.insertAdjacentElement("afterend", line);
-	}
-
+	// 2026-11-06: the greeting line under the title (greet) was removed; a line left by an older
+	// version of this script on an open page is taken away.
 	function apply() {
 		const own = ownBlock();
 		if (!own || !own.parentElement) return;
 		addLook(own.parentElement);
 		const editing = Boolean(own.parentElement.querySelector(".edit-mode"));
-		greet(own.parentElement, editing);
+		own.parentElement.querySelectorAll(".mws-greet").forEach((el) => el.remove());
 		const sections = readSections(own);
 		const tabs = sections.filter((s) => s.has_content);
 		// Editing the workspace, or nothing to choose from: no tabs, everything visible.
