@@ -61,7 +61,11 @@ LEAD_BOARD_FIELDS = {
 			"options": "Manav Lead Stage",
 			"insert_after": "status",
 			"in_standard_filter": 1,
-			"description": "Moved by each visit of the lead, or by Next Stage.",
+			# 2026-11-07: read-only on the lead - the stage is set by the lead's visits (DVR) and Next
+			# Stage only. The user asked why the lead has a stage when the DVR sets it; it is kept as
+			# the lead's current stage for the Leads page, dashboard, Make Quotation and reports.
+			"read_only": 1,
+			"description": "Set by the lead's visits (DVR) or Next Stage; cannot be changed here.",
 		},
 		{
 			"fieldname": "next_followup_date",
@@ -187,6 +191,27 @@ def stage_after(stage):
 		limit=1,
 	)
 	return nxt[0] if nxt else None
+
+
+# CHANGE NOTE
+# Date: 2026-11-07
+# Change: stage_query - the Stage dropdown (every Link to Manav Lead Stage, hooks.py standard_queries)
+#         lists all stages by Sequence (the DVR's Stage, its list filter and the lead's included).
+# Reason: The user found the stage order wrong: Frappe's link search sorts by idx (how often a stage
+#         was linked) before the doctype's sort field, so the most-used stages jumped to the top.
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def stage_query(doctype, txt, searchfield, start, page_len, filters):
+	return frappe.get_all(
+		"Manav Lead Stage",
+		filters={"stage_name": ["like", f"%{txt or ''}%"]},
+		fields=["name"],
+		order_by="sequence asc, name asc",
+		# All stages at once (there are about 12): the dropdown's usual limit of 10 would hide the
+		# last stages (Installation) unless typed.
+		page_length=200,
+		as_list=True,
+	)
 
 
 # Next Stage button: move the lead to the stage after its current one, with the next follow-up

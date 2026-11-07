@@ -9,14 +9,8 @@
   "naming_series",
   "sec_visiting_card",
   "visiting_card",
-  "scan_front_camera",
-  "scan_front_upload",
   "col_visiting_card",
   "visiting_card_back",
-  "scan_back_camera",
-  "scan_back_upload",
-  "sec_scan_now",
-  "scan_now",
   "sec_customer",
   "company_name",
   "mobile_no",
@@ -78,23 +72,14 @@
   {
    "fieldname": "sec_visiting_card",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Visiting Card"
   },
   {
-   "description": "Add the front (and the back below if needed), then click Scan Now: the AI reads the card and fills the customer details. Use the buttons, or the field's own Attach.",
+   "description": "Filled by the Visiting Card menu at the top (Take Photo / Upload File, then Scan Now).",
    "fieldname": "visiting_card",
    "fieldtype": "Attach Image",
    "label": "Visiting Card (Front)"
-  },
-  {
-   "fieldname": "scan_front_camera",
-   "fieldtype": "Button",
-   "label": "Front: Take Photo"
-  },
-  {
-   "fieldname": "scan_front_upload",
-   "fieldtype": "Button",
-   "label": "Front: Upload File"
   },
   {
    "fieldname": "col_visiting_card",
@@ -105,26 +90,6 @@
    "fieldname": "visiting_card_back",
    "fieldtype": "Attach Image",
    "label": "Visiting Card (Back)"
-  },
-  {
-   "fieldname": "scan_back_camera",
-   "fieldtype": "Button",
-   "label": "Back: Take Photo"
-  },
-  {
-   "fieldname": "scan_back_upload",
-   "fieldtype": "Button",
-   "label": "Back: Upload File"
-  },
-  {
-   "fieldname": "sec_scan_now",
-   "fieldtype": "Section Break"
-  },
-  {
-   "description": "Read the uploaded card(s) and fill the customer details.",
-   "fieldname": "scan_now",
-   "fieldtype": "Button",
-   "label": "Scan Now"
   },
   {
    "fieldname": "sec_lead_info",
@@ -415,7 +380,7 @@
   }
  ],
  "links": [],
- "modified": "2026-11-04 13:00:00.000000",
+ "modified": "2026-11-07 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav Lead",

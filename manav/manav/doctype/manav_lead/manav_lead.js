@@ -44,6 +44,11 @@
 // Date: 2026-11-03
 // Change: No Product filter by Product Type: both are hidden, only the free-hand Product is used.
 // Reason: The user asked to remove Product Type and Product from the lead.
+// CHANGE NOTE
+// Date: 2026-11-07
+// Change: The Visiting Card section is gone from the form body (its scan buttons removed, the two
+//         picture fields hidden); scanning is only through the top-right Visiting Card menu.
+// Reason: The user said the top menu already does this, so the body section was a duplicate.
 
 // Card value -> Lead field it fills.
 const CARD_TO_LEAD = {
@@ -88,34 +93,6 @@ frappe.ui.form.on("Manav Lead", {
 		frm.add_custom_button(__("Back: Take Photo"), () => pick_card(frm, "visiting_card_back", true), group);
 		frm.add_custom_button(__("Back: Upload File"), () => pick_card(frm, "visiting_card_back", false), group);
 		frm.add_custom_button(__("Scan Now"), () => scan_card(frm), group);
-
-		// Make the Scan Now button on the form body white, so it stands out.
-		const $scan = frm.get_field("scan_now") && frm.get_field("scan_now").$input;
-		if ($scan) {
-			$scan.removeClass("btn-default btn-primary").css({
-				"background-color": "#ffffff",
-				color: "#1a1a1a",
-				border: "1px solid #c7c7c7",
-				"font-weight": 600,
-			});
-		}
-	},
-	// The same actions as buttons in the Visiting Card section on the form body (easy to find).
-	scan_front_camera(frm) {
-		pick_card(frm, "visiting_card", true);
-	},
-	scan_front_upload(frm) {
-		pick_card(frm, "visiting_card", false);
-	},
-	scan_back_camera(frm) {
-		pick_card(frm, "visiting_card_back", true);
-	},
-	scan_back_upload(frm) {
-		pick_card(frm, "visiting_card_back", false);
-	},
-	// Scan Now button: read the uploaded card(s).
-	scan_now(frm) {
-		scan_card(frm);
 	},
 	// Amount = Quantity x Rate, recalculated as the user types.
 	quantity: calc_amount,

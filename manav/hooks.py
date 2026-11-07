@@ -512,6 +512,12 @@ scheduler_events = {
 # Reason: The user asked for Draft PI and Final PI in the quotation's connections.
 override_doctype_dashboards = {"Quotation": "manav.manav.quotation.get_quotation_dashboard"}
 
+# CHANGE NOTE
+# Date: 2026-11-07
+# Change: Every Stage dropdown (lead, visit) lists the stages by Sequence (lead_board.stage_query).
+# Reason: The user found the stage order wrong (Frappe sorted the most-used stages first).
+standard_queries = {"Manav Lead Stage": "manav.manav.lead_board.stage_query"}
+
 # exempt linked doctypes from being automatically cancelled
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
