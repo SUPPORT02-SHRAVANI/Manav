@@ -183,8 +183,9 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "For an existing customer: pick one of its contacts (filled by itself when it has only one). Otherwise type the name.",
    "fieldname": "contact_person",
-   "fieldtype": "Data",
+   "fieldtype": "Autocomplete",
    "label": "Contact Person",
    "reqd": 1
   },

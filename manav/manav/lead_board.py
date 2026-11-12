@@ -158,6 +158,10 @@ def setup_lead_board_fields():
 def update_visit_count(visit, method=None):
 	if not visit.lead or not frappe.db.exists("Manav Lead", visit.lead):
 		return
+	# The field is made by setup_lead_board_fields (after_migrate); until a migrate has run it is not
+	# there, and a visit must still save.
+	if not frappe.db.has_column("Manav Lead", "visit_count"):
+		return
 	count = frappe.db.count("Manav Visit", {"lead": visit.lead, "docstatus": ["!=", 2]})
 	# update_modified=False: a visit must not move the lead to the top of the "last modified" list.
 	frappe.db.set_value("Manav Lead", visit.lead, "visit_count", count, update_modified=False)

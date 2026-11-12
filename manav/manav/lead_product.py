@@ -41,7 +41,7 @@ def item_query(txt=None, principal=None, **kwargs):
 		if conditions:
 			of_principal = " or ".join(conditions)
 			rows = frappe.db.sql(
-				f"""select name, item_name from `tabItem`
+				f"""select name, item_name, description from `tabItem`
 				where disabled = 0 and is_sales_item = 1 and has_variants = 0
 					and ({of_principal})
 					and (name like %(txt)s or item_name like %(txt)s)
@@ -51,12 +51,13 @@ def item_query(txt=None, principal=None, **kwargs):
 				as_dict=True,
 			)
 
+	# 2026-11-12: bold product name, and under it the start of its description (was: the item code),
+	# as the user asked.
 	out = [
 		{
 			"value": r.name,
 			"label": r.item_name or r.name,
-			# the code under the name when they differ, so two items of the same name can be told apart
-			"description": r.name if r.item_name and r.item_name != r.name else "",
+			"description": short_description(r),
 		}
 		for r in rows
 	]
@@ -78,6 +79,23 @@ def get_item_description(item_code):
 		return ""
 	item = frappe.db.get_value("Item", item_code, ["item_name", "description"], as_dict=True)
 	return html_to_text(item.description) or item.item_name or item_code
+
+
+# Longest description shown under a product in the dropdown.
+DROPDOWN_DESCRIPTION_CHARS = 120
+
+
+def short_description(item):
+	"""The item's description on one line, cut to DROPDOWN_DESCRIPTION_CHARS, for the dropdown. Empty
+	when it only repeats the name; the code then, so items of the same name can be told apart."""
+	text = " ".join(html_to_text(item.description).split())
+	name = (item.item_name or item.name or "").strip()
+	if not text or text.lower() == name.lower():
+		return item.name if item.name != name else ""
+	if len(text) > DROPDOWN_DESCRIPTION_CHARS:
+		text = text[:DROPDOWN_DESCRIPTION_CHARS].rsplit(" ", 1)[0] + "…"
+	# the dropdown shows it as HTML
+	return frappe.utils.escape_html(text)
 
 
 def html_to_text(value):

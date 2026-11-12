@@ -151,6 +151,15 @@ frappe.ui.form.on("Manav Lead", {
 function setup_item_dropdown(frm) {
 	const field = frm.fields_dict.item_code;
 	if (!field) return;
+	// bold product name, its description below in grey, wrapped (not cut off at the dropdown's edge)
+	if (!$("#manav-lead-item-style").length) {
+		$(`<style id="manav-lead-item-style">
+			.frappe-control[data-fieldname="item_code"] .awesomplete > ul { max-height: 360px; overflow-y: auto; }
+			.frappe-control[data-fieldname="item_code"] .awesomplete li p { margin: 0; white-space: normal; line-height: 1.35; }
+			.frappe-control[data-fieldname="item_code"] .awesomplete li strong { font-size: 13px; font-weight: 700; color: var(--heading-color); }
+			.frappe-control[data-fieldname="item_code"] .awesomplete li .small { display: block; margin-top: 2px; font-size: 12px; color: var(--text-muted); }
+		</style>`).appendTo("head");
+	}
 	field.get_query = () => {
 		if (!frm.doc.principal && !(frm.manav_principal_told > Date.now() - 3000)) {
 			frm.manav_principal_told = Date.now();

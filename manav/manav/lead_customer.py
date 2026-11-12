@@ -23,6 +23,7 @@ import json
 # Frappe framework.
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.contacts.doctype.address.address import get_default_address
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
@@ -154,19 +155,22 @@ def get_customer_details(customer):
 		"magic_cust_id": doc.get("custom_customer_code"),
 	}
 
-	contact_name = doc.get("customer_primary_contact") or get_default_contact("Customer", doc.name)
-	if contact_name:
-		contact = frappe.db.get_value(
-			"Contact",
-			contact_name,
-			["first_name", "last_name", "designation", "mobile_no", "phone", "email_id"],
-			as_dict=True,
-		)
-		if contact:
-			out["contact_person"] = " ".join(filter(None, [contact.first_name, contact.last_name]))
-			out["contact_position"] = contact.designation
-			out["mobile_no"] = out["mobile_no"] or contact.mobile_no or contact.phone
-			out["email_id"] = out["email_id"] or contact.email_id
+	# 2026-11-12: all the customer's contacts go back as "contacts" (the lead's Contact Person dropdown).
+	# Exactly one contact: it fills the lead's contact fields. More than one: none is filled, the user picks
+	# one from the dropdown (manav_lead_customer.js), as the user asked.
+	contacts = get_customer_contacts(doc.name)
+	contact = None
+	if len(contacts) == 1:
+		contact = contacts[0]
+	elif not contacts:
+		# no linked contact found: Frappe's own lookup (the customer's primary / default contact) as before
+		contact_name = doc.get("customer_primary_contact") or get_default_contact("Customer", doc.name)
+		contact = contact_values(contact_name) if contact_name else None
+	if contact:
+		out["contact_person"] = contact["full_name"]
+		out["contact_position"] = contact["designation"]
+		out["mobile_no"] = out["mobile_no"] or contact["mobile_no"]
+		out["email_id"] = out["email_id"] or contact["email_id"]
 
 	address_name = doc.get("customer_primary_address") or get_default_address("Customer", doc.name)
 	if address_name:
@@ -182,4 +186,69 @@ def get_customer_details(customer):
 				filter(None, [address.address_line1, address.address_line2, city, address.state, address.country])
 			)
 
-	return {key: value for key, value in out.items() if value}
+	out = {key: value for key, value in out.items() if value}
+	out["contacts"] = contacts
+	return out
+
+
+CONTACT_FIELDS = ["name", "first_name", "last_name", "designation", "mobile_no", "phone", "email_id", "is_primary_contact"]
+
+
+def contact_row(c):
+	"""A Contact row -> what the lead's Contact Person dropdown and fields need."""
+	return {
+		"contact": c.name,
+		"full_name": " ".join(filter(None, [c.first_name, c.last_name])) or c.name,
+		"designation": c.designation or "",
+		"mobile_no": c.mobile_no or c.phone or "",
+		"email_id": c.email_id or "",
+		"is_primary": cint(c.is_primary_contact),
+	}
+
+
+def contact_values(contact_name):
+	c = frappe.db.get_value("Contact", contact_name, CONTACT_FIELDS, as_dict=True)
+	return contact_row(c) if c else None
+
+
+@frappe.whitelist()
+def add_customer_contact(customer, first_name, last_name=None, designation=None, mobile_no=None, email_id=None):
+	"""2026-11-12: a new Contact in the master, linked to the Customer, from the lead's Contact Person
+	dropdown ("+ Add new contact", manav_lead_customer.js), as the user asked. Returns it like
+	get_customer_contacts does. Anyone who may read the customer may add a contact to it."""
+	frappe.has_permission("Customer", "read", customer, throw=True)
+	first_name = (first_name or "").strip()
+	if not first_name:
+		frappe.throw(_("Please enter the contact's name."))
+
+	contact = frappe.new_doc("Contact")
+	contact.first_name = first_name
+	contact.last_name = (last_name or "").strip() or None
+	contact.designation = (designation or "").strip() or None
+	if mobile_no:
+		contact.append("phone_nos", {"phone": mobile_no.strip(), "is_primary_mobile_no": 1})
+	if email_id:
+		contact.append("email_ids", {"email_id": email_id.strip(), "is_primary": 1})
+	contact.append("links", {"link_doctype": "Customer", "link_name": customer})
+	# The salesperson may have no right to create Contacts; the customer read check above guards it.
+	contact.insert(ignore_permissions=True)
+	return contact_values(contact.name)
+
+
+@frappe.whitelist()
+def get_customer_contacts(customer):
+	"""Every Contact linked to the Customer (primary first, then by name)."""
+	if not customer:
+		return []
+	frappe.has_permission("Customer", "read", customer, throw=True)
+	names = frappe.get_all(
+		"Dynamic Link",
+		filters={"parenttype": "Contact", "link_doctype": "Customer", "link_name": customer},
+		pluck="parent",
+	)
+	if not names:
+		return []
+	rows = frappe.get_all("Contact", filters={"name": ["in", list(set(names))]}, fields=CONTACT_FIELDS)
+	contacts = [contact_row(c) for c in rows]
+	contacts.sort(key=lambda c: (-c["is_primary"], c["full_name"].lower()))
+	return contacts
