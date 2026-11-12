@@ -99,6 +99,11 @@ frappe.ui.form.on("Manav Lead", {
 		) {
 			frm.set_value("currency", lead_default);
 		}
+		// 2026-11-12: Sales Engineer is locked for a salesperson (it is always the logged-in user); only
+		// System Manager / Sales Manager / Manav Management may pick someone else. The server enforces
+		// the same (ManavLead.before_validate). Same role list as SALE_ENGINEER_CHOOSER_ROLES there.
+		const can_choose = frappe.user.has_role(["System Manager", "Sales Manager", "Manav Management"]);
+		frm.set_df_property("sale_engineer", "read_only", can_choose ? 0 : 1);
 		// 2026-11-12: a new lead shows its maker as Sales Engineer at once (the server also fills an
 		// empty one on saving, ManavLead.before_validate), as the user asked.
 		if (frm.is_new() && !frm.doc.sale_engineer) {
