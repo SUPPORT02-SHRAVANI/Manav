@@ -4,6 +4,17 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-12
 
+**Print page: Frappe's Print Format dropdown hidden; the Print Format Type cards choose the format.**
+
+- Summary: under Format in the print page's sidebar, Frappe's Print Format dropdown is hidden while the
+  Print Format Type cards are shown (a doctype with more than one format); the cards still set its
+  hidden value, so Print and PDF work as before. With a single format the dropdown shows again.
+- Reason: the user asked to remove the dropdown, as the same choice is in the cards below.
+- Files: `manav/public/js/manav_print_sidebar.js`.
+- Testing: `node` parse (Windows): OK. All 43 template includes of the print formats on GitHub `main`
+  resolve to files on `main`. Not run: the print page in a browser.
+- Pending: `bench build` (Frappe Cloud: deploy) and a browser reload.
+
 **Quotation prints: the Classic machine line in every format (no Quantity / Rate columns).**
 
 - Summary: every quotation format now prints the lines as Manav Classic Quotation: the machine's row

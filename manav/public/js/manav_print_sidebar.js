@@ -45,6 +45,12 @@
 // Upgrade note: wraps frappe.meta.get_print_formats (frappe/public/js/frappe/model/meta.js,
 // checked on Frappe 16.33.1); without it nothing is left out.
 //
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: Frappe's "Print Format" dropdown under Format is hidden while the Print Format Type cards
+// are shown; the cards still set its (hidden) value, so printing works as before.
+// Reason: The user asked to remove the dropdown, as the same choice is in the cards below.
+//
 // Upgrade note: this extends PrintView methods (setup_sidebar, show, setup_print_format_dom,
 // printit), checked against Frappe 16.33.1. Each wrapper calls Frappe's own
 // method first, and the whole file does nothing if PrintView or a method is missing. After a Frappe
@@ -219,7 +225,7 @@
 		// their defaults still apply
 		$dynamic.hide();
 
-		view.manav_ui = { $types, font_control, sign_control, $sign_wrap };
+		view.manav_ui = { $types, $format, font_control, sign_control, $sign_wrap };
 		refresh_choices(view);
 	}
 
@@ -260,6 +266,10 @@
 			names = [];
 		}
 		view.manav_ui.$types.toggle(names.length > 1);
+		// 2026-11-12: Frappe's Print Format dropdown is hidden while the cards are shown (the user's
+		// request: the cards already choose the format). It stays in the page, as the cards set its
+		// value; with no cards (one format only) it is shown again.
+		view.manav_ui.$format.toggle(!(names.length > 1));
 		names.forEach((name) => {
 			const words = String(name).toLowerCase();
 			const kind =
