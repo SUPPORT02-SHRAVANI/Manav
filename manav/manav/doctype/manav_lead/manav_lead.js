@@ -99,6 +99,23 @@ frappe.ui.form.on("Manav Lead", {
 		) {
 			frm.set_value("currency", lead_default);
 		}
+		// 2026-11-12: a new lead shows its maker as Sales Engineer at once (the server also fills an
+		// empty one on saving, ManavLead.before_validate), as the user asked.
+		if (frm.is_new() && !frm.doc.sale_engineer) {
+			frappe.call("manav.manav.lead_permission.my_sales_person").then((r) => {
+				if (r.message && !frm.doc.sale_engineer) {
+					frm.set_value("sale_engineer", r.message);
+				} else if (!r.message) {
+					frappe.show_alert(
+						{
+							message: __("Your login is not linked to a Sales Person, so Sales Engineer stays empty. Ask the admin to set it."),
+							indicator: "orange",
+						},
+						8
+					);
+				}
+			});
+		}
 	},
 	refresh(frm) {
 		// 2026-11-03: Product Type / Product are hidden (free-hand Product only), so no Product filter.
@@ -115,31 +132,19 @@ frappe.ui.form.on("Manav Lead", {
 		}
 	},
 
-	// 2026-11-12: an item fills Product Description from its description; Free Hand lets the user type it.
+	// 2026-11-12: Product Description is always typed by the salesperson; choosing an item does not
+	// fill it (user's request: the lead keeps their own words, while the quotation takes the item's
+	// description from the Item master). After choosing, the cursor goes to Product Description.
 	item_code(frm) {
 		const item = frm.doc.item_code;
 		if (!item) return;
+		setTimeout(() => {
+			const f = frm.fields_dict.product_free_hand;
+			f && f.$input && f.$input.focus();
+		}, 200);
 		if (item === LEAD_FREE_HAND) {
-			// the description of an item chosen before is no free-hand text
-			if (frm.manav_filled_description && frm.doc.product_free_hand === frm.manav_filled_description) {
-				frm.set_value("product_free_hand", "");
-			}
-			frm.manav_filled_description = null;
-			setTimeout(() => {
-				const f = frm.fields_dict.product_free_hand;
-				f && f.$input && f.$input.focus();
-			}, 200);
 			frappe.show_alert({ message: __("Type the product in Product Description."), indicator: "blue" }, 4);
-			return;
 		}
-		frappe
-			.call("manav.manav.lead_product.get_item_description", { item_code: item })
-			.then((r) => {
-				const text = r.message || "";
-				if (!text || frm.doc.item_code !== item) return;
-				frm.manav_filled_description = text;
-				frm.set_value("product_free_hand", text);
-			});
 	},
 	// Amount = Quantity x Rate, recalculated as the user types.
 	quantity: calc_amount,

@@ -285,7 +285,7 @@
    "label": "Item"
   },
   {
-   "description": "Filled from the chosen item's description; can be changed. With Free Hand, type the product here.",
+   "description": "Type your own description of the product (not filled from the item). The quotation takes the item's description from the Item master.",
    "fieldname": "product_free_hand",
    "fieldtype": "Small Text",
    "label": "Product Description"
@@ -404,7 +404,7 @@
   }
  ],
  "links": [],
- "modified": "2026-11-12 12:00:00.000000",
+ "modified": "2026-11-12 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav Lead",

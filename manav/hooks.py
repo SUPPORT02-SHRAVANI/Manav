@@ -441,12 +441,15 @@ doc_events = {
 
 # 2026-11-05: each login sees only its own leads (created by it, or it is the Sale Engineer);
 # Administrator / System Manager see all. Rule in manav/manav/lead_permission.py.
+# 2026-11-12: the same for Manav Visit - a user's own visits and the visits of their own leads.
 permission_query_conditions = {
 	"Manav Lead": "manav.manav.lead_permission.get_permission_query_conditions",
+	"Manav Visit": "manav.manav.lead_permission.visit_query_conditions",
 }
 
 has_permission = {
 	"Manav Lead": "manav.manav.lead_permission.has_permission",
+	"Manav Visit": "manav.manav.lead_permission.visit_has_permission",
 }
 
 # Document Events
