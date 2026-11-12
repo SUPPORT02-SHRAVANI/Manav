@@ -218,13 +218,19 @@ frappe.ui.form.on("Manav Lead", {
 						6
 					);
 				}
-				if (contacts.length > 1) {
+				// several contacts: pick one; none in the master and none filled: add one (2026-11-12)
+				const none = !contacts.length && !frm.doc.contact_person;
+				if (contacts.length > 1 || none) {
 					frappe.show_alert(
 						{
-							message: __("{0} has {1} contacts - pick one in Contact Person.", [
-								frappe.utils.escape_html(frm.doc.customer),
-								contacts.length,
-							]),
+							message: none
+								? __("{0} has no contacts yet - use + Add new contact in Contact Person.", [
+										frappe.utils.escape_html(frm.doc.customer),
+								  ])
+								: __("{0} has {1} contacts - pick one in Contact Person.", [
+										frappe.utils.escape_html(frm.doc.customer),
+										contacts.length,
+								  ]),
 							indicator: "blue",
 						},
 						7
