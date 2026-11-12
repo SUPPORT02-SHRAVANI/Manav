@@ -243,6 +243,9 @@ def limit_desk_to_manav(bootinfo):
 		if icon.get("label") in DESK_ICONS and icon.get("label") in shells:
 			icon["module"] = icon["label"]
 
+	# 2026-11-12: every page opens in the user's branch sidebar, the admins too (open_branch_sidebar)
+	open_branch_sidebar(bootinfo)
+
 	if is_admin():
 		return
 
@@ -259,6 +262,53 @@ def limit_desk_to_manav(bootinfo):
 	# App switcher in the sidebar header: only Manav
 	if bootinfo.get("app_data"):
 		bootinfo.app_data = [a for a in bootinfo.app_data if a.get("app_name") == APP_NAME]
+
+
+# CHANGE NOTE
+# Date: 2026-11-12
+# Change: open_branch_sidebar: the desk's home sidebar is the user's branch sidebar, and every page
+# that would open an ERPNext / HRMS sidebar (or the generic Manav one) opens the branch sidebar.
+# Reason: The user found that going back (or opening a Quotation, Customer, Item ...) switched the
+# sidebar to ERPNext's Selling / Stock; it should stay on Bangalore or the user's own branch.
+def open_branch_sidebar(bootinfo):
+	"""Point the desk's sidebar choice at the user's branch sidebar (Bangalore, FTWZ, Chennai,
+	Coimbatore; the head office's Bangalore for a user without one, or with a branch that has no
+	sidebar, such as Hyderabad).
+
+	Why: Frappe 16 keeps the sidebar on screen only for pages it lists; for any other page, and for
+	/desk itself, it opens the sidebar named in the boot's `canonical_shell` map / `home_shell`
+	(frappe/public/js/frappe/ui/sidebar/sidebar.js shell_for_route / default_shell, built in
+	frappe/desk/doctype/sidebar/sidebar.py build_canonical_shells; checked on Frappe 16.54). Those
+	name ERPNext's sidebars (Quotation -> Selling, Item -> Stock), so going back or opening a linked
+	document left the branch. Only these two boot values are changed, for this page load: the other
+	Manav sidebars (Lead Management, ...) keep their own pages, and what a user may open is still
+	decided by their roles. If the boot has neither value (another Frappe version), nothing changes.
+	"""
+	from manav.manav.branches import get_user_branch
+
+	shells = bootinfo.get("module_sidebars") or {}
+	branch = get_user_branch() or ""
+	# "Manav Marketing - Coimbatore" -> the "Coimbatore" sidebar
+	shell = next((name for name in BRANCH_WORKSPACES if branch.endswith(name)), None)
+	if shell not in shells:
+		shell = BRANCH_WORKSPACES[0] if BRANCH_WORKSPACES[0] in shells else None
+	if not shell:
+		return
+
+	if bootinfo.get("home_shell"):
+		bootinfo.home_shell = shell
+
+	# Rewrite only the pages owned by another app's sidebar, the generic Manav sidebar or another
+	# branch's sidebar (Frappe files the shared Manav pages under Bangalore)
+	def other_app(name):
+		owner = shells.get(name) or {}
+		return name == MANAV_WORKSPACE or name in BRANCH_WORKSPACES or owner.get("app") != APP_NAME
+
+	for entities in (bootinfo.get("canonical_shell") or {}).values():
+		if isinstance(entities, dict):
+			for entity, owner in entities.items():
+				if owner and other_app(owner):
+					entities[entity] = shell
 
 
 def reset_stale_desktop_layouts():

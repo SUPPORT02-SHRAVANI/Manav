@@ -4,6 +4,25 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-12
 
+**Desk: every page opens in the user's branch sidebar (not ERPNext's Selling / Stock ...).**
+
+- Summary: new `desk_home.open_branch_sidebar` (called from the `limit_desk_to_manav` boot hook, for
+  all users including admins) sets the boot's `home_shell` to the user's branch sidebar (Bangalore,
+  FTWZ, Chennai, Coimbatore; Bangalore when the user has no branch or one without a sidebar, e.g.
+  Hyderabad) and points every page of the `canonical_shell` map that belonged to an ERPNext / HRMS
+  sidebar, the Manav sidebar or another branch's sidebar to it. Lead Management keeps its pages.
+  `branches.get_user_branch` is the branch lookup shared with `add_branch_to_boot`.
+- Reason: the user found that going back, or opening a Quotation / Customer / Item ..., switched the
+  sidebar to ERPNext's; Frappe 16.54 picks the sidebar for any page the one on screen does not list
+  from that map. The older trimming (`workspace_sidebar_item`) no longer covered it.
+- Files: `manav/manav/desk_home.py`, `manav/manav/branches.py`.
+- Testing: `py_compile` (Windows) OK. On manav.local (read only, boot built with the new hooks):
+  Administrator home Bangalore, Quotation / Customer / Item / Sales Order / Draft PI / Employee ->
+  Bangalore; shyam (Coimbatore) home Coimbatore, the same pages -> Coimbatore; Manav Lead / Visit ->
+  Lead Management; no ERPNext sidebar left in either map. Not run: clicking through in a browser.
+- Pending: deploy, then users log in again (or reload) so the new boot is used. ERPNext's sidebars
+  stay reachable for admins through the Apps menu / search.
+
 **Print page: Frappe's Print Format dropdown hidden; the Print Format Type cards choose the format.**
 
 - Summary: under Format in the print page's sidebar, Frappe's Print Format dropdown is hidden while the

@@ -30,6 +30,12 @@ Date: 2026-11-03
 Change: Added add_branch_to_boot (extend_bootinfo hook): the user's branch is sent to the desk and
 shown beside the page title (public/js/manav_branch.js).
 Reason: The user asked for the branch name beside the "Manav" title at the top of the page.
+
+CHANGE NOTE
+Date: 2026-11-12
+Change: The branch lookup is the function get_user_branch, used by add_branch_to_boot and by
+desk_home.open_branch_sidebar.
+Reason: The desk opens the user's branch sidebar for every page (desk_home), which needs the branch.
 """
 
 import frappe
@@ -91,8 +97,16 @@ def add_branch_to_boot(bootinfo):
 	"""
 	if frappe.session.user == "Guest" or not frappe.db.has_column("User", "custom_branch"):
 		return
-	branch = frappe.db.get_value("User", frappe.session.user, "custom_branch")
+	bootinfo.manav_branch = get_user_branch()
+
+
+def get_user_branch(user=None):
+	"""The user's branch: User > Branch (custom_branch), else the branch of the user's Employee
+	record (HRMS), else None. 2026-11-12: moved out of add_branch_to_boot, as desk_home also needs
+	it (the branch's sidebar opens for every page)."""
+	user = user or frappe.session.user
+	branch = frappe.db.get_value("User", user, "custom_branch") if frappe.db.has_column("User", "custom_branch") else None
 	# no branch on the User: the branch of the user's Employee record, if any (HRMS)
 	if not branch and frappe.db.has_column("Employee", "branch"):
-		branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "branch")
-	bootinfo.manav_branch = branch
+		branch = frappe.db.get_value("Employee", {"user_id": user}, "branch")
+	return branch
