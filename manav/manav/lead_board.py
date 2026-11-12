@@ -75,6 +75,19 @@ LEAD_BOARD_FIELDS = {
 			"read_only": 1,
 			"description": "From the latest visit: its Next Visit Date (by default the visit date plus the stage's days).",
 		},
+		# 2026-11-12: number of visits (cancelled ones not counted), shown as a coloured badge in the
+		# lead list (manav_lead_list.js). Kept up to date by update_visit_count.
+		{
+			"fieldname": "visit_count",
+			"fieldtype": "Int",
+			"label": "Visits",
+			"insert_after": "next_followup_date",
+			"read_only": 1,
+			"no_copy": 1,
+			"in_list_view": 1,
+			"default": "0",
+			"description": "Number of visits to this lead (cancelled visits not counted).",
+		},
 	],
 	"Manav Visit": [
 		{
@@ -131,6 +144,23 @@ def setup_lead_board_fields():
 			"update `tabManav Lead` set stage=%s where ifnull(stage, '')=''",
 			first,
 		)
+
+	# 2026-11-12: (re)count every lead's visits, so existing leads show their Visits in the list.
+	frappe.db.sql(
+		"""update `tabManav Lead` l set l.visit_count = (
+			select count(*) from `tabManav Visit` v where v.lead = l.name and v.docstatus != 2
+		)"""
+	)
+
+
+# 2026-11-12: Manav Visit after_insert / on_cancel / after_delete (hooks.py): recount the lead's visits
+# (cancelled ones not counted, same as the Leads page) into Manav Lead.visit_count.
+def update_visit_count(visit, method=None):
+	if not visit.lead or not frappe.db.exists("Manav Lead", visit.lead):
+		return
+	count = frappe.db.count("Manav Visit", {"lead": visit.lead, "docstatus": ["!=", 2]})
+	# update_modified=False: a visit must not move the lead to the top of the "last modified" list.
+	frappe.db.set_value("Manav Lead", visit.lead, "visit_count", count, update_modified=False)
 
 
 # Name of the first stage by sequence ("01 Start Lead"), or None when there are none.
@@ -332,17 +362,47 @@ def make_quotation(lead):
 		lead.sale_engineer if lead.sale_engineer and frappe.db.exists("Sales Person", lead.sale_engineer) else None
 	) or sales_person_for_user(lead.owner)
 	qtn.custom_account_manager = frappe.db.get_value("Customer", customer, "account_manager")
+	# 2026-11-12: the customer's old-system (Magic) code is shown on the new quotation before it is
+	# saved; the form fills it only when the customer is chosen there, which a quotation made here skips.
+	if frappe.get_meta("Quotation").has_field("custom_magic_cust_code") and frappe.get_meta("Customer").has_field(
+		"custom_customer_code"
+	):
+		qtn.custom_magic_cust_code = frappe.db.get_value("Customer", customer, "custom_customer_code")
 	if contact:
 		qtn.contact_person = contact
 
-	# The product as a line when it is an Item (by code or name); else the user picks the items.
-	# The rate comes from the principal's price list, like any quotation line.
-	item_code = find_item(lead.product) or find_item(lead.product_free_hand)
+	# 2026-11-12: the lead's Principal becomes the quotation's (its currency, price list, letter head and
+	# terms, as the quotation form does on choosing it - quotation.get_type_defaults).
+	principal_values = {}
+	if lead.get("principal") and frappe.db.exists("Quotation Type", lead.principal):
+		from manav.manav.quotation import get_type_defaults
+
+		qtn.custom_quotation_type = lead.principal
+		defaults = get_type_defaults(lead.principal)
+		principal_values = {
+			k: defaults.get(k) for k in ("currency", "selling_price_list") if defaults.get(k)
+		}
+		for key in ("letter_head", "tc_name"):
+			if defaults.get(key):
+				qtn.set(key, defaults[key])
+		qtn.update(principal_values)
+
+	# The product as a line when it is an Item; else the user picks the items. The rate comes from the
+	# principal's price list, like any quotation line. 2026-11-12: the lead's Item (chosen under its
+	# Principal) first; "Free Hand" is no item.
+	from manav.manav.lead_product import FREE_HAND
+
+	lead_item = lead.get("item_code") if lead.get("item_code") != FREE_HAND else None
+	item_code = find_item(lead_item) or find_item(lead.product) or find_item(lead.product_free_hand)
 	if item_code:
 		qtn.append("items", {"item_code": item_code, "qty": flt(lead.quantity) or 1})
 
 	# Customer address, contact details, price list, etc. like ERPNext does on choosing the customer.
 	qtn.run_method("set_missing_values")
+	# ERPNext may have put the customer's currency / price list there; the principal decides them.
+	if principal_values and any(qtn.get(k) != v for k, v in principal_values.items()):
+		qtn.update(principal_values)
+		qtn.run_method("set_missing_values")
 	if contact:
 		qtn.contact_person = contact
 		qtn.contact_email = qtn.contact_email or lead.email_id

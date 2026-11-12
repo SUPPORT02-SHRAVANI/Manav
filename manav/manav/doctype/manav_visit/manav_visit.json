@@ -10,18 +10,19 @@
   "lead",
   "visit_no",
   "company_name",
-  "product",
-  "visit_purpose",
-  "discussion",
-  "column_break_main",
-  "sale_engineer",
-  "checkin_date",
-  "status",
-  "next_visit_date",
-  "digipin",
   "contact_person",
   "mobile_no",
   "location",
+  "sale_engineer",
+  "product",
+  "column_break_main",
+  "checkin_date",
+  "status",
+  "visit_type",
+  "visit_purpose",
+  "next_visit_date",
+  "digipin",
+  "discussion",
   "section_checkin",
   "checkin_time",
   "column_break_checkin",
@@ -87,71 +88,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "lead.product_free_hand",
-   "fetch_if_empty": 1,
-   "fieldname": "product",
-   "fieldtype": "Data",
-   "label": "Product"
-  },
-  {
-   "default": "Follow-up",
-   "fieldname": "visit_purpose",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Reason of Visit",
-   "options": "New Enquiry\nFollow-up\nDemo\nInstallation\nService\nPayment Collection\nCourtesy Visit\nSales Promotion\nOthers",
-   "reqd": 1
-  },
-  {
-   "fieldname": "discussion",
-   "fieldtype": "Small Text",
-   "label": "Visit Description",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_main",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "The logged-in user who checked in.",
-   "fieldname": "sale_engineer",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Sale Engineer",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "default": "Checked In",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 0,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "no_copy": 1,
-   "options": "Checked In\nChecked Out",
-   "read_only": 1,
-   "hidden": 1
-  },
-  {
-   "description": "Becomes a ToDo of the sale engineer on that date.",
-   "fieldname": "next_visit_date",
-   "fieldtype": "Date",
-   "label": "Next Visit Date",
-   "no_copy": 1
-  },
-  {
-   "description": "India Post DIGIPIN of the check-in position, worked out automatically.",
-   "fieldname": "digipin",
-   "fieldtype": "Data",
-   "label": "Digipin",
-   "no_copy": 1,
-   "read_only": 1,
-   "hidden": 1
-  },
-  {
    "fetch_from": "lead.contact_person",
    "fieldname": "contact_person",
    "fieldtype": "Data",
@@ -174,10 +110,25 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_checkin",
-   "fieldtype": "Section Break",
-   "label": "Check In",
-   "hidden": 1
+   "description": "The logged-in user who checked in.",
+   "fieldname": "sale_engineer",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sale Engineer",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.product_free_hand",
+   "fetch_if_empty": 1,
+   "fieldname": "product",
+   "fieldtype": "Small Text",
+   "label": "Product"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "checkin_date",
@@ -188,6 +139,67 @@
    "read_only": 1,
    "search_index": 1,
    "default": "Today"
+  },
+  {
+   "default": "Checked In",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 0,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Checked In\nChecked Out",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "default": "Field Visit",
+   "description": "How the customer was met: in person, by phone, video call, e-mail or WhatsApp.",
+   "fieldname": "visit_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Visit Type",
+   "options": "Field Visit\nPhone Call\nVideo Call\nCustomer at Our Office\nEmail\nWhatsApp",
+   "reqd": 1
+  },
+  {
+   "default": "Follow-up",
+   "fieldname": "visit_purpose",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reason of Visit",
+   "options": "New Enquiry\nFollow-up\nDemo\nInstallation\nService\nPayment Collection\nCourtesy Visit\nSales Promotion\nOthers",
+   "reqd": 1
+  },
+  {
+   "description": "Becomes a ToDo of the sale engineer on that date.",
+   "fieldname": "next_visit_date",
+   "fieldtype": "Date",
+   "label": "Next Visit Date",
+   "no_copy": 1
+  },
+  {
+   "description": "India Post DIGIPIN of the check-in position, worked out automatically.",
+   "fieldname": "digipin",
+   "fieldtype": "Data",
+   "label": "Digipin",
+   "no_copy": 1,
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "discussion",
+   "fieldtype": "Small Text",
+   "label": "Visit Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_checkin",
+   "fieldtype": "Section Break",
+   "label": "Check In",
+   "hidden": 1
   },
   {
    "fieldname": "checkin_time",
@@ -379,7 +391,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-04 10:00:00.000000",
+ "modified": "2026-11-12 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav Visit",

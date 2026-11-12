@@ -52,7 +52,18 @@ Date: 2026-10-29
 Change: Added add_draft_pi_to_selling_sidebar (after_migrate): "Draft PI" in ERPNext's Selling
 sidebar between Quotation and Sales Order.
 Reason: The user asked for the Draft PI between Quotation and Sales Order in the sidebar.
+
+CHANGE NOTE
+Date: 2026-11-07
+Change: Added reset_stale_desktop_layouts (after_migrate): a user's saved desk layout (Frappe's
+Desktop Layout) that lacks any of the DESK_ICONS is deleted, as Frappe's own "Reset Desktop
+Layout" does, so the desk home shows the Manav icons again.
+Reason: On the live site the Administrator's /desk was blank: the layout saved before the Manav
+icons existed listed only ERPNext / HRMS icons, which limit_desk_to_manav no longer sends (all
+"not permitted"), and did not list the Manav icons at all.
 """
+
+import json
 
 import frappe
 
@@ -248,3 +259,31 @@ def limit_desk_to_manav(bootinfo):
 	# App switcher in the sidebar header: only Manav
 	if bootinfo.get("app_data"):
 		bootinfo.app_data = [a for a in bootinfo.app_data if a.get("app_name") == APP_NAME]
+
+
+def reset_stale_desktop_layouts():
+	"""Delete saved desk layouts that do not hold all the Manav desk icons. Runs after every migrate.
+
+	Why: Frappe 16 draws /desk from the user's saved "Desktop Layout" when one exists, not from the
+	icons in the boot (desktop.py get_context, desktop_icons.bundle.js sync_layout / arrange_layout,
+	checked on the bench's Frappe 16). A layout saved before the Manav icons existed lists only
+	icons that limit_desk_to_manav no longer sends, which Frappe then hides as "not permitted", and
+	never shows the Manav icons it does not list: the desk is blank. Without a saved layout Frappe
+	uses the boot icons, so deleting it is the same as the user's own "Reset Desktop Layout".
+
+	A layout that lists every Manav icon (hidden or not) is the user's own arrangement and is kept.
+	Desktop Layout is marked "retiring" in Frappe, so nothing is done once the doctype is gone.
+	"""
+	if not frappe.db.exists("DocType", "Desktop Layout"):
+		return
+
+	needed = set(DESK_ICONS)
+	for row in frappe.get_all("Desktop Layout", fields=["name", "layout"]):
+		try:
+			icons = json.loads(row.layout or "[]")
+		except ValueError:
+			icons = None  # unreadable layout: Frappe could not draw it either, so reset it
+		labels = {i.get("label") for i in icons if isinstance(i, dict)} if isinstance(icons, list) else set()
+		if needed <= labels:
+			continue
+		frappe.delete_doc("Desktop Layout", row.name, ignore_permissions=True)

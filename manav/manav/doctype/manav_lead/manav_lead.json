@@ -27,24 +27,27 @@
   "longitude",
   "sec_lead_info",
   "lead_date",
-  "haas_cust_id",
-  "magic_cust_id",
-  "col_lead_info",
   "status",
+  "col_lead_info",
   "sale_engineer",
   "sale_manager",
+  "haas_cust_id",
+  "magic_cust_id",
   "sec_source",
   "source",
   "source_name",
   "sec_product",
   "product_type",
   "product",
+  "principal",
+  "item_code",
   "product_free_hand",
   "col_product",
   "currency",
   "quantity",
   "rate",
   "amount",
+  "competitor",
   "sec_profile",
   "customer_profile",
   "sector",
@@ -105,20 +108,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "haas_cust_id",
-   "fieldtype": "Data",
-   "label": "Haas Cust ID"
-  },
-  {
-   "fieldname": "magic_cust_id",
-   "fieldtype": "Data",
-   "label": "Magic Cust ID"
-  },
-  {
-   "fieldname": "col_lead_info",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "Open",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -127,6 +116,10 @@
    "label": "Status",
    "options": "Open\nPending to Qualify\nQualified\nClosed",
    "reqd": 1
+  },
+  {
+   "fieldname": "col_lead_info",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "sale_engineer",
@@ -141,6 +134,16 @@
    "fieldname": "sale_manager",
    "fieldtype": "Data",
    "label": "Sale Manager"
+  },
+  {
+   "fieldname": "haas_cust_id",
+   "fieldtype": "Data",
+   "label": "Haas Cust ID"
+  },
+  {
+   "fieldname": "magic_cust_id",
+   "fieldtype": "Data",
+   "label": "Magic Cust ID"
   },
   {
    "fieldname": "sec_customer",
@@ -267,10 +270,24 @@
    "hidden": 1
   },
   {
-   "description": "Free-text product when it is not in the Product master.",
+   "description": "The principal (Quotation Type) of the product; the Item list shows its items.",
+   "fieldname": "principal",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Principal",
+   "options": "Quotation Type"
+  },
+  {
+   "description": "An item of the principal (type to search), or Free Hand at the end of the list for a product not in it.",
+   "fieldname": "item_code",
+   "fieldtype": "Autocomplete",
+   "label": "Item"
+  },
+  {
+   "description": "Filled from the chosen item's description; can be changed. With Free Hand, type the product here.",
    "fieldname": "product_free_hand",
-   "fieldtype": "Data",
-   "label": "Product"
+   "fieldtype": "Small Text",
+   "label": "Product Description"
   },
   {
    "fieldname": "col_product",
@@ -301,6 +318,12 @@
    "label": "Amount",
    "options": "currency",
    "read_only": 1
+  },
+  {
+   "description": "Competitor(s) the customer is also talking to, e.g. their brand / model / price.",
+   "fieldname": "competitor",
+   "fieldtype": "Small Text",
+   "label": "Competitor"
   },
   {
    "fieldname": "sec_profile",
@@ -380,7 +403,7 @@
   }
  ],
  "links": [],
- "modified": "2026-11-07 12:00:00.000000",
+ "modified": "2026-11-12 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav Lead",

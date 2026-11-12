@@ -49,6 +49,23 @@
 // Change: The Visiting Card section is gone from the form body (its scan buttons removed, the two
 //         picture fields hidden); scanning is only through the top-right Visiting Card menu.
 // Reason: The user said the top menu already does this, so the body section was a duplicate.
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: The 5-item Visiting Card menu (Front/Back x Take Photo/Upload File + Scan Now) is replaced by
+//         one "Scan Visiting Card" button opening a small dialog (card_dialog): a Front and a Back tile
+//         (back optional) showing the picture, and a Scan Card button. A tile opens the device's own
+//         chooser (on a phone: camera or gallery), so Take Photo / Upload File are no longer separate.
+// Reason: The user found the menu with so many options confusing.
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: Product section works like the quotation: Principal (Quotation Type) first, then Item - a
+//         dropdown of the principal's items (manav.manav.lead_product.item_query) ending with
+//         "Free Hand" - and the chosen item's description fills Product Description by itself. Free
+//         Hand: the cursor goes to Product Description to type the product.
+// Reason: The user asked for principal -> items -> automatic description, with a free-hand option.
+
+// The Item value meaning "not in the list, typed by hand" (lead_product.FREE_HAND on the server).
+const LEAD_FREE_HAND = "Free Hand";
 
 // Card value -> Lead field it fills.
 const CARD_TO_LEAD = {
@@ -86,30 +103,139 @@ frappe.ui.form.on("Manav Lead", {
 	refresh(frm) {
 		// 2026-11-03: Product Type / Product are hidden (free-hand Product only), so no Product filter.
 
-		// Visiting card scan: front and back, each by camera (capture) or a file from the device.
-		const group = __("Visiting Card");
-		frm.add_custom_button(__("Front: Take Photo"), () => pick_card(frm, "visiting_card", true), group);
-		frm.add_custom_button(__("Front: Upload File"), () => pick_card(frm, "visiting_card", false), group);
-		frm.add_custom_button(__("Back: Take Photo"), () => pick_card(frm, "visiting_card_back", true), group);
-		frm.add_custom_button(__("Back: Upload File"), () => pick_card(frm, "visiting_card_back", false), group);
-		frm.add_custom_button(__("Scan Now"), () => scan_card(frm), group);
+		// Visiting card scan: one button, the dialog holds front / back and the Scan Card button.
+		frm.add_custom_button(__("Scan Visiting Card"), () => card_dialog(frm));
+		setup_item_dropdown(frm);
+	},
+
+	// 2026-11-12: a new principal empties an item chosen under the old one (Free Hand stays).
+	principal(frm) {
+		if (frm.doc.item_code && frm.doc.item_code !== LEAD_FREE_HAND) {
+			frm.set_value("item_code", "");
+		}
+	},
+
+	// 2026-11-12: an item fills Product Description from its description; Free Hand lets the user type it.
+	item_code(frm) {
+		const item = frm.doc.item_code;
+		if (!item) return;
+		if (item === LEAD_FREE_HAND) {
+			// the description of an item chosen before is no free-hand text
+			if (frm.manav_filled_description && frm.doc.product_free_hand === frm.manav_filled_description) {
+				frm.set_value("product_free_hand", "");
+			}
+			frm.manav_filled_description = null;
+			setTimeout(() => {
+				const f = frm.fields_dict.product_free_hand;
+				f && f.$input && f.$input.focus();
+			}, 200);
+			frappe.show_alert({ message: __("Type the product in Product Description."), indicator: "blue" }, 4);
+			return;
+		}
+		frappe
+			.call("manav.manav.lead_product.get_item_description", { item_code: item })
+			.then((r) => {
+				const text = r.message || "";
+				if (!text || frm.doc.item_code !== item) return;
+				frm.manav_filled_description = text;
+				frm.set_value("product_free_hand", text);
+			});
 	},
 	// Amount = Quantity x Rate, recalculated as the user types.
 	quantity: calc_amount,
 	rate: calc_amount,
 });
 
+// 2026-11-12: the Item dropdown (Autocomplete) asks the server for the principal's items matching what
+// is typed; the list always ends with Free Hand. Without a principal the user is told to choose it.
+function setup_item_dropdown(frm) {
+	const field = frm.fields_dict.item_code;
+	if (!field) return;
+	field.get_query = () => {
+		if (!frm.doc.principal && !(frm.manav_principal_told > Date.now() - 3000)) {
+			frm.manav_principal_told = Date.now();
+			frappe.show_alert({ message: __("Select the Principal first to see its items."), indicator: "orange" }, 4);
+		}
+		return {
+			query: "manav.manav.lead_product.item_query",
+			params: { principal: frm.doc.principal || "" },
+		};
+	};
+}
+
 function calc_amount(frm) {
 	frm.set_value("amount", flt(frm.doc.quantity) * flt(frm.doc.rate));
 }
 
-// Let the user take / choose a photo of the card into `fieldname` (front or back), then read the card.
-function pick_card(frm, fieldname, use_camera) {
+// The Scan Visiting Card dialog: a Front and a Back tile and a Scan Card button.
+function card_dialog(frm) {
+	const sides = [
+		{ fieldname: "visiting_card", label: __("Front side"), hint: __("Required") },
+		{ fieldname: "visiting_card_back", label: __("Back side"), hint: __("Only if it has details") },
+	];
+	const d = new frappe.ui.Dialog({
+		title: __("Scan Visiting Card"),
+		fields: [{ fieldtype: "HTML", fieldname: "tiles" }],
+		primary_action_label: __("Scan Card"),
+		primary_action() {
+			if (!frm.doc.visiting_card && !frm.doc.visiting_card_back) {
+				frappe.show_alert({ message: __("Add a photo of the card first."), indicator: "orange" }, 4);
+				return;
+			}
+			d.hide();
+			read_card(frm);
+		},
+	});
+
+	const $tiles = $(`<div class="mvc-tiles"></div>`).appendTo(d.fields_dict.tiles.$wrapper);
+	$(`<p class="mvc-help">${__("Tap a side to take a photo or choose one from your phone / computer.")}</p>`).insertBefore($tiles);
+
+	const render = () => {
+		$tiles.empty();
+		for (const side of sides) {
+			const url = frm.doc[side.fieldname];
+			const $tile = $(`
+				<div class="mvc-tile ${url ? "has-photo" : ""}" role="button" tabindex="0">
+					${
+						url
+							? `<img src="${encodeURI(url)}" alt="">`
+							: `<div class="mvc-empty">${frappe.utils.icon("camera", "lg")}<span>${__("Add photo")}</span></div>`
+					}
+					<div class="mvc-label"><b>${side.label}</b> <span>${url ? __("Tap to change") : side.hint}</span></div>
+				</div>`).appendTo($tiles);
+			$tile.on("click keydown", (e) => {
+				if (e.type === "keydown" && e.key !== "Enter") return;
+				pick_card(frm, side.fieldname, render);
+			});
+		}
+	};
+	render();
+
+	if (!$("#mvc-style").length) {
+		$(`<style id="mvc-style">
+			.mvc-help { color: var(--text-muted); margin-bottom: 12px; }
+			.mvc-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+			.mvc-tile { border: 2px dashed var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer;
+				background: var(--subtle-fg); transition: border-color .15s, background .15s; }
+			.mvc-tile:hover, .mvc-tile:focus { border-color: var(--primary); outline: none; }
+			.mvc-tile.has-photo { border-style: solid; }
+			.mvc-tile img { width: 100%; height: 120px; object-fit: cover; display: block; }
+			.mvc-empty { height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+				gap: 6px; color: var(--text-muted); }
+			.mvc-label { padding: 8px 10px; font-size: 13px; border-top: 1px solid var(--border-color); }
+			.mvc-label span { color: var(--text-muted); font-size: 12px; }
+			@media (max-width: 480px) { .mvc-tiles { grid-template-columns: 1fr; } }
+		</style>`).appendTo("head");
+	}
+	d.show();
+}
+
+// Let the user take / choose a photo of the card into `fieldname` (front or back); `done` runs after
+// the upload (the dialog redraws its tile). No `capture` attribute: phones then offer camera or gallery.
+function pick_card(frm, fieldname, done) {
 	const input = document.createElement("input");
 	input.type = "file";
 	input.accept = "image/*";
-	// "environment" = the back camera on phones; desktops ignore it and show the file picker.
-	if (use_camera) input.setAttribute("capture", "environment");
 	input.onchange = async () => {
 		const file = input.files && input.files[0];
 		if (!file) return;
@@ -119,8 +245,7 @@ function pick_card(frm, fieldname, use_camera) {
 			const file_url = await upload_card(frm, blob, fieldname);
 			frappe.dom.unfreeze();
 			await frm.set_value(fieldname, file_url);
-			// The picture is stored; the user clicks Scan Now to read it (front and back together).
-			frappe.show_alert({ message: __("Photo added. Click Scan Now to read the card."), indicator: "blue" }, 6);
+			if (done) done();
 		} catch (e) {
 			frappe.dom.unfreeze();
 			frappe.msgprint(__("The photo could not be uploaded: {0}", [e.message || e]));
@@ -173,15 +298,6 @@ async function upload_card(frm, blob, fieldname) {
 		throw new Error(response.statusText || __("upload failed"));
 	}
 	return data.message.file_url;
-}
-
-// Scan Now: make sure a card was uploaded, then read it.
-function scan_card(frm) {
-	if (!frm.doc.visiting_card && !frm.doc.visiting_card_back) {
-		frappe.msgprint(__("Upload the visiting card (front and/or back) first, then click Scan Now."));
-		return;
-	}
-	read_card(frm);
 }
 
 // Send the picture(s) to the AI and fill the lead with what it read from the card (front + back).

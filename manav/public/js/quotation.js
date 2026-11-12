@@ -178,6 +178,7 @@ const quotation_events = {
 		set_item_query(frm);
 		add_draft_pi_button(frm);
 		setup_machine_spares(frm);
+		fill_missing_magic_code(frm);
 	},
 
 	custom_quotation_type(frm) {
@@ -304,6 +305,40 @@ function fill_customer_values(frm, customer_name) {
 			frm.set_value("custom_account_manager", customer.account_manager || null);
 		}
 	});
+}
+
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: A draft quotation that already has its customer but no Magic Cust Code (made from a lead,
+// copied, or opened from a link) gets the code when the form opens, not only on saving.
+// Reason: The user asked for the Magic code to be visible before the quotation is saved; the
+// party_name event that fills it does not run when the customer comes with the new document.
+function fill_missing_magic_code(frm) {
+	if (frm.doc.doctype !== "Quotation" || frm.doc.docstatus !== 0) return;
+	if (!frm.fields_dict.custom_magic_cust_code || frm.doc.custom_magic_cust_code) return;
+	if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
+	const customer = frm.doc.party_name;
+	frappe.db.get_value("Customer", customer, "custom_customer_code").then((r) => {
+		const code = r.message && r.message.custom_customer_code;
+		// only when the customer has a code and was not changed meanwhile
+		if (code && frm.doc.party_name === customer && !frm.doc.custom_magic_cust_code) {
+			frm.set_value("custom_magic_cust_code", code);
+		}
+	});
+}
+
+// Items need a principal first (2026-11-12, the user's request): the principal decides the price
+// list and currency, and so the rates; an item chosen before it would be priced from the wrong list.
+// Returns true (after telling the user) when the principal is still empty.
+function principal_missing(frm) {
+	if (!frm.fields_dict.custom_quotation_type || frm.doc.custom_quotation_type) return false;
+	frappe.msgprint({
+		title: __("Select the Principal first"),
+		message: __("Please select the Principal (Quotation Type) before adding items."),
+		indicator: "orange",
+	});
+	frm.scroll_to_field("custom_quotation_type");
+	return true;
 }
 
 // The PI (Sales Order) works as the quotation does: sub-items, item search with rates, the
@@ -475,6 +510,32 @@ const quotation_item_events = {
 	// An Items line opened for editing ("Editing Row #n"): Back and Save buttons on it.
 	form_render(frm, cdt, cdn) {
 		add_row_form_buttons(frm, cdn);
+	},
+
+	// CHANGE NOTE
+	// Date: 2026-11-12
+	// Change: On a quotation without a Principal, adding a line or choosing an Item Code asks for the
+	// Principal first (principal_missing); an item chosen anyway is taken off the line again.
+	// Reason: The user asked that the principal be selected before items are added.
+	items_add(frm) {
+		if (frm.doc.doctype === "Quotation") principal_missing(frm);
+	},
+
+	item_code(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (frm.doc.doctype !== "Quotation" || !row || !row.item_code || !principal_missing(frm)) return;
+		// ERPNext's own item_code handler is already fetching the item's details (name, rate from
+		// the price list); clear the line after that call has returned, so its answer does not
+		// fill the line again.
+		frappe.after_ajax(() => {
+			frappe.model.set_value(cdt, cdn, {
+				item_code: "",
+				item_name: "",
+				description: "",
+				price_list_rate: 0,
+				rate: 0,
+			});
+		});
 	},
 };
 
@@ -668,6 +729,20 @@ function set_item_query(frm) {
 		frm.manav_item_group = (r.message || {}).item_group || null;
 	});
 	frm.set_query("item_code", "items", (doc, cdt, cdn) => {
+		// CHANGE NOTE
+		// Date: 2026-11-12
+		// Change: On a quotation without a Principal, clicking into Item Code (Frappe runs this query
+		// as soon as the box is focused, before anything is typed) asks for the Principal first and
+		// offers no items. The message is shown once per click (frm.manav_principal_asked_at).
+		// Reason: The user asked to be told on clicking the item, not only after choosing one.
+		if (frm.doc.doctype === "Quotation" && !frm.doc.custom_quotation_type && frm.fields_dict.custom_quotation_type) {
+			if (!frm.manav_principal_asked_at || Date.now() - frm.manav_principal_asked_at > 1500) {
+				frm.manav_principal_asked_at = Date.now();
+				document.activeElement && document.activeElement.blur();
+				principal_missing(frm);
+			}
+			return { filters: { name: "__select_the_principal_first__" } };
+		}
 		// 2026-11-05: every sales item of the Item Master is offered, on any line; the Item Group
 		// filter (principal's group, Options only on sub-item lines, added 2026-11-02) is removed
 		// at the user's request. frm.manav_item_group is still loaded but no longer filters here.

@@ -176,6 +176,14 @@ Change: Quotation print formats "Quotation Modern", "Quotation Modern with Image
 "Manav Sales Quotation" are disabled after every migrate (HIDDEN_PRINT_FORMATS); Manav Sales
 Quotation is no longer a default fallback.
 Reason: The user crossed them out of the Print view's list.
+
+CHANGE NOTE
+Date: 2026-11-12
+Change: On the Quotation, "Machine Number" (custom_machine_number), "Customer's Machine (Serial No)"
+(custom_machine_serial_no) and "CIF Port" (custom_cif_port) are hidden. Their columns and values
+stay. CIF Port is still filled from the principal's default (else FTWZ Chennai, quotation.fill_cif_defaults)
+and printed in "CIF Charges - <port>". The Final PI (Sales Order) keeps its CIF Port.
+Reason: The user asked to remove these fields from the quotation; the quotation already has a Port.
 """
 
 import json
@@ -280,6 +288,10 @@ ERPNEXT_FIELDS = {
 			"fieldtype": "Check",
 			"default": "1",
 			"allow_on_submit": 1,
+			# 2026-11-12: hidden on the form; asked on the print page only (the "Print Signature"
+			# switch of manav_print_sidebar.js sets this field). The user asked not to be asked for
+			# the signature in the quotation, only when printing.
+			"hidden": 1,
 			"insert_after": "custom_account_manager",
 			"description": "Untick to print without the signature",
 		},
@@ -310,6 +322,8 @@ ERPNEXT_FIELDS = {
 			"label": "Machine Number",
 			"fieldtype": "Data",
 			"insert_after": "custom_haas_customer_id",
+			# 2026-11-12: hidden (the user's request); the value is kept
+			"hidden": 1,
 		},
 		{
 			# The customer's machine, kept as an ERPNext Serial No (machine model + customer). On a
@@ -320,6 +334,9 @@ ERPNEXT_FIELDS = {
 			"options": "Serial No",
 			"insert_after": "custom_machine_number",
 			"description": "For spares: the customer's machine; \"Spares for Machine\" then offers its spare parts",
+			# 2026-11-12: hidden (the user's request); without a machine the "Spares for Machine"
+			# button is not shown, spares are added through a line's Item Code
+			"hidden": 1,
 		},
 		{
 			# The Manav branch the quotation (and the PI made from it) belongs to (branches.py).
@@ -654,6 +671,9 @@ ERPNEXT_FIELDS["Quotation"].extend(
 			"depends_on": "",
 			# 2026-11-04: printed "CIF Charges - <port>" (was "upto <port>")
 			"description": "Printed as CIF Charges - <port>, e.g. Chennai Sea Port",
+			# 2026-11-12: hidden on the quotation (the user's request: the quotation already has a
+			# Port); still filled from the principal's default and printed (fill_cif_defaults)
+			"hidden": 1,
 		},
 		{
 			# 2026-11-03: the place the price is ex-works from, printed as "Prices : Ex-Works, <this>."

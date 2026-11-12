@@ -539,14 +539,15 @@ frappe.pages["manav-leads-board"].on_page_load = function (wrapper) {
 			: stage && cint(stage.make_quotation)
 				? act("make-quotation", "file", __("Make Quotation"), "", { hot: true })
 				: "";
-		// 2026-11-04: the quotation's PI - Final PI, else Draft PI, else Make Draft PI once it is submitted
-		const pi_act = lead.final_pi
-			? act("open-final-pi", "pi", __("Final PI"), esc(lead.final_pi), { colour: "#1d89e2" })
-			: lead.draft_pi
-				? act("open-draft-pi", "pi", __("Draft PI"), esc(lead.draft_pi), { colour: "#f08c00" })
-				: lead.quotation && lead.quotation_docstatus === 1
-					? act("make-draft-pi", "pi", __("Make Draft PI"), "", { hot: true })
-					: "";
+		// 2026-11-04: the quotation's PI - Make Draft PI once the quotation is submitted.
+		// 2026-11-12: Draft PI and Final PI are BOTH shown when both exist (was: Final PI hid the Draft PI),
+		// as the user asked.
+		const pi_act =
+			(lead.draft_pi ? act("open-draft-pi", "pi", __("Draft PI"), esc(lead.draft_pi), { colour: "#f08c00" }) : "") +
+			(lead.final_pi ? act("open-final-pi", "pi", __("Final PI"), esc(lead.final_pi), { colour: "#1d89e2" }) : "") ||
+			(lead.quotation && lead.quotation_docstatus === 1
+				? act("make-draft-pi", "pi", __("Make Draft PI"), "", { hot: true })
+				: "");
 
 		$right.html(`
 			<div class="mlb-hero" style="--a:${a}">

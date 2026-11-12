@@ -50,29 +50,39 @@
 // Reason: The user asked to remove the photos, to lock a visit once done, that Next Stage makes a new
 //         visit, for the product on the visit and for a visit counter.
 
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: No "Visit No. N for <company>" headline at the top any more (it showed twice; Visit No. is a
+//         field on the form). A new visit opened from a lead (New Visit on the lead, Next Stage, Leads
+//         page) has its Lead locked (read-only); a saved visit's Lead was already locked (set_only_once).
+// Reason: The user asked to remove the headline and that the lead of a visit made from it cannot be changed.
+
 frappe.ui.form.on("Manav Visit", {
+	onload(frm) {
+		// The lead came with the new visit (from the lead / Next Stage): remember to lock it.
+		// (set every time: Frappe reuses the same form object for every visit opened)
+		frm.__manav_lead_locked = Boolean(frm.is_new() && frm.doc.lead);
+	},
+
 	refresh(frm) {
-		show_visit_no(frm);
+		frm.dashboard.clear_headline();
+		focus_description(frm);
+		frm.set_df_property("lead", "read_only", !frm.is_new() || frm.__manav_lead_locked ? 1 : 0);
 		if (frm.is_new() || !frm.doc.lead || frm.doc.docstatus === 2) return;
 		if (!frappe.model.can_create("Manav Visit")) return;
 		frm.add_custom_button(__("Next Stage"), () => next_stage(frm)).addClass("btn-primary");
 	},
-
-	lead(frm) {
-		show_visit_no(frm);
-	},
 });
 
-// "Visit No. 3 for LEAD-00002" at the top; a new visit shows the number it will get.
-function show_visit_no(frm) {
-	if (!frm.doc.lead) return frm.dashboard.clear_headline();
-	const show = (n) =>
-		frm.dashboard.set_headline(
-			`<b>${__("Visit No. {0}", [n])}</b> ${__("for {0}", [frappe.utils.escape_html(frm.doc.company_name || frm.doc.lead)])}`
-		);
-	if (frm.doc.visit_no) return show(frm.doc.visit_no);
-	if (!frm.is_new()) return frm.dashboard.clear_headline();
-	frappe.db.count("Manav Visit", { filters: { lead: frm.doc.lead, docstatus: ["!=", 2] } }).then((n) => show(n + 1));
+// 2026-11-12: a visit still being filled (new or draft) opens with the cursor in Visit Description, the
+// field the salesperson types first. Delayed so it runs after Frappe's own focus on the first field.
+function focus_description(frm) {
+	if (frm.doc.docstatus !== 0) return;
+	setTimeout(() => {
+		const field = frm.fields_dict.discussion;
+		if (!field || !field.$input || !field.$input.is(":visible")) return;
+		field.$input.focus();
+	}, 400);
 }
 
 // Next Stage: a new visit of the lead in the stage after this visit's (or, when it has none, after the

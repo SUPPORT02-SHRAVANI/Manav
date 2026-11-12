@@ -40,7 +40,26 @@
 	Change: The letter head is printed at the top of every page, with its footer and "Page n of m" at
 	the foot (manav_page_frame.html), instead of the letter head once at the top.
 	Reason: The user asked for the header, footer and page number on every page of every print.
+
+	CHANGE NOTE
+	Date: 2026-11-12
+	Change: Table lines (items, totals, terms) are drawn in the theme's dark colour instead of its
+	light border colour (theme.border is set to theme.dark here). A sub-item's row (under its
+	machine, and the loose options) prints only its Amount: its Qty and Rate cells are left empty.
+	Reason: The user asked for darker table lines and for no quantity and per-item price of the
+	sub-items in the print.
+
+	CHANGE NOTE
+	Date: 2026-11-12
+	Change: Under each machine's row, a bold line "Prices : <price basis>   US$ <amount>" (q.price_basis,
+	machine.price_digits: the machine's own amount), as Manav Classic Quotation prints it. The Qty /
+	Rate / Amount columns of the machine's row stay. Later the same day: no Qty and Rate columns at
+	all; one Price column (the machine's price on its "Prices :" row, each sub-item's own amount), as
+	Manav Classic Quotation; the user showed the Classic print as the one for every format.
+	Reason: The user asked for the machine's price under its name in every print format, as on Classic.
 -#}
+{#- 2026-11-12: darker table lines: every line drawn with theme.border uses the theme's dark colour -#}
+{%- set _ = theme.update({"border": theme.dark}) -%}
 <style>
 	.mbq { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1f2937; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 	.mbq table { width: 100%; border-collapse: collapse; }
@@ -80,6 +99,9 @@
 	.mbq .items tr.option .code { font-weight: 700; }
 	.mbq .items tr.option td.no { font-weight: 500; color: #4b5563; }
 	.mbq .items tr.machine .name { margin-top: 2px; }
+	/* 2026-11-12: the machine's "Prices : ... US$ <amount>" line under its row, bold, no row line */
+	.print-format .mbq .items tr.mprice > td { padding: 4px 8px 2px !important; border-bottom: 0; }
+	.print-format .mbq .items tr.mprice td.mprice-text, .print-format .mbq .items tr.mprice td.mprice-amount { font-size: 10pt; font-weight: 800; color: {{ theme.dark }}; }
 	/* 2026-11-04: Standard Accessories rows under the machine (two points a row, no row lines) */
 	.print-format .mbq .items tr.acc-head td {
 		padding: 7px 8px 3px !important; border-bottom: 0; font-size: 7.5pt; font-weight: 800;
@@ -151,9 +173,8 @@
 		<tr>
 			<th style="width: 7%; text-align: center;">No.</th>
 			<th>Item &amp; Description</th>
-			<th style="width: 8%; text-align: right;">Qty</th>
-			<th style="width: 16%; text-align: right;">Rate</th>
-			<th style="width: 17%; text-align: right;">Amount</th>
+			{#- 2026-11-12 (later): one Price column, as Manav Classic Quotation (no Qty and Rate) -#}
+			<th style="width: 20%; text-align: right;">Price{% if q.currency_label %} ({{ q.currency_label }}){% endif %}</th>
 		</tr>
 	{% endmacro %}
 
@@ -167,9 +188,14 @@
 					<span class="code">{{ machine.code or "" }}</span>
 					{% if machine.name and machine.name != machine.code %}<div class="name">{{ machine.name }}</div>{% endif %}
 				</td>
-				<td class="num">{{ machine.qty }}</td>
-				<td class="num">{{ machine.rate }}</td>
-				<td class="num"><b>{{ machine.amount }}</b></td>
+				<td class="num"></td>
+			</tr>
+			{#- 2026-11-12: "Prices : <basis>   US$ <amount>" right under the machine's name, as on
+			    Manav Classic Quotation (the user's request); the columns above stay -#}
+			<tr class="mprice">
+				<td></td>
+				<td class="mprice-text">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
+				<td class="num mprice-amount">{{ machine.price_digits }}</td>
 			</tr>
 			{#- 2026-11-04: the Standard Accessories in rows of their own across the whole table (were
 			    squeezed into the description cell of the machine's row, which could not break over a
@@ -179,14 +205,14 @@
 			{% set half = ((machine.bullets | length) + 1) // 2 %}
 			<tr class="acc-head">
 				<td></td>
-				<td colspan="4">Standard Accessories</td>
+				<td colspan="2">Standard Accessories</td>
 			</tr>
 			{% for i in range(half) %}
 			{% set left = machine.bullets[i] %}
 			{% set right = machine.bullets[i + half] if (i + half) < (machine.bullets | length) else None %}
 			<tr class="acc">
 				<td></td>
-				<td colspan="4">
+				<td colspan="2">
 					<table class="acc-pair"><tr>
 						<td class="acc-dot">&#9642;</td>
 						<td class="acc-cell">{% if left.bold %}<b>{{ left.text }}</b>{% else %}{{ left.text }}{% endif %}</td>
@@ -196,14 +222,13 @@
 				</td>
 			</tr>
 			{% endfor %}
-			<tr class="acc-end"><td colspan="5"></td></tr>
+			<tr class="acc-end"><td colspan="3"></td></tr>
 			{% endif %}
 			{% for option in machine.options %}
 			<tr class="option{% if loop.index is even %} band{% endif %}">
 				<td class="no">{{ option.no }}</td>
 				<td class="desc"><span class="code">{{ option.code or "" }}</span> &nbsp;{{ option.description or "" }}</td>
-				<td class="num">{{ option.qty }}</td>
-				<td class="num">{{ option.rate }}</td>
+				{#- 2026-11-12: no Qty and Rate for a sub-item, only its Amount (the user's request) -#}
 				<td class="num">{{ option.amount }}</td>
 			</tr>
 			{% endfor %}
@@ -219,8 +244,7 @@
 			<tr class="{% if loop.index is even %}band{% endif %}">
 				<td class="no">{{ option.no }}</td>
 				<td class="desc"><b>{{ option.code or "" }}</b> &nbsp;{{ option.description or "" }}</td>
-				<td class="num">{{ option.qty }}</td>
-				<td class="num">{{ option.rate }}</td>
+				{#- 2026-11-12: no Qty and Rate for a sub-item, only its Amount -#}
 				<td class="num">{{ option.amount }}</td>
 			</tr>
 			{% endfor %}

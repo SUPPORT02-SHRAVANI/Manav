@@ -50,6 +50,13 @@
 	the foot (manav_page_frame.html), instead of the letter head once at the top.
 	Reason: The user asked for the header, footer and page number on every page of every print.
 	Reason: The user asked for the word Ex-Works not in bold.
+
+	CHANGE NOTE
+	Date: 2026-11-12
+	Change: The machine's "Prices : <basis>  US$ <amount>" line is printed right under the machine's
+	name (before its points); the CIF and other charges stay after the last machine's points. The
+	lines of the terms table and the options table are black (were light grey).
+	Reason: The user asked for the machine's price under the machine name and for darker table lines.
 -#}
 <style>
 	.mcq { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -86,9 +93,10 @@
 	.mcq .bullets .text { width: 47%; }
 	.mcq .price-row td { border-top: 1px dashed {{ theme.primary }}; padding-top: 5px !important; font-weight: bold; }
 	.mcq .price-row .amount { color: {{ theme.dark }}; font-size: 10.5pt; }
-	.mcq .options { margin-top: 6px; border: 1px solid {{ theme.border }}; }
-	.mcq .options th { background: {{ theme.tint }}; color: {{ theme.dark }}; border-bottom: 1px solid {{ theme.border }}; font-size: 8.5pt; text-align: left; }
-	.mcq .options td { border-bottom: 1px solid {{ theme.border }}; font-size: 8.5pt; }
+	/* 2026-11-12: black lines (were theme.border, light grey); the user asked for darker table lines */
+	.mcq .options { margin-top: 6px; border: 1px solid {{ theme.dark }}; }
+	.mcq .options th { background: {{ theme.tint }}; color: {{ theme.dark }}; border-bottom: 1px solid {{ theme.dark }}; font-size: 8.5pt; text-align: left; }
+	.mcq .options td { border-bottom: 1px solid {{ theme.dark }}; font-size: 8.5pt; }
 	.mcq .options tr.band td { background: {{ theme.band }}; }
 	.mcq .right { text-align: right; }
 	.mcq .charges { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 4px 6px; page-break-inside: avoid; }
@@ -99,7 +107,8 @@
 	.mcq .grand td { background: {{ theme.primary }}; color: #fff; font-weight: bold; font-size: 10.5pt; padding: 4px 5px !important; }
 	.mcq .block { border: 1.5px solid {{ theme.dark }}; border-top: 0; padding: 5px 6px; page-break-inside: avoid; }
 	.mcq .caps { font-weight: bold; font-size: 8.5pt; letter-spacing: 0.06em; color: {{ theme.dark }}; text-transform: uppercase; margin-bottom: 3px; }
-	.print-format .mcq .terms table td { padding: 2px 4px !important; border-bottom: 1px solid {{ theme.border }}; }
+	/* 2026-11-12: black line under every term (was theme.border, light grey) */
+	.print-format .mcq .terms table td { padding: 2px 4px !important; border-bottom: 1px solid {{ theme.dark }}; }
 	.mcq .terms table tr:nth-child(even) td { background: {{ theme.band }}; }
 	.mcq .small { font-size: 8pt; }
 </style>
@@ -149,6 +158,18 @@
 			</tr>
 		</table>
 
+		{#- "Prices : <basis>" with the machine's own amount (not its options), as on the old print.
+		    2026-11-12: right under the machine's name (was after its points), the user's request. -#}
+		<table class="price-lines" style="margin-top: 2px;">
+			<tr>
+				<td style="width: 8%;"></td>
+				{#- 2026-11-04: bold, as before (for a while that day it was not bold; the user asked for bold) -#}
+				<td style="width: 52%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
+				<td style="width: 20%;"></td>
+				<td style="width: 20%;"><table><tr><td class="cur">{{ machine.price_digits.split(" ")[0] }}</td><td class="num">{{ machine.price_digits.split(" ", 1)[1] }}</td></tr></table></td>
+			</tr>
+		</table>
+
 		{% if machine.bullets %}
 		<table class="bullets">
 			{% for pair in machine.bullets | batch(2) %}
@@ -163,26 +184,21 @@
 		</table>
 		{% endif %}
 
-		{#- "Prices : <basis>" with the machine's own amount (not its options), as on the old print -#}
+		{#- under the last machine's points: CIF charges and other charges, a dotted leader each
+		    (2026-11-12: a table of their own, as the machine's price line moved under its name) -#}
+		{% set charges = ([[q.cif_line, q.cif_digits]] if q.cif_line else []) + q.tax_lines if loop.last else [] %}
+		{% if charges %}
 		<table class="price-lines">
-			<tr>
-				<td style="width: 8%;"></td>
-				{#- 2026-11-04: bold, as before (for a while that day it was not bold; the user asked for bold) -#}
-				<td style="width: 52%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
-				<td style="width: 20%;"></td>
-				<td style="width: 20%;"><table><tr><td class="cur">{{ machine.price_digits.split(" ")[0] }}</td><td class="num">{{ machine.price_digits.split(" ", 1)[1] }}</td></tr></table></td>
-			</tr>
-			{#- under the last machine: CIF charges and other charges, a dotted leader each -#}
-			{% if loop.last %}
-			{% for charge in ([[q.cif_line, q.cif_digits]] if q.cif_line else []) + q.tax_lines %}
+			<tr><td style="width: 8%;"></td><td style="width: 52%;"></td><td style="width: 20%;"></td><td style="width: 20%;"></td></tr>
+			{% for charge in charges %}
 			<tr>
 				<td></td>
 				<td colspan="2" class="leader">{{ charge[0] }}</td>
 				<td><table><tr><td class="cur">{{ charge[1].split(" ")[0] }}</td><td class="num">{{ charge[1].split(" ", 1)[1] }}</td></tr></table></td>
 			</tr>
 			{% endfor %}
-			{% endif %}
 		</table>
+		{% endif %}
 	</div>
 
 	{#- the machine's options: own prices, not added to the price above (the old print) -#}

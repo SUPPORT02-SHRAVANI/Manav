@@ -29,6 +29,12 @@
 #         a visit cancels its open follow-up ToDo. The photo fields are gone from the form.
 # Reason: The user asked that a visit is locked once done, that Next Stage makes a new visit, and for a
 #         visit counter of the lead.
+# CHANGE NOTE
+# Date: 2026-11-12
+# Change: auto_submit_old_drafts (hooks.py, cron every 15 minutes): a visit still in draft 5 hours after
+#         it was made is submitted automatically, with a comment on it saying so. A visit that cannot be
+#         submitted (e.g. a mandatory field empty) stays in draft and the failure is in the Error Log.
+# Reason: The user asked that a visit left in draft is submitted by itself after 5 hours.
 
 # Frappe framework.
 import frappe
@@ -37,7 +43,21 @@ from frappe import _
 # Base class of every DocType controller.
 from frappe.model.document import Document
 # Date, time and conversion helpers.
-from frappe.utils import add_days, cint, date_diff, escape_html, formatdate, getdate, nowtime, today
+from frappe.utils import (
+	add_days,
+	add_to_date,
+	cint,
+	date_diff,
+	escape_html,
+	formatdate,
+	getdate,
+	now_datetime,
+	nowtime,
+	today,
+)
+
+# A visit still in draft this many hours after it was made is submitted by auto_submit_old_drafts.
+AUTO_SUBMIT_AFTER_HOURS = 5
 
 # Controller of Manav Visit.
 class ManavVisit(Document):
@@ -70,6 +90,34 @@ class ManavVisit(Document):
 			pluck="name",
 		):
 			frappe.db.set_value("ToDo", todo_name, "status", "Cancelled")
+
+
+# Scheduler entry point (cron every 15 minutes, hooks.py): submit the visits still in draft
+# AUTO_SUBMIT_AFTER_HOURS after they were made. Submitting moves the lead (lead_board.move_lead_stage)
+# just like a manual submit. Each visit is committed on its own, so one failure does not undo the rest.
+def auto_submit_old_drafts():
+	cutoff = add_to_date(now_datetime(), hours=-AUTO_SUBMIT_AFTER_HOURS)
+	names = frappe.get_all(
+		"Manav Visit",
+		filters={"docstatus": 0, "creation": ["<=", cutoff]},
+		order_by="creation asc",
+		pluck="name",
+	)
+	for name in names:
+		try:
+			visit = frappe.get_doc("Manav Visit", name)
+			visit.flags.ignore_permissions = True
+			visit.submit()
+			visit.add_comment(
+				"Comment",
+				_("Submitted automatically: it was still in draft {0} hours after it was made.").format(
+					AUTO_SUBMIT_AFTER_HOURS
+				),
+			)
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(title=f"Manav visit auto-submit failed: {name}")
 
 
 # Keep the follow-up ToDo of a visit in step with its Next Visit Date.

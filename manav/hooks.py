@@ -211,6 +211,8 @@ after_migrate = [
 	"manav.manav.branches.setup_branches",
 	# 2026-10-19: Manav as the Default App, so users land on the Manav workspace after login.
 	"manav.manav.desk_home.set_default_app",
+	# 2026-11-07: delete saved desk layouts without the Manav icons (they left /desk blank)
+	"manav.manav.desk_home.reset_stale_desktop_layouts",
 	# 2026-10-28: App Name "Manav Marketing" (the site's name, e.g. in login e-mails)
 	"manav.manav.desk_home.set_app_name",
 	# 2026-10-19: the role that sees all employees' figures (dashboard tabs, workspace team charts)
@@ -228,6 +230,8 @@ after_migrate = [
 	# 2026-11-02: Stage / Next Follow-up on the lead and Stage / Lead Status on the DVR (Manav Visit),
 	# as custom fields (lead_board.py); after setup_lead_masters, which seeds the stages.
 	"manav.manav.lead_board.setup_lead_board_fields",
+	# 2026-11-07: Existing Customer on the lead, and Sale Manager as a Sales Person (lead_customer.py)
+	"manav.manav.lead_customer.setup_lead_customer_fields",
 ]
 
 # CHANGE NOTE
@@ -278,7 +282,12 @@ doctype_js = {
 		"public/js/manav_lead_quotation.js",
 		"public/js/manav_dvr_stage.js",
 	],
-	"Manav Lead": ["public/js/manav_lead_quotation.js", "public/js/manav_lead_form.js"],
+	# 2026-11-07: manav_lead_customer.js - an Existing Customer fills the lead from the Customer master
+	"Manav Lead": [
+		"public/js/manav_lead_quotation.js",
+		"public/js/manav_lead_form.js",
+		"public/js/manav_lead_customer.js",
+	],
 }
 
 # CHANGE NOTE
@@ -367,9 +376,14 @@ doc_events = {
 	# Reason: The user asked for a Leads Board with each lead's stage, status, date and DVR count, and a
 	# Make DVR button on the card.
 	# 2026-11-04: visits are submittable; a visit moves the lead when it is submitted (was on every save)
+	# 2026-11-12: the lead's Visits count (visit_count, shown coloured in the lead list) is recounted
+	# when a visit is made, cancelled or deleted (lead_board.update_visit_count).
 	"Manav Visit": {
 		"before_insert": "manav.manav.lead_board.fill_dvr_stage",
+		"after_insert": "manav.manav.lead_board.update_visit_count",
 		"on_submit": "manav.manav.lead_board.move_lead_stage",
+		"on_cancel": "manav.manav.lead_board.update_visit_count",
+		"after_delete": "manav.manav.lead_board.update_visit_count",
 	},
 }
 
@@ -459,6 +473,12 @@ scheduler_events = {
 	"daily": [
 		"manav.manav.doctype.manav_visit.manav_visit.send_followup_reminders",
 	],
+	# 2026-11-12: every 15 minutes, visits left in draft for 5 hours are submitted (manav_visit.py).
+	"cron": {
+		"*/15 * * * *": [
+			"manav.manav.doctype.manav_visit.manav_visit.auto_submit_old_drafts",
+		],
+	},
 }
 
 # scheduler_events = {

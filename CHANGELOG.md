@@ -2,6 +2,189 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-11-12
+
+**Quotation prints: the Classic machine line in every format (no Quantity / Rate columns).**
+
+- Summary: every quotation format now prints the lines as Manav Classic Quotation: the machine's row
+  ("1 / 01, code, name"), under it "Prices : <basis>   US$ <machine amount>" with the amount in the
+  one Price column, then the sub-items with their own amount; no Qty / Rate columns.
+  - Modern / HSN (`manav_modern_quotation_body.html`, switch `machine_price_line`): no Price and
+    Quantity columns, the machine's own cell empty, and no price line after all lines (CIF / other
+    charges stay). The PI does not set the switch and is unchanged.
+  - Banded / Colour (`manav_banded_quotation_body.html`): columns No | Item & Description | Price.
+  - Quotation Classic / Bordered (print-builder): the Items table is replaced by an HTML block that
+    draws the lines from the new `manav_builder_lines.html` (data from `manav_quotation_data.html`);
+    the Standard Accessories block stays; `modified` raised.
+- Reason: the user showed the Classic print and asked for that machine line in every print format.
+- Files: `manav/templates/print_formats/manav_modern_quotation_body.html`, `manav_modern_quotation.html`,
+  `manav_modern_quotation_cif.html`, `manav_banded_quotation_body.html`, `manav_builder_lines.html`
+  (new), `manav_quotation_data.html` (header note);
+  `manav/manav/print_format/manav_quotation_classic/manav_quotation_classic.json`,
+  `manav/manav/print_format/manav_quotation_bordered/manav_quotation_bordered.json`.
+- Testing (Windows, local): Jinja2 parse of the six templates OK; Banded body, builder lines and the
+  Modern machine / sub-item rows rendered with sample data in the Classic arrangement. Not run: real
+  print previews / PDFs.
+- Pending: `bench --site manav.local migrate` for the two builder formats (the template files apply on
+  reload). Builder edits made on the site to those two formats are overwritten by the import.
+
+**Quotation Classic / Quotation Bordered prints: no Quantity and Rate columns.**
+
+- Summary: the Items table of the print-builder formats Manav Quotation Classic and Manav Quotation
+  Bordered (shown as "Quotation Classic" / "Quotation Bordered") no longer has the Quantity columns
+  (both alternatives, `uom` / `qty`) or Rate; their width goes to the Item column. No, Item, Code and
+  Amount remain. `modified` raised so `bench migrate` re-imports both formats.
+- Reason: the user asked for the Quantity and Rate shown in this print to be removed. A builder format
+  cannot blank cells for sub-item rows only, so the columns are removed for every line.
+- Files: `manav/manav/print_format/manav_quotation_classic/manav_quotation_classic.json`,
+  `manav/manav/print_format/manav_quotation_bordered/manav_quotation_bordered.json`.
+- Testing: JSON rewritten and read back (Windows): the columns are as listed. Not run: `bench migrate`
+  and the print preview.
+- Pending: `bench --site manav.local migrate`. Print Format Builder edits made on the site to these
+  two formats would be overwritten by the import.
+
+**Quotation prints: "Prices : <basis>   US$ <amount>" under each machine's name in every format.**
+
+- Summary: Manav Modern Quotation, Quotation with HSN Code, Manav Banded Quotation and Manav Colour
+  Quotation now print, right under each machine's row, the bold line "Prices : <Ex-Works From> <Port>"
+  (else the principal's Price Basis) with the machine's own amount ("US$ 187000.00"), as Manav Classic
+  Quotation does. The Price / Qty / Total columns of the machine's row stay (the user's choice).
+  Modern / HSN: new body switch `machine_price_line` and per-machine `price_digits`; the PI does not
+  set the switch and is unchanged.
+- Reason: the user showed the Classic print and asked for the same machine price under the machine
+  name in all print formats.
+- Files: `manav/templates/print_formats/manav_modern_quotation_body.html`,
+  `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`, `manav_banded_quotation_body.html`.
+- Testing (Windows, local): Jinja2 parse of the five quotation templates OK; the Banded body and the
+  Modern machine row rendered with sample data show the line under the machine name. Not run: real
+  print previews / PDFs on the site.
+- Pending: Modern / HSN still also print the one "Prices : ... <total of machines>" line after all the
+  lines (existing); with one machine it repeats the machine's line. Remove it if not wanted.
+
+**Quotation form: Machine Number, Customer's Machine (Serial No) and CIF Port hidden.**
+
+- Summary: the three Quotation custom fields get `hidden: 1` in `ERPNEXT_FIELDS` (re-applied on every
+  migrate). The columns and values stay. CIF Port is still filled on saving from the principal's
+  default, else FTWZ Chennai (`quotation.fill_cif_defaults`), so the prints' "CIF Charges - <port>"
+  line is unchanged. With no machine to choose, the "Spares for Machine" button no longer appears;
+  spares are added through a line's Item Code. The Final PI (Sales Order) keeps its CIF Port.
+- Reason: the user asked to remove these fields from the quotation; it already has a Port field.
+- Files: `manav/manav/erpnext_fields.py`.
+- Testing: `py_compile` (Windows): OK. Not run: `bench migrate` and the form in a browser.
+- Pending: `bench --site manav.local migrate`, then reload the Quotation form.
+
+**Quotation: Principal asked on clicking Item Code; Print Signature asked only on the print page.**
+
+- Summary: on a quotation without a Principal, clicking into an Items line's Item Code (before typing)
+  shows "Select the Principal first" and offers no items (`quotation.js` `set_item_query`; the
+  earlier checks on adding a line / choosing an item stay). "Print Signature"
+  (`custom_print_signature`) is hidden on the Quotation and Final PI forms; it is set by the
+  existing "Print Signature" switch of the print page (`manav_print_sidebar.js`).
+- Reason: the user asked to be warned on clicking the item, and not to be asked for the signature in
+  the quotation but at printing.
+- Files: `manav/public/js/quotation.js`, `manav/manav/erpnext_fields.py`.
+- Testing: `node --check` and `py_compile` OK; `bench migrate` on manav.local OK, the field read back as
+  hidden on Quotation and Sales Order. Not run: the form and print page in a browser.
+- Pending: Draft PI keeps its own visible Print Signature field (its own doctype JSON).
+
+**Quotation: Principal first, Magic code before saving; quotation prints: price under the machine, darker lines, sub-items without Qty / Rate.**
+
+- Summary:
+  - Quotation form: adding an Items line or choosing an Item Code while the Principal (Quotation
+    Type) is empty shows "Select the Principal first" and scrolls to it; an item chosen anyway is
+    taken off the line again (`quotation_item_events.items_add` / `item_code`, `principal_missing`).
+    Quotation only, not the Final PI.
+  - Magic Cust Code is visible before saving: a quotation made from a lead (Make Quotation) gets it
+    from `lead_board.make_quotation`, and a draft opened with its customer but without the code gets
+    it on refresh (`fill_missing_magic_code`). Before, only choosing the customer on the form, or
+    saving, filled it.
+  - Manav Classic Quotation (default): the "Prices : <basis>  US$ <amount>" line is printed right under
+    the machine's name, before its points; CIF / other charges stay after the last machine's points.
+    Options and terms lines are black.
+  - Manav Modern Quotation and Quotation with HSN Code: new switches `option_amount_only` and
+    `dark_lines` of the shared body: sub-item rows print only their Total (Price and Quantity empty);
+    line table, totals, terms and the top box lines are dark. The PI (Manav Proforma Invoice), which
+    uses the same body, does not set them and is unchanged.
+  - Manav Banded / Colour Quotation: sub-item rows print only their Amount (Qty and Rate empty);
+    table lines in the theme's dark colour.
+- Reason: the user asked for the principal to be chosen before items, the Magic code to show before
+  saving, the machine's price under its name, darker table lines and no quantity / per-item price of
+  the sub-items in the print.
+- Files: `manav/public/js/quotation.js`, `manav/manav/lead_board.py`,
+  `manav/templates/print_formats/manav_classic_quotation_body.html`,
+  `manav_banded_quotation_body.html`, `manav_modern_quotation_body.html`,
+  `manav_modern_quotation.html`, `manav_modern_quotation_cif.html`.
+- Testing (Windows, local): `node` parse of `quotation.js`, `py_compile` of `lead_board.py`, Jinja2
+  parse of the five templates: OK. The Classic body was rendered with sample data: price line under
+  the machine name and CIF charges after the last machine's points, as intended. Not run: `bench
+  build` / `bench clear-cache` on the server, the form in a browser, and real print previews / PDFs.
+- Pending: in the Modern / HSN / Banded / Colour layouts the machine's price was already on the
+  machine's own row (beside its name), so only Classic was rearranged; confirm this on the prints.
+
+## 2026-11-07
+
+**Lead: Existing Customer fills the lead from the Customer master; Sale Manager from the Sales Person list.**
+
+- Summary:
+  - The Source section comes first on the lead form, before the Customer section (a `field_order`
+    Property Setter, rebuilt from `manav_lead.json`'s order on every migrate).
+  - New "Existing Customer" field (Link to Customer) right under Source, shown and mandatory only
+    when the Source contains "existing customer" (the seeded "Existing Customer - New order").
+    Choosing another source clears it. The rule is checked in the browser only, as Frappe does
+    not evaluate `mandatory_depends_on` on the server.
+  - A new lead opens with a popup "New Customer / Existing Customer". Existing Customer asks for
+    the customer in the popup, sets the Source to "Existing Customer - New order" (else the first
+    source with "existing customer" in its name) and fills the lead. The popup appears once per
+    new form, and not when the lead already comes with a Source or Customer. Picking a customer
+    fills Company Name, Mobile No, Email ID, Website, Contact Person, Contact
+    Position, Address, Haas Cust ID and Magic Cust ID from the customer and its primary (else
+    default) contact and address. Fields stay editable.
+  - Sale Manager is now a Link to Sales Person, the same list as Sales Engineer. Frappe does not
+    allow a Data field to become a Link by customization, so the old text field `sale_manager`
+    is hidden (Property Setter) and a new custom field `sales_manager` (label "Sale Manager")
+    sits after it. On migrate an old text value that is a Sales Person moves to the new field;
+    any other old text goes into Other Information Notes. The old field is emptied either way.
+  - Both are custom fields made on migrate (`lead_customer.setup_lead_customer_fields`), like the
+    stage fields of `lead_board.py`. `manav_lead.json` is not changed.
+- Reason: the user asked for the same list in Sales Engineer and Sale Manager, for an existing
+  customer's details to come from the Customer master, and for the lead to ask the source first
+  and offer the customer dropdown only for an existing customer.
+- Files: `manav/manav/lead_customer.py` (new), `manav/public/js/manav_lead_customer.js` (new),
+  `manav/hooks.py`.
+- Testing: Python syntax check and `node --check` (Windows): OK. On manav.local: `bench migrate`
+  OK; meta read back: `customer` Link Customer, `sales_manager` Link Sales Person, `sale_manager`
+  hidden; no old text values were left (none set on this site). `get_customer_details` on
+  ZODIAC LIFE SCIENCES PVT LTD. returned company name, Magic Cust ID MZ029 and the 5-line address.
+  `bench build --app manav` (with Node 24) and `clear-cache` OK. After the Source change:
+  `setup_lead_customer_fields` run on manav.local, meta order read back as Source section ->
+  source, customer, source_name -> Customer section, with the depends_on / mandatory_depends_on
+  condition on `customer`. Popup: `node --check` OK; the source lookup it uses
+  (`frappe.client.get_list` with `like %existing customer%`) returned "Existing Customer - New
+  order" on manav.local. Not run: the lead form and popup in a browser.
+- Pending: Make Quotation (`lead_board.get_or_make_customer`) still finds the customer by Company
+  Name. This works because the name is filled from the chosen customer, but it does not read the
+  new Existing Customer field yet. `lead_board.py`, `manav_lead.json` and `manav_lead.js` are
+  read-only on the share for this login, so they were not edited. The stage dropdown order (the
+  user's other request) is already fixed by commit 7633c79 (`lead_board.stage_query`), which
+  still needs deploying and migrating on the live site.
+
+**Desk home (/desk) blank for the Administrator: stale saved desk layouts reset on migrate.**
+
+- Summary: new `desk_home.reset_stale_desktop_layouts` (after_migrate) deletes every saved
+  Frappe "Desktop Layout" that does not list all the Manav desk icons (Bangalore, FTWZ, Chennai,
+  Coimbatore, Lead Management), the same as Frappe's own "Reset Desktop Layout". Layouts that
+  list all of them are kept. Nothing is done if Frappe drops the Desktop Layout doctype.
+- Reason: on manav.mymagicerp.com the Administrator's /desk showed only the search bar. Their
+  layout, saved before the Manav icons existed, listed 47 ERPNext / HRMS icons, all marked "not
+  permitted" because `limit_desk_to_manav` no longer sends them, and none of the Manav icons
+  (checked in the browser console on the live site).
+- Files: `manav/manav/desk_home.py`, `manav/hooks.py`.
+- Testing: Python syntax check of both files (Windows): OK. `bench migrate` on manav.local ran
+  the after_migrate hooks without error; no Desktop Layout records remain there. Not run: the
+  live site, the desk in a browser after the reset.
+- Pending: the fix applies after the code is deployed and `bench migrate` runs on the live site.
+  Until then the console reset (`delete_layout`) clears it for one user.
+
 ## 2026-11-06
 
 **Workspaces: title card and greeting line removed.**

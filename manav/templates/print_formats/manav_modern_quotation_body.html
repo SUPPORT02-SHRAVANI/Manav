@@ -45,6 +45,18 @@
 	  doc_title, to_label, number_label  the title of the box and the names of the customer and
 	                      the number (defaults QUOTATION, Quotation To, Quotation No.; the PI
 	                      prints PROFORMA INVOICE, Invoice To, PI No.)
+	  option_amount_only  (2026-11-12) a sub-item's row (an option under its machine, or a loose
+	                      option) prints only its Total; its Price and Quantity cells stay empty
+	  dark_lines          (2026-11-12) the lines of the line tables, the totals, the terms table and
+	                      the box at the top are drawn dark grey / black instead of light grey
+	  machine_price_line  (2026-11-12) under each machine's row, the bold line "<q.price_line>
+	                      <machine.price_digits>" ("Prices : Ex-Works Dubai   US$ 187000.00"), as
+	                      Manav Classic Quotation prints it. 2026-11-12 (later): with it the line
+	                      tables have no Price and Quantity columns (one Price column: the machine's
+	                      price on that row, each sub-item's own amount on its row), and the price
+	                      line after all lines is left out (only the CIF / other charges stay)
+	  All three are given by Manav Modern Quotation and Quotation with HSN Code (the user's requests
+	  of 2026-11-12); the PI does not give them and prints as before.
 
 	Working, top to bottom:
 	1. Head of every page, as on the old printed quotation: the letter head (the principal's
@@ -380,10 +392,27 @@
 			{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}
 		</td>
 		{% if hsn %}<td class="mm-hsn">{{ line.hsn or "" }}</td>{% endif %}
-		<td class="mm-num">{{ line.rate }}</td>
-		<td class="mm-qty">{{ line.qty }}</td>
-		<td class="mm-num mm-strong">{{ line.amount }}</td>
+		{#- 2026-11-12: option_amount_only - a sub-item (kind "option", or a loose option "") shows
+		    its Total only, no Price and Quantity; a machine row is unchanged -#}
+		{% set amount_only = q.option_amount_only and kind != "machine" %}
+		{#- 2026-11-12 (later): machine_price_line - the Classic arrangement: no Price and Quantity
+		    columns; the machine's price is on the "Prices :" row under it, so its own cell is empty -#}
+		{% if not q.machine_price_line %}
+		<td class="mm-num">{{ "" if amount_only else line.rate }}</td>
+		<td class="mm-qty">{{ "" if amount_only else line.qty }}</td>
+		{% endif %}
+		<td class="mm-num mm-strong">{{ "" if (q.machine_price_line and kind == "machine") else line.amount }}</td>
 	</tr>
+	{#- 2026-11-12: machine_price_line - "Prices : <basis>   US$ <amount>" right under the machine's
+	    name, as on Manav Classic Quotation (the user's request); q.price_line is set by
+	    manav_quotation_pi_totals.html ("Prices : <Ex-Works From> <Port>", else "Price :") -#}
+	{% if kind == "machine" and q.machine_price_line and line.price_digits %}
+	<tr class="mm-machine-price-row">
+		<td></td>
+		<td class="mm-mprice-text"{% if hsn %} colspan="2"{% endif %}>{{ q.price_line or "Price :" }}</td>
+		<td class="mm-num mm-mprice-amount">{{ line.price_digits }}</td>
+	</tr>
+	{% endif %}
 	{#- the description as points in two columns, reading down the left column first; the
 	    picture, when given, on their left -#}
 	{% set image = line.image if pic else "" %}
@@ -392,7 +421,7 @@
 	{% set half = ((points | length) / 2) | round(0, "ceil") | int %}
 	<tr class="mm-points-row{% if kind %} mm-{{ kind }}-points{% endif %}">
 		<td></td>
-		<td colspan="{{ 5 if hsn else 4 }}">
+		<td colspan="{{ (5 if hsn else 4) - (2 if q.machine_price_line else 0) }}">
 			<table class="mm-points-wrap">
 				<tr>
 					{% if image %}<td class="mm-points-pic"><img src="{{ image }}" alt="{{ line.code or '' }}"></td>{% endif %}
@@ -433,9 +462,14 @@
 				<th style="width: 6%; text-align: center;">No</th>
 				<th>Item Description</th>
 				{% if hsn %}<th style="width: 12%; text-align: center;">HSN Code</th>{% endif %}
+				{% if q.machine_price_line %}
+				{#- 2026-11-12 (later): the Classic arrangement - one Price column -#}
+				<th style="width: 20%; text-align: right;">Price{% if q.currency_code %} ({{ q.currency_code }}){% endif %}</th>
+				{% else %}
 				<th style="width: 17%; text-align: right;">Price{% if q.currency_code %} ({{ q.currency_code }}){% endif %}</th>
 				<th style="width: 11%; text-align: center;">Quantity</th>
 				<th style="width: 17%; text-align: right;">Total{% if q.currency_code %} ({{ q.currency_code }}){% endif %}</th>
+				{% endif %}
 			</tr>
 		</thead>
 		<tbody>
@@ -533,6 +567,11 @@
 	.print-format .mm .mm-price-line td.mm-price-text.mm-price-plain { font-weight: 400; }
 	.print-format .mm .mm-price-line td.mm-price-dots { width: 100%; max-width: 0; overflow: hidden; white-space: nowrap; font-weight: 400; letter-spacing: 1px; padding-left: 4px !important; }
 	.print-format .mm .mm-price-line td.mm-price-amount { white-space: nowrap; text-align: right; padding-left: 12px !important; font-weight: 900; }
+	/* 2026-11-12: the machine's own "Prices : ... US$ <amount>" line under its name (machine_price_line);
+	   no line under it, so it reads as one block with the machine's row and points */
+	.print-format .mm .mm-lines tr.mm-machine-price-row > td { padding-top: 4px !important; padding-bottom: 2px !important; border-bottom: 0 !important; }
+	.print-format .mm .mm-lines tr.mm-machine-price-row > td.mm-mprice-text,
+	.print-format .mm .mm-lines tr.mm-machine-price-row > td.mm-mprice-amount { font-size: 10pt; font-weight: 800; color: #000; }
 
 	.mm .mm-sum { margin-top: 14px; page-break-inside: avoid; }
 	.print-format .mm .mm-sum > tbody > tr > td { width: 50%; }
@@ -613,6 +652,24 @@
 		.mm-sheet-footer { position: fixed; bottom: 8mm; left: 12mm; right: 12mm; }
 	}
 </style>
+{#- 2026-11-12: dark_lines - the light grey lines of the line tables, totals and terms are drawn dark
+    (the user asked for darker table lines). After the rules above, so these win; the box at the top
+    of the page is coloured in its own tags (head_line / head_inner_line below). -#}
+{% if q.dark_lines %}
+<style>
+	.print-format .mm .mm-lines td { border-bottom: 1px solid #4b5563; }
+	.print-format .mm .mm-lines.mm-lines-open tr:last-child td { border-bottom: 1px solid #4b5563; }
+	.print-format .mm .mm-lines .mm-machine-row td { border-bottom: 1px solid #1f2937; }
+	.print-format .mm .mm-totals td { border-bottom: 1px solid #4b5563; }
+	.print-format .mm .mm-totals tr.mm-grand td { border-bottom: 0; }
+	.mm table.mm-terms-table { border: 1px solid #1f2937; }
+	.print-format .mm .mm-terms-table th { border-bottom: 1px solid #1f2937; }
+	.print-format .mm .mm-terms-table td { border-top: 1px solid #4b5563; }
+	.print-format .mm .mm-terms-table tr.mm-term-more td { border-top: 0; }
+</style>
+{% endif %}
+{% set head_line = "#1f2937" if q.dark_lines else "#9ca3af" %}
+{% set head_inner_line = "#4b5563" if q.dark_lines else "#d1d5db" %}
 
 {#- The quotation itself is drawn once into `page` and put out twice below: once for printing
     from the browser and once for the PDF made on the server (see "8." at the end). -#}
@@ -651,12 +708,12 @@
 <div class="mm-page-head" style="{{ head_font }}">
 {% if page_letter_head %}<div class="letter-head" style="margin: 0 0 1mm 0;">{{ page_letter_head }}</div>
 {% else %}<div style="font-size: 15pt; font-weight: 800; text-transform: uppercase; color: #000; text-align: center; margin: 0 0 2mm 0;">{{ q.company or "" }}</div>{% endif %}
-<table class="mm-head-box" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #9ca3af; border-radius: 6px; font-size: 8.5pt; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+<table class="mm-head-box" style="width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid {{ head_line }}; border-radius: 6px; font-size: 8.5pt; color: #1a1a1a; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
 	<tr>
 		<td colspan="2" style="padding: 1px 14px !important; border: 0; background: #1f2937; border-top-left-radius: 5px; border-top-right-radius: 5px; text-align: center; font-size: 10pt; font-weight: 900; letter-spacing: 0.2em; color: #fff; line-height: 1.3;">{{ q.doc_title or "QUOTATION" }}</td>
 	</tr>
 	<tr>
-		<td style="width: 57%; padding: 4px 14px 4px 14px !important; vertical-align: top; border: 0; border-right: 1px solid #d1d5db;">
+		<td style="width: 57%; padding: 4px 14px 4px 14px !important; vertical-align: top; border: 0; border-right: 1px solid {{ head_inner_line }};">
 			<div style="{{ head_label }}">{{ q.to_label or "Quotation To" }}</div>
 			<div style="font-size: 10pt; font-weight: 800; color: #000; margin: 2px 0 1px 0; line-height: 1.25;">{{ q.customer_name or "" }}</div>
 			{% if customer_address %}<div style="color: #4b5563; line-height: 1.3; font-size: 8pt;">{{ customer_address }}</div>{% endif %}
@@ -861,9 +918,12 @@
 
 	{#- the price line of the whole document (PI prints, 2026-11-02): text, dotted leader, amount;
 	    a table, as the PDF maker knows no flexbox -#}
-	{% if q.price_line %}
+	{#- 2026-11-12 (later): with machine_price_line the price is under each machine; only the CIF and
+	    other charges are printed here, as on Manav Classic Quotation -#}
+	{% if q.price_line and (not q.machine_price_line or q.charge_lines) %}
 	</div><!--mm-cut--><div class="mm">
 	<table class="mm-price-line">
+		{% if not q.machine_price_line %}
 		<tr>
 			<td class="mm-price-text{{ ' mm-price-plain' if q.price_plain else '' }}">{{ q.price_line }}</td>
 			{#- dots as text, cut to the space left (a dotted border is not drawn by the PDF maker);
@@ -872,6 +932,7 @@
 			<td class="mm-price-dots">{{ (" ." * 120) if (q.price_amount and not q.price_no_dots) else "" }}</td>
 			<td class="mm-price-amount">{{ q.price_amount }}</td>
 		</tr>
+		{% endif %}
 		{#- CIF and other charges, lines of the same kind under the price (quotations, 2026-11-02) -#}
 		{% for charge in q.charge_lines or [] %}
 		<tr>

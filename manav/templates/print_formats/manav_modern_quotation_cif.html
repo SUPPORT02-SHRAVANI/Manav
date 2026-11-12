@@ -82,6 +82,21 @@
 	Change: A bold item of the description's bulleted list (<strong> / <b>; the old system's
 	"Bold Print" of Quotation Sub Machine Mst) is marked "!" and printed bold.
 	Reason: The user had the machines' points loaded from the old table, with its bold lines.
+
+	CHANGE NOTE
+	Date: 2026-11-12
+	Change: Sets option_amount_only and dark_lines: a sub-item row prints its Total only (no Price,
+	no Quantity) and the table lines are dark.
+	Reason: The user asked for no quantity / per-item price of the sub-items and darker table lines.
+
+	CHANGE NOTE
+	Date: 2026-11-12
+	Change: Sets machine_price_line and gives each machine price_digits ("US$ 187000.00", the
+	machine's own amount): the body prints "Prices : <basis>  US$ <amount>" right under the
+	machine's name, as Manav Classic Quotation does. Later the same day: no Price and Quantity
+	columns (one Price column), and no price line after all lines; the user asked for the Classic
+	arrangement in every format.
+	Reason: The user asked for the machine's price under its name in every print format, as on Classic.
 -#}
 {#- a sales person whose name was taken already is stored as "NAME (CODE)"; the code is not printed -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] }}{%- endmacro -%}
@@ -200,6 +215,9 @@
 	"no_page_per_machine": True,
 	"show_hsn": True,
 	"bullet": "*",
+	"option_amount_only": True,
+	"dark_lines": True,
+	"machine_price_line": True,
 	"no_tax_line": True,
 	"grand_total_label": "GRAND TOTAL (CIF)",
 } -%}
@@ -225,7 +243,7 @@
 	{%- set image = image | replace("fmt=webp", "fmt=png") if image else image -%}
 	{#- no specifications are printed (no_specs), so none are read -#}
 	{%- set about = {} -%}{{- describe(item.description, about) -}}
-	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "hsn": hsn_of.get((item.item_code or "") | lower), "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "options": options}) -%}
+	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "hsn": hsn_of.get((item.item_code or "") | lower), "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "price_digits": ({"USD": "US$", "INR": "Rs."}.get(doc.currency, doc.currency or "") ~ " " ~ ("%.2f" | format(frappe.utils.flt(item.amount)))) | trim, "options": options}) -%}
 {%- endfor -%}
 {%- for option in lines | selectattr("custom_main_item_code") | rejectattr("custom_main_item_code", "in", main_codes) -%}
 	{%- set about = {} -%}{{- describe(option.description, about) -}}

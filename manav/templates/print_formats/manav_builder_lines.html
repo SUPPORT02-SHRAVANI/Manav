@@ -1,0 +1,94 @@
+{#-
+	Item lines of the print-builder formats "Manav Quotation Classic" and "Manav Quotation Bordered"
+	(shown as Quotation Classic / Quotation Bordered), in the arrangement of Manav Classic Quotation:
+
+	  Sr.No | Item Code | Particulars                         | Price in US$
+	  01      VF-10/40    Haas USA Make Vertical Machining ...
+	                      Prices : Ex-Works Dubai               US$ 187000.00
+	  1.1     ACF         <sub-item description>                     5000.00
+	                      CIF Charges - Chennai Sea Port . . .  US$   1400.00   (after the last machine)
+
+	The machine's points are not repeated here: those formats print them in their Standard
+	Accessories block (manav_std_accessories.html).
+
+	Working: the builder format's HTML block sets body_template to this file and includes
+	manav_quotation_data.html, which gathers `q` (machines, options, price_basis, cif_line,
+	tax_lines ...) and then includes this file.
+
+	Created: 2026-11-12, when the user asked for the Classic machine line ("01 CODE Name", then
+	"Prices : <basis>  US$ <amount>") in every quotation print format, and for no Quantity / Rate.
+-#}
+<style>
+	.mbl { font-size: 9.5pt; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	.mbl table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+	/* dark lines (the user asked for darker table lines); Frappe's print style pads every cell */
+	.print-format .mbl th, .print-format .mbl td { padding: 3px 6px !important; vertical-align: top; }
+	.print-format .mbl th { border: 1.5px solid #000; font-weight: 700; text-align: center; background: #f3f3f3; }
+	.mbl .box { border: 1.5px solid #000; border-top: 0; page-break-inside: avoid; }
+	.mbl .right { text-align: right; white-space: nowrap; }
+	.mbl .strong { font-weight: 700; }
+	.mbl .machine-name { font-weight: 700; font-size: 10.5pt; }
+	.mbl .price-row td { font-weight: 700; font-size: 10pt; }
+	.print-format .mbl .opt td { border-top: 1px solid #000; }
+	.mbl .leader { overflow: hidden; white-space: nowrap; }
+	.mbl .leader:after { content: " . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."; color: #555; }
+</style>
+{%- macro cols() -%}<colgroup><col style="width: 8%;"><col style="width: 16%;"><col><col style="width: 20%;"></colgroup>{%- endmacro -%}
+<div class="mbl">
+	<table>
+		{{ cols() }}
+		<tr><th>Sr.No</th><th>Item Code</th><th>Particulars</th><th>Price in {{ q.currency_label }}</th></tr>
+	</table>
+	{% for machine in q.machines %}
+	<div class="box">
+		<table>
+			{{ cols() }}
+			<tr>
+				<td class="right strong">{{ "%02d" | format(machine.no) }}</td>
+				<td class="strong">{{ machine.code or "" }}</td>
+				<td class="machine-name">{{ machine.name }}</td>
+				<td></td>
+			</tr>
+			{#- the machine's own amount (not its sub-items), as on Manav Classic Quotation -#}
+			<tr class="price-row">
+				<td></td>
+				<td colspan="2">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
+				<td class="right">{{ machine.price_digits }}</td>
+			</tr>
+			{% for option in machine.options %}
+			<tr class="opt">
+				<td class="right">{{ option.no }}</td>
+				<td>{{ option.code or "" }}</td>
+				<td>{{ option.description or "" }}</td>
+				<td class="right">{{ option.price_digits }}</td>
+			</tr>
+			{% endfor %}
+			{#- after the last machine: CIF and other charges, a dotted leader each -#}
+			{% if loop.last %}
+			{% for charge in ([[q.cif_line, q.cif_digits]] if q.cif_line else []) + q.tax_lines %}
+			<tr class="price-row">
+				<td></td>
+				<td colspan="2" class="leader">{{ charge[0] }}</td>
+				<td class="right">{{ charge[1] }}</td>
+			</tr>
+			{% endfor %}
+			{% endif %}
+		</table>
+	</div>
+	{% endfor %}
+	{% if q.loose_options %}
+	<div class="box">
+		<table>
+			{{ cols() }}
+			{% for option in q.loose_options %}
+			<tr class="{% if not loop.first %}opt{% endif %}">
+				<td class="right">{{ option.no }}</td>
+				<td>{{ option.code or "" }}</td>
+				<td>{{ option.description or "" }}</td>
+				<td class="right">{{ option.price_digits }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	{% endif %}
+</div>

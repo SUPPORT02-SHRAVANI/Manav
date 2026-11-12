@@ -21,36 +21,135 @@
 //         A line opens the visit. Later the same day: a timeline of visit cards under four summary
 //         figures (total, last visit, next follow-up, stage), no New Visit button in the tab (it is at the top).
 // Reason: The user asked for a Visits tab on the lead showing its visits line-wise.
+// CHANGE NOTE
+// Date: 2026-11-12
+// Change: Every section of the lead form gets its own light background colour and a coloured left
+//         edge (colour_lead_sections), with darker shades in dark mode.
+// Reason: The user asked that each section has a light colour while filling in a lead.
 
 frappe.ui.form.on("Manav Lead", {
 	refresh(frm) {
+		colour_lead_sections(frm);
 		render_visits(frm);
+		// 2026-11-12: no "N Visits" headline at the top any more (the user asked to remove it); the count
+		// is the Visits field in Lead Info and the Visits tab.
+		frm.dashboard.clear_headline();
 		if (frm.is_new()) return;
-		show_visit_count(frm);
 		manav.lead_quotation.add_button(frm, frm.doc.name, frm.doc.stage, frm.doc.quotation);
 		if (frappe.model.can_create("Manav Visit")) {
+			// 2026-11-12: only New Visit at the top - the Next Stage button (a new visit in the next stage)
+			// did the same thing and was removed; the visit's Stage is chosen in the visit.
 			frm.add_custom_button(__("New Visit"), () => frappe.new_doc("Manav Visit", { lead: frm.doc.name })).addClass(
 				"btn-primary"
 			);
-			frm.add_custom_button(__("Next Stage"), () => next_lead_stage(frm));
 		}
 	},
 });
 
-// "3 Visits" at the top of the lead; a click opens the lead's visits.
-function show_visit_count(frm) {
-	frappe.db.count("Manav Visit", { filters: { lead: frm.doc.name, docstatus: ["!=", 2] } }).then((n) => {
-		frm.dashboard.set_headline(
-			`<a href="#" class="manav-lead-visits"><b>${n === 1 ? __("1 Visit") : __("{0} Visits", [n])}</b></a>`
-		);
-		frm.dashboard.wrapper.find(".manav-lead-visits").on("click", (e) => {
-			e.preventDefault();
-			frappe.route_options = { lead: frm.doc.name };
-			frappe.set_route("List", "Manav Visit");
-		});
+// 2026-11-12 (later): softer pastel tints, a coloured section title with a header band, white input
+// boxes with a clear border (the grey Frappe inputs disappeared on the coloured sections) and a
+// coloured focus ring. Per section: [tint, border, accent, dark tint, dark accent].
+const MANAV_LEAD_SECTION_COLOURS = [
+	["#F4F8FF", "#D6E4FB", "#3B6FD4", "#1B2230", "#6E9BEA"], // sky blue
+	["#F3FBF6", "#CDEBD9", "#23905A", "#18261F", "#5CC48D"], // mint
+	["#FFF8F0", "#F5DDBF", "#C7771F", "#2B2219", "#E3A35A"], // peach
+	["#F8F5FF", "#E1D7F7", "#7A55CC", "#221E2D", "#A98BEB"], // lavender
+	["#F1FAFA", "#C9E9E9", "#1F8A8A", "#172728", "#5CC2C2"], // aqua
+	["#FFF5F7", "#F6D5DD", "#C2456A", "#2B1D22", "#E57E9C"], // rose
+	["#FDFBEF", "#EEE6B8", "#9C8414", "#28261A", "#D3BC4E"], // lemon
+];
+// Fixed colour per known section, so a section keeps its colour; others take the next one.
+const MANAV_LEAD_SECTION_INDEX = {
+	sec_customer: 0,
+	sec_lead_info: 1,
+	sec_source: 2,
+	sec_product: 3,
+	sec_profile: 4,
+	sec_notes: 5,
+	sec_conversion: 6,
+};
+
+// Give every section of the lead form its light colour (classes manav-sec-0..6 + one stylesheet).
+function colour_lead_sections(frm) {
+	$("#manav-lead-section-style").remove();
+	{
+		// Each colour only sets three variables; the shared rules below use them.
+		const rules = MANAV_LEAD_SECTION_COLOURS.map(
+			([tint, border, accent, dtint, daccent], i) => `
+			.manav-lead-coloured .form-section.manav-sec-${i} { --ms-tint: ${tint}; --ms-border: ${border}; --ms-accent: ${accent}; }
+			[data-theme="dark"] .manav-lead-coloured .form-section.manav-sec-${i} { --ms-tint: ${dtint}; --ms-border: ${daccent}55; --ms-accent: ${daccent}; }`
+		).join("");
+		const S = ".manav-lead-coloured .form-section.card-section";
+		$(`<style id="manav-lead-section-style">
+			${rules}
+			${S} {
+				background: var(--ms-tint);
+				border: 1px solid var(--ms-border) !important;
+				border-left: 5px solid var(--ms-accent) !important;
+				border-radius: 12px;
+				margin: 0 0 14px 0;
+				box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+				/* no overflow:hidden - it cut off the Link dropdowns (Sales Engineer, Sale Manager) */
+				overflow: visible !important;
+			}
+			/* a field with an open dropdown sits above the next sections */
+			${S} .frappe-control:focus-within { position: relative; z-index: 20; }
+			${S}:focus-within { position: relative; z-index: 10; }
+			${S} > .section-head {
+				color: var(--ms-accent);
+				font-weight: 700;
+				font-size: 13px;
+				letter-spacing: 0.3px;
+				text-transform: uppercase;
+				padding: 10px 16px !important;
+				margin: 0 !important;
+				border-bottom: 1px solid var(--ms-border);
+				border-radius: 0 11px 0 0;
+				background: linear-gradient(90deg, var(--ms-border), transparent 70%);
+			}
+			${S} > .section-body { padding-top: 12px; }
+			${S} .control-label { color: var(--text-color); font-weight: 600; }
+
+			/* The input boxes: white with a clear border, so they stand out on the coloured section */
+			${S} .form-control,
+			${S} .like-disabled-input,
+			${S} .ql-editor,
+			${S} textarea {
+				background: #ffffff !important;
+				border: 1px solid #CBD3DE !important;
+				border-radius: 8px !important;
+				box-shadow: 0 1px 1px rgba(16, 24, 40, 0.04);
+			}
+			${S} .form-control:hover { border-color: var(--ms-accent) !important; }
+			${S} .form-control:focus {
+				border-color: var(--ms-accent) !important;
+				box-shadow: 0 0 0 3px var(--ms-border) !important;
+			}
+			/* read-only values: a light grey box so they look locked */
+			${S} .like-disabled-input { background: #F6F7F9 !important; }
+
+			[data-theme="dark"] ${S} .form-control,
+			[data-theme="dark"] ${S} textarea,
+			[data-theme="dark"] ${S} .ql-editor {
+				background: #12161C !important;
+				border-color: #3A4350 !important;
+			}
+			[data-theme="dark"] ${S} .like-disabled-input { background: #1C2128 !important; border-color: #3A4350 !important; }
+		</style>`).appendTo("head");
+	}
+	$(frm.wrapper).addClass("manav-lead-coloured");
+	let next = Object.keys(MANAV_LEAD_SECTION_INDEX).length;
+	(frm.layout.sections || []).forEach((section) => {
+		const name = section.df && section.df.fieldname;
+		let i = MANAV_LEAD_SECTION_INDEX[name];
+		if (i === undefined) i = next++;
+		const $w = $(section.wrapper);
+		$w.removeClass((_, c) => (c.match(/manav-sec-\d+/g) || []).join(" "));
+		$w.addClass(`manav-sec-${i % MANAV_LEAD_SECTION_COLOURS.length}`);
 	});
 }
 
+// "3 Visits" at the top of the lead; a click opens the lead's visits.
 // The Visits tab: the lead's visits, newest first, one line each.
 function render_visits(frm) {
 	const field = frm.get_field("visits_html");
@@ -173,22 +272,4 @@ function add_visits_style() {
 			.mlv-state { margin-left:0; }
 		}
 	</style>`).appendTo("head");
-}
-
-// A new visit of the lead in the stage after its current one (by the stages' Sequence; no stage yet:
-// the first one); submitting the visit moves the lead there.
-function next_lead_stage(frm) {
-	frappe.db
-		.get_list("Manav Lead Stage", { fields: ["name", "days"], order_by: "sequence asc", limit: 0 })
-		.then((stages) => {
-			const idx = stages.findIndex((s) => s.name === frm.doc.stage);
-			const next = idx < 0 ? stages[0] : stages[idx + 1];
-			if (!next) {
-				frappe.msgprint(__("The lead is already at the last stage ({0}).", [frm.doc.stage || "-"]));
-				return;
-			}
-			const values = { lead: frm.doc.name, stage: next.name };
-			if (cint(next.days) > 0) values.next_visit_date = frappe.datetime.add_days(frappe.datetime.get_today(), cint(next.days));
-			frappe.new_doc("Manav Visit", values);
-		});
 }

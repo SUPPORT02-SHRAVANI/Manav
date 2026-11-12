@@ -1,7 +1,8 @@
 {#-
 	Gathers the values of an ERPNext Quotation for the print formats Manav Classic Quotation,
-	Manav Banded Quotation (both black and white) and Manav Colour Quotation into the variable `q`,
-	then draws the
+	Manav Banded Quotation (both black and white) and Manav Colour Quotation into the variable `q`
+	(since 2026-11-12 also for the item lines of the builder formats Manav Quotation Classic /
+	Bordered, body_template manav_builder_lines.html), then draws the
 	page with the layout file named in `body_template`. The print format sets `theme` (colours)
 	and `body_template` and includes this file; a variable set here is only seen by a file
 	included from here, which is why this file includes the layout at its end.
