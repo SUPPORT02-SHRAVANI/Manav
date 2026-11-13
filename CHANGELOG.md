@@ -4,6 +4,28 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Leads: Sale Manager, managers see their team's leads, Sale Manager notified of quotations / PIs.**
+
+- Summary (as found in the working copy and pushed on the user's request; written in another
+  session): Manav Lead has a Sale Manager (sales_manager; new and existing leads get Naveen Mahadevan,
+  patch `lead_default_sale_manager`); `lead_permission`: a user also sees the leads / visits whose
+  Sales Engineer is in their part of the Sales Person tree or where they are the Sale Manager, and
+  Manav Management sees all; `lead_notify.py` (after_insert of Quotation, Draft PI, Sales Order) sends
+  the lead's Sale Manager a bell notification; changes in the lead form, lead_api, lead_board,
+  lead_product and the Lead Funnel report.
+- Reason: per the file notes, the user asked that a manager sees everything of their employees,
+  that Naveen Mahadevan is the manager of all, and that the Sale Manager is told when a quotation,
+  Draft PI or Final PI is made for the lead.
+- Files: `manav/hooks.py`, `manav/patches.txt`, `manav/patches/lead_default_sale_manager.py` (new),
+  `manav/manav/lead_notify.py` (new), `lead_permission.py`, `lead_api.py`, `lead_board.py`,
+  `lead_product.py`, `doctype/manav_lead/` (js, json, py), `doctype/manav_visit/manav_visit.json`,
+  `report/manav_lead_funnel/manav_lead_funnel.py`, `public/js/manav_lead_form.js`.
+- Testing (this session, before pushing): Python files parse / compile, both JS files pass
+  `node --check`, both doctype JSON files load; `lead_permission` still returns True for a user's own
+  and new leads (the fix above is kept). Not run here: the features themselves, the patch, a
+  non-admin login. Any tests of the session that wrote them are not recorded here.
+- Pending: deploy (with migrate: new field and patch); try a manager and a sales user on live.
+
 **Desk: no branches for now; the first page shows Quotation and Lead Management.**
 
 - Summary: `desk_home.limit_desk_to_manav` sends the browser two desk icons: "Quotation" (the
