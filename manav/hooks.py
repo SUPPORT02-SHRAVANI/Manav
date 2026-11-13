@@ -336,6 +336,12 @@ doc_events = {
 		],
 		# 2026-11-02: a quotation made from a lead (Make Quotation, RFQ stage) becomes the lead's Quotation
 		"on_update": "manav.manav.lead_board.link_quotation_to_lead",
+		# 2026-11-13: the lead's Sale Manager gets a bell notification (lead_notify.py)
+		"after_insert": "manav.manav.lead_notify.notify_lead_sales_manager",
+	},
+	# 2026-11-13: the lead's Sale Manager gets a bell notification when a Draft PI is made (lead_notify.py)
+	"Draft PI": {
+		"after_insert": "manav.manav.lead_notify.notify_lead_sales_manager",
 	},
 	# 2026-10-28: the PI (Sales Order) keeps the sub-items' machine prices and numbers like a quotation
 	# CHANGE NOTE
@@ -368,6 +374,8 @@ doc_events = {
 		"on_submit": "manav.manav.pi.link_pi_documents",
 		"on_cancel": "manav.manav.pi.unlink_pi_documents",
 		"on_trash": "manav.manav.pi.unlink_pi_documents",
+		# 2026-11-13: the lead's Sale Manager gets a bell notification for the Final PI (lead_notify.py)
+		"after_insert": "manav.manav.lead_notify.notify_lead_sales_manager",
 	},
 	# CHANGE NOTE
 	# Date: 2026-11-02

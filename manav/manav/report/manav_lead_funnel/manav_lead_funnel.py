@@ -48,7 +48,8 @@ def get_data(filters, group_by):
 	agg = defaultdict(lambda: {"leads": 0, "qualified": 0, "converted": 0})
 	not_set = _("(not set)")
 
-	lead_filters = {}
+	# 2026-11-13: cancelled leads (replaced by their amendment) are not counted
+	lead_filters = {"docstatus": ["!=", 2]}
 	if filters.get("from_date") and filters.get("to_date"):
 		lead_filters["lead_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	# The grouping field plus status and quotation; de-duplicated when the group is "status".

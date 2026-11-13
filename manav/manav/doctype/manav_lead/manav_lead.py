@@ -15,6 +15,16 @@
 # Change: Sales Engineer is always the logged-in user's Sales Person for a salesperson (no manager
 #         role): set on a new lead, unchangeable on a saved one. Managers may still pick anyone.
 # Reason: The user asked that whoever logs in and makes the lead is its Sales Engineer.
+# CHANGE NOTE
+# Date: 2026-11-13
+# Change: An empty Sale Manager is filled with DEFAULT_SALE_MANAGER (Naveen Mahadevan) on saving.
+#         The lead is submittable: cancelling it is not stopped by its visits / quotations, which move
+#         to the amended lead when that is submitted (on_cancel, on_submit, move_lead_history).
+# Reason: The user asked that Naveen Mahadevan is the manager of all leads, and for a Submit button so
+#         that no one can change a saved lead.
+
+# The Sales Person every lead's Sale Manager defaults to (the user's "manager of all").
+DEFAULT_SALE_MANAGER = "NAVEEN MAHADEVAN"
 
 # Frappe framework.
 import frappe
@@ -45,6 +55,10 @@ class ManavLead(Document):
 				self.sale_engineer = sales_person_for_user(frappe.session.user) or self.sale_engineer
 			else:
 				self.sale_engineer = frappe.db.get_value("Manav Lead", self.name, "sale_engineer") or self.sale_engineer
+		# 2026-11-13: Sale Manager defaults to the manager of all (DEFAULT_SALE_MANAGER), when that Sales
+		# Person exists on this site; it is notified of the lead's quotations and PIs (lead_notify.py).
+		if not self.get("sales_manager") and frappe.db.exists("Sales Person", DEFAULT_SALE_MANAGER):
+			self.sales_manager = DEFAULT_SALE_MANAGER
 		# Currency defaults to USD (the LMS default).
 		if not self.currency:
 			self.currency = "USD"
@@ -65,6 +79,32 @@ class ManavLead(Document):
 		# If only the product is set, borrow its product type.
 		elif self.product and not self.product_type:
 			self.product_type = frappe.db.get_value("Manav Product", self.product, "product_type")
+
+	# 2026-11-13: a submitted lead is changed by Cancel -> Amend. Its submitted visits and quotations
+	# must not stop the cancel (Frappe refuses to cancel a document that submitted ones link to); they
+	# stay as they are and move to the amended lead when that is submitted (on_submit).
+	def on_cancel(self):
+		self.ignore_linked_doctypes = LEAD_HISTORY_LINKS
+
+	def on_submit(self):
+		if self.amended_from:
+			move_lead_history(self.amended_from, self.name)
+
+
+# 2026-11-13: documents that keep a lead's history: (doctype, its link field to Manav Lead). The same
+# doctypes are left out of "cancel all linked documents" on the form (manav_lead.js).
+LEAD_HISTORY_FIELDS = (("Manav Visit", "lead"), ("Quotation", "custom_manav_lead"))
+LEAD_HISTORY_LINKS = tuple(doctype for doctype, _field in LEAD_HISTORY_FIELDS)
+
+
+def move_lead_history(old_lead, new_lead):
+	"""Point the cancelled lead's visits and quotations at its amendment (references only, so
+	db-level: they may be submitted)."""
+	for doctype, field in LEAD_HISTORY_FIELDS:
+		if not frappe.db.has_column(doctype, field):
+			continue
+		for name in frappe.get_all(doctype, filters={field: old_lead}, pluck="name"):
+			frappe.db.set_value(doctype, name, field, new_lead, update_modified=False)
 
 
 # 2026-11-12: roles that may set a lead's Sales Engineer to someone else (everyone else gets their own).

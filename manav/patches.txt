@@ -11,3 +11,5 @@ manav.patches.lead_sales_engineer_link
 manav.patches.clean_lead_dropdown_labels
 # 2026-11-04: "Manav Modern Quotation CIF" renamed "Quotation with HSN Code" (old record deleted)
 manav.patches.rename_hsn_print_format
+# 2026-11-13: leads without a Sale Manager get Naveen Mahadevan (manav_lead.DEFAULT_SALE_MANAGER)
+manav.patches.lead_default_sale_manager

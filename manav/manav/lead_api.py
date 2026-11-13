@@ -35,7 +35,9 @@ def get_lead_counts():
 	counts = {s: 0 for s in STATUSES}
 	# frappe.get_list respects the user's permissions (a salesperson sees only their own leads).
 	# The status of each accessible lead is counted in Python - robust across Frappe versions.
-	for row in frappe.get_list("Manav Lead", fields=["status"], limit_page_length=0):
+	for row in frappe.get_list(
+		"Manav Lead", filters={"docstatus": ["!=", 2]}, fields=["status"], limit_page_length=0  # 2026-11-13: not cancelled
+	):
 		if row.status in counts:
 			counts[row.status] += 1
 	# Also return the overall total.

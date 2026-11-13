@@ -60,6 +60,7 @@
   "other_information_notes",
   "sec_conversion",
   "quotation",
+  "amended_from",
   "tab_visits",
   "visits_html"
  ],
@@ -393,6 +394,16 @@
    "options": "Quotation"
   },
   {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Manav Lead",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
    "fieldname": "tab_visits",
    "fieldtype": "Tab Break",
    "label": "Visits"
@@ -404,7 +415,7 @@
   }
  ],
  "links": [],
- "modified": "2026-11-12 16:30:00.000000",
+ "modified": "2026-11-13 15:30:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Manav Lead",
@@ -421,7 +432,10 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
   },
   {
    "create": 1,
@@ -433,7 +447,10 @@
    "report": 1,
    "role": "Manav Management",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
   },
   {
    "create": 1,
@@ -445,7 +462,10 @@
    "report": 1,
    "role": "Sales Manager",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
   },
   {
    "create": 1,
@@ -456,7 +476,10 @@
    "report": 1,
    "role": "Sales User",
    "share": 1,
-   "write": 1
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
   }
  ],
  "row_format": "Dynamic",
@@ -465,5 +488,6 @@
  "sort_order": "DESC",
  "states": [],
  "title_field": "company_name",
- "track_changes": 1
+ "track_changes": 1,
+ "is_submittable": 1
 }

@@ -3,6 +3,15 @@
 //          Amount = Qty x Rate.
 // Created: 2026-10-29
 // CHANGE NOTE
+// Date: 2026-11-13
+// Change: Choosing an Item fills Rate from its Item Price (principal's price list first) and Amount
+//         follows Quantity x Rate (fill_item_rate, lead_product.get_item_rate).
+// Reason: The user asked that the rate comes by itself after adding the product, and amount from qty.
+// CHANGE NOTE
+// Date: 2026-11-13
+// Change: The lead is submittable (manav_lead.json); Scan Visiting Card shows on a draft lead only.
+// Reason: The user asked for a Submit button after saving a lead so that no one can change it.
+// CHANGE NOTE
 // Date: 2026-10-30
 // Change: Visiting card scan: "Visiting Card" menu with Take Photo (opens the phone camera) and Upload
 //         Card; the photo is shrunk, uploaded into the Visiting Card field, and read by OpenAI
@@ -123,10 +132,16 @@ frappe.ui.form.on("Manav Lead", {
 		}
 	},
 	refresh(frm) {
+		// 2026-11-13: cancelling a submitted lead (to amend it) must not offer to cancel its visits and
+		// quotations too; they move to the amended lead (manav_lead.py LEAD_HISTORY_FIELDS).
+		frm.ignore_doctypes_on_cancel_all = ["Manav Visit", "Quotation"];
 		// 2026-11-03: Product Type / Product are hidden (free-hand Product only), so no Product filter.
 
 		// Visiting card scan: one button, the dialog holds front / back and the Scan Card button.
-		frm.add_custom_button(__("Scan Visiting Card"), () => card_dialog(frm));
+		// 2026-11-13: only on a draft lead - a submitted lead is locked (it fills the lead's fields).
+		if (frm.doc.docstatus === 0) {
+			frm.add_custom_button(__("Scan Visiting Card"), () => card_dialog(frm));
+		}
 		setup_item_dropdown(frm);
 	},
 
@@ -149,7 +164,9 @@ frappe.ui.form.on("Manav Lead", {
 		}, 200);
 		if (item === LEAD_FREE_HAND) {
 			frappe.show_alert({ message: __("Type the product in Product Description."), indicator: "blue" }, 4);
+			return;
 		}
+		fill_item_rate(frm);
 	},
 	// Amount = Quantity x Rate, recalculated as the user types.
 	quantity: calc_amount,
@@ -184,6 +201,39 @@ function setup_item_dropdown(frm) {
 
 function calc_amount(frm) {
 	frm.set_value("amount", flt(frm.doc.quantity) * flt(frm.doc.rate));
+}
+
+// 2026-11-13: choosing an Item fills Rate from its price (principal's price list first, see
+// lead_product.get_item_rate); Quantity becomes 1 when empty, and Amount follows (rate/quantity
+// handlers). A price in another currency also switches the lead's Currency, so the rate stays right.
+// No price found: Rate is left as it was and the salesperson is told to type it.
+function fill_item_rate(frm) {
+	const item = frm.doc.item_code;
+	frappe
+		.call("manav.manav.lead_product.get_item_rate", {
+			item_code: item,
+			principal: frm.doc.principal || null,
+			currency: frm.doc.currency || null,
+		})
+		.then((r) => {
+			if (frm.doc.item_code !== item) return; // the user picked another item meanwhile
+			const p = r.message || {};
+			if (!flt(p.rate)) {
+				frappe.show_alert({ message: __("No price found for this item. Type the Rate."), indicator: "orange" }, 5);
+				return;
+			}
+			const steps = [];
+			if (p.currency && p.currency !== frm.doc.currency) {
+				steps.push(() => frm.set_value("currency", p.currency));
+				steps.push(() =>
+					frappe.show_alert({ message: __("Currency set to {0} as per the item's price.", [p.currency]), indicator: "blue" }, 5)
+				);
+			}
+			if (!flt(frm.doc.quantity)) steps.push(() => frm.set_value("quantity", 1));
+			steps.push(() => frm.set_value("rate", flt(p.rate)));
+			steps.push(() => calc_amount(frm));
+			return frappe.run_serially(steps);
+		});
 }
 
 // The Scan Visiting Card dialog: a Front and a Back tile and a Scan Card button.

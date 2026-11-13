@@ -280,6 +280,8 @@ def get_lead_board():
 			"product_type", "product", "product_free_hand", "location", "sale_engineer",
 			"contact_person", "mobile_no", "email_id", "quotation",
 		],
+		# 2026-11-13: cancelled leads (replaced by their amendment) are not shown
+		filters={"docstatus": ["!=", 2]},
 		order_by="modified desc",
 		limit_page_length=0,
 	)

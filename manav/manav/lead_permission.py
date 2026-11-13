@@ -34,18 +34,74 @@ Change: has_permission and visit_has_permission return True ("no objection") whe
         role permissions still decide, and False still refuses another user's lead or visit.
 Reason: The user could not create a Manav Lead on the live site ("You need the 'create' permission on
         Manav Lead"); the same was found on manav.local.
+
+CHANGE NOTE
+Date: 2026-11-13
+Change: A manager sees their people's leads and visits: a lead is also the user's when its Sales
+        Engineer is the user's Sales Person or any Sales Person under it in the Sales Person tree, or
+        when the user is its Sale Manager (sales_manager). Manav Management sees everything, like
+        System Manager.
+Reason: The user asked that a manager sees everything of their employees, and that Naveen Mahadevan is
+        the manager of all.
 """
 
 import frappe
 
 from manav.manav.quotation import sales_person_for_user
 
-FULL_ACCESS_ROLES = {"System Manager"}
+# 2026-11-13: Manav Management (the top managers) see every lead and visit too.
+FULL_ACCESS_ROLES = {"System Manager", "Manav Management"}
 
 
 def _sees_all(user):
-	"""Administrator / System Manager are not limited to their own leads."""
+	"""Administrator / System Manager / Manav Management are not limited to their own leads."""
 	return user == "Administrator" or bool(FULL_ACCESS_ROLES & set(frappe.get_roles(user)))
+
+
+def _team(user):
+	"""(the user's Sales Person, the user's team): the team is that Sales Person and every Sales Person
+	under it in the Sales Person tree (a manager's Sales Person is a group with their people under
+	it). (None, []) when the user has no Sales Person."""
+	sales_person = sales_person_for_user(user)
+	if not sales_person:
+		return None, []
+	bounds = frappe.db.get_value("Sales Person", sales_person, ["lft", "rgt"], as_dict=True)
+	if not bounds or bounds.lft is None:
+		return sales_person, [sales_person]
+	team = frappe.get_all(
+		"Sales Person",
+		filters={"lft": [">=", bounds.lft], "rgt": ["<=", bounds.rgt]},
+		pluck="name",
+	)
+	return sales_person, team or [sales_person]
+
+
+def _lead_condition(user, alias):
+	"""SQL: the lead (table alias `alias`) is the user's: made by them, its Sales Engineer is in their
+	team, or they are its Sale Manager."""
+	condition = f"{alias}.`owner` = {frappe.db.escape(user)}"
+	sales_person, team = _team(user)
+	if team:
+		names = ", ".join(frappe.db.escape(name) for name in team)
+		condition += f" or {alias}.`sale_engineer` in ({names})"
+	if sales_person and _has_sales_manager():
+		condition += f" or {alias}.`sales_manager` = {frappe.db.escape(sales_person)}"
+	return condition
+
+
+def _has_sales_manager():
+	"""Sale Manager is a custom field (lead_customer.py, made on migrate); not there yet -> not used."""
+	return frappe.get_meta("Manav Lead").has_field("sales_manager")
+
+
+def _lead_is_users(values, user):
+	"""Python twin of _lead_condition for one lead's owner / sale_engineer / sales_manager."""
+	if values.get("owner") == user:
+		return True
+	sales_person, team = _team(user)
+	if values.get("sale_engineer") and values.get("sale_engineer") in team:
+		return True
+	return bool(sales_person and values.get("sales_manager") == sales_person)
 
 
 def get_permission_query_conditions(user=None):
@@ -53,11 +109,7 @@ def get_permission_query_conditions(user=None):
 	user = user or frappe.session.user
 	if _sees_all(user):
 		return ""
-	condition = f"`tabManav Lead`.`owner` = {frappe.db.escape(user)}"
-	sales_person = sales_person_for_user(user)
-	if sales_person:
-		condition += f" or `tabManav Lead`.`sale_engineer` = {frappe.db.escape(sales_person)}"
-	return f"({condition})"
+	return f"({_lead_condition(user, '`tabManav Lead`')})"
 
 
 def has_permission(doc, ptype=None, user=None, debug=False):
@@ -69,25 +121,19 @@ def has_permission(doc, ptype=None, user=None, debug=False):
 	# A lead being created has no owner check to make yet.
 	if not doc.get("name") or (hasattr(doc, "is_new") and doc.is_new()):
 		return True
-	if doc.get("owner") == user:
-		return True
-	sales_person = sales_person_for_user(user)
-	if sales_person and doc.get("sale_engineer") == sales_person:
-		return True
-	return False
+	return _lead_is_users(doc, user)
 
 
 def _is_own_lead(lead, user):
-	"""The lead was made by the user, or the user is its Sales Engineer."""
+	"""The lead is the user's (made by them, Sales Engineer in their team, or they are its Sale
+	Manager)."""
 	if not lead:
 		return False
-	values = frappe.db.get_value("Manav Lead", lead, ["owner", "sale_engineer"], as_dict=True)
+	fields = ["owner", "sale_engineer"] + (["sales_manager"] if _has_sales_manager() else [])
+	values = frappe.db.get_value("Manav Lead", lead, fields, as_dict=True)
 	if not values:
 		return False
-	if values.owner == user:
-		return True
-	sales_person = sales_person_for_user(user)
-	return bool(sales_person and values.sale_engineer == sales_person)
+	return _lead_is_users(values, user)
 
 
 def visit_query_conditions(user=None):
@@ -96,10 +142,7 @@ def visit_query_conditions(user=None):
 	user = user or frappe.session.user
 	if _sees_all(user):
 		return ""
-	lead_condition = f"l.`owner` = {frappe.db.escape(user)}"
-	sales_person = sales_person_for_user(user)
-	if sales_person:
-		lead_condition += f" or l.`sale_engineer` = {frappe.db.escape(sales_person)}"
+	lead_condition = _lead_condition(user, "l")
 	return (
 		f"(`tabManav Visit`.`owner` = {frappe.db.escape(user)}"
 		f" or `tabManav Visit`.`lead` in (select l.`name` from `tabManav Lead` l where {lead_condition}))"

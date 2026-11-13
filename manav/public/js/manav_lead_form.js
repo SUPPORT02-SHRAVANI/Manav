@@ -26,6 +26,10 @@
 // Change: Every section of the lead form gets its own light background colour and a coloured left
 //         edge (colour_lead_sections), with darker shades in dark mode.
 // Reason: The user asked that each section has a light colour while filling in a lead.
+// CHANGE NOTE
+// Date: 2026-11-13
+// Change: No Make Quotation / New Visit on a cancelled lead (the lead is submittable now).
+// Reason: A cancelled document cannot be linked; the amended lead takes new visits and quotations.
 
 frappe.ui.form.on("Manav Lead", {
 	refresh(frm) {
@@ -35,6 +39,8 @@ frappe.ui.form.on("Manav Lead", {
 		// is the Visits field in Lead Info and the Visits tab.
 		frm.dashboard.clear_headline();
 		if (frm.is_new()) return;
+		// 2026-11-13: a cancelled lead takes no new visit or quotation (its amendment does)
+		if (frm.doc.docstatus === 2) return;
 		manav.lead_quotation.add_button(frm, frm.doc.name, frm.doc.stage, frm.doc.quotation);
 		if (frappe.model.can_create("Manav Visit")) {
 			// 2026-11-12: only New Visit at the top - the Next Stage button (a new visit in the next stage)
