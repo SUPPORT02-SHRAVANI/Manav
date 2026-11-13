@@ -83,6 +83,8 @@
 	Date: 2026-11-13
 	Change: A quotation with CIF charges prints its price line without the Port (it is in the CIF line).
 	Reason: The user marked the port on the price line of a CIF quotation: it should not be there.
+	Later the same day: on a quotation the CIF line takes the typed Port (custom_price_port), the
+	hidden CIF Port only when Port is empty (the user typed Dubai and got Chennai Sea Port).
 -#}
 {%- set with_taxes = with_taxes if with_taxes is defined else True -%}
 {%- set is_cif = doc.get("custom_is_cif") -%}
@@ -117,7 +119,9 @@
 {%- if cif_amount -%}
 	{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>") -#}
 	{#- 2026-11-04: "CIF Charges - <port>" again, e.g. "CIF Charges - Chennai Sea Port" (the user's wording) -#}
-	{%- set _ = charge_lines.append(["CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), currency_label ~ " " ~ ("%.2f" | format(cif_amount))]) -%}
+	{#- 2026-11-13 (later): on a quotation the typed Port is the CIF port; the hidden CIF Port only when Port is empty -#}
+	{%- set cif_port = (doc.get("custom_price_port") if doc.doctype == "Quotation" else None) or doc.get("custom_cif_port") -%}
+	{%- set _ = charge_lines.append(["CIF Charges" ~ ((" - " ~ cif_port) if cif_port else ""), currency_label ~ " " ~ ("%.2f" | format(cif_amount))]) -%}
 {%- endif -%}
 {%- if with_taxes -%}
 	{%- for tax in (doc.get("taxes") or []) | selectattr("tax_amount") -%}

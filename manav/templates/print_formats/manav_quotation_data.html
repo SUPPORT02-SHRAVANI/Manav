@@ -104,6 +104,9 @@
 	Change: A quotation with CIF charges prints the "Prices : ..." line without the Port (has_cif); the
 	port is in "CIF Charges - <port>" under the points.
 	Reason: The user marked the port on the price line of a CIF quotation: it should not be there.
+	Later the same day: on a quotation "CIF Charges - <port>" takes the Port typed on the quotation
+	(custom_price_port), the hidden CIF Port only when Port is empty; the user typed Dubai and got
+	Chennai Sea Port.
 -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
@@ -308,7 +311,9 @@
 
 {#- CIF charges (later 2026-10-29): a line, and added to the printed grand total -#}
 {#- 2026-11-13: the Draft PI names these fields without custom_ (is_cif, cif_charges, cif_port) -#}
-{%- set cif_port = doc.get("custom_cif_port") or doc.get("cif_port") -%}
+{#- 2026-11-13 (later): on a quotation the Port typed by the user (custom_price_port) is the CIF port;
+    the hidden CIF Port (the principal's default, e.g. Chennai Sea Port) only when Port is empty -#}
+{%- set cif_port = (doc.get("custom_price_port") if doc.doctype == "Quotation" else None) or doc.get("custom_cif_port") or doc.get("cif_port") -%}
 {%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges") or doc.get("cif_charges")) if (doc.get("custom_is_cif") or doc.get("is_cif")) else 0 -%}
 {%- if cif_amount -%}
 	{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>"), as on the old print -#}

@@ -4,6 +4,22 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Quotation prints: the CIF line takes the Port typed on the quotation.**
+
+- Summary: on a quotation "CIF Charges - <port>" uses the quotation's Port (custom_price_port), and
+  the hidden CIF Port (custom_cif_port, filled with the principal's default, e.g. Chennai Sea Port)
+  only when Port is empty (Classic, Modern, with HSN Code). Draft PI and Final PI keep their own CIF
+  Port, as their Port defaults to WAREHOUSE CHENNAI.
+- Reason: the user typed Port "dubai" on a quotation (4AXD) and the print said "CIF Charges -
+  Chennai Sea Port": the CIF Port field is hidden on the quotation since 2026-11-12 but still filled
+  with the principal's default, and the print read it.
+- Files: `manav/templates/print_formats/manav_quotation_data.html`,
+  `manav/templates/print_formats/manav_quotation_pi_totals.html`.
+- Testing (manav.local): Classic, Modern, with HSN Code render (HTML and PDF) for 26QX000089 /
+  26QX000091; Draft PI 26DPI00004 and the 5 Sales Order formats on 26FPI00003 render. Not seen: a
+  quotation with Port typed and CIF charges (none on manav.local); check the 4AXD quotation on live.
+- Pending: deploy.
+
 **Quotation prints: no port on the "Prices :" line of a CIF quotation.**
 
 - Summary: Classic (`manav_quotation_data.html`) and Modern / with HSN Code
