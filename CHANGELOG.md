@@ -4,6 +4,25 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Desk: no branches for now; the first page shows Quotation and Lead Management.**
+
+- Summary: `desk_home.limit_desk_to_manav` sends the browser two desk icons: "Quotation" (the
+  Bangalore sidebar under that name) and Lead Management. The Bangalore sidebar is labelled
+  "Quotation" (sidebar header and module menu); FTWZ, Chennai, Coimbatore and the generic Manav
+  sidebar are left out of the module menu; `open_branch_sidebar` puts every user in that sidebar
+  whatever their branch (HOME_SHELL). The Bangalore workspace's heading reads "Manav Marketing".
+  Only what is sent to the browser changes: the branch workspaces, sidebars and icons stay and can be
+  shown again (HIDDEN_SHELLS, SHELL_LABELS, DESK_ICONS).
+- Reason: the user asked not to show the separate branches for now, only Quotation and Lead
+  Management on the first page after login.
+- Files: `manav/manav/desk_home.py`, `manav/manav/workspace/bangalore/bangalore.json`.
+- Testing (manav.local, e2e.admin, System Manager): after login the desk (/desk) shows the icons
+  Quotation and Lead Management only (screenshot); the Manav sidebars sent are Bangalore (label
+  Quotation) and Lead Management (plus one local-only sidebar not on the live site); the Quotation list
+  opens with the sidebar headed "Quotation". `py_compile` OK. Not tested: a non-admin user; the
+  workspace heading (comes with migrate); the live site.
+- Pending: deploy (with migrate).
+
 **Leads and visits: every user could be refused ("Not allowed via controller permission check").**
 
 - Summary: `lead_permission.has_permission` and `visit_has_permission` return True ("no objection")

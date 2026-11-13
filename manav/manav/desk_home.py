@@ -199,8 +199,25 @@ BRANCH_WORKSPACES = ("Bangalore", "FTWZ", "Chennai", "Coimbatore")
 # (217.79.180.219/lms) and in the style of my_visit_monitor. Files: desktop_icon/lead_management.json,
 # workspace_sidebar/lead_management.json, doctype/manav_lead*, page/manav_lead_dashboard.
 LEAD_WORKSPACE = "Lead Management"
-# The icons shown on the desk home (manav/desktop_icon/*.json): the four branches and Lead Management.
-DESK_ICONS = (*BRANCH_WORKSPACES, LEAD_WORKSPACE)
+# CHANGE NOTE
+# Date: 2026-11-13
+# Change: No branches for now: the desk home shows two icons, "Quotation" (the Bangalore sidebar,
+# shown under that name) and Lead Management; every user, whatever their branch, works in that one
+# sidebar (HOME_SHELL); FTWZ, Chennai, Coimbatore and the generic Manav sidebar are left out of the
+# sidebar's module menu. Only what is sent to the browser is changed (limit_desk_to_manav): the
+# branch records stay, so the branches can be shown again by emptying HIDDEN_SHELLS and SHELL_LABELS
+# and restoring DESK_ICONS. The Bangalore workspace's heading (its Home page) reads "Manav
+# Marketing" instead of "Manav Marketing - Bangalore" (manav/workspace/bangalore/bangalore.json).
+# Reason: The user asked not to show the separate branches for now, only Quotation and Lead
+# Management on the first page after login.
+# The one sidebar everyone works in, and the names it is shown under.
+HOME_SHELL = BRANCH_WORKSPACES[0]
+SHELL_LABELS = {HOME_SHELL: "Quotation"}
+# Sidebars not offered in the sidebar's module menu (their pages open in HOME_SHELL)
+HIDDEN_SHELLS = (*BRANCH_WORKSPACES[1:], MANAV_WORKSPACE)
+# The icons shown on the desk home (manav/desktop_icon/*.json, by their stored label).
+# 2026-11-13: Bangalore (shown as "Quotation") and Lead Management; was the four branches too.
+DESK_ICONS = (HOME_SHELL, LEAD_WORKSPACE)
 
 
 def is_admin(user=None):
@@ -246,6 +263,17 @@ def limit_desk_to_manav(bootinfo):
 	# 2026-11-12: every page opens in the user's branch sidebar, the admins too (open_branch_sidebar)
 	open_branch_sidebar(bootinfo)
 
+	# 2026-11-13: the home sidebar is shown as "Quotation" (desk icon, sidebar header, module menu),
+	# and the other branch sidebars are not offered (the user's request: no branches for now)
+	for icon in bootinfo.get("desktop_icons") or []:
+		if icon.get("label") in SHELL_LABELS:
+			icon["label"] = SHELL_LABELS[icon["label"]]
+	for name, label in SHELL_LABELS.items():
+		if isinstance(shells.get(name), dict):
+			shells[name]["label"] = label
+	for name in HIDDEN_SHELLS:
+		shells.pop(name, None)
+
 	if is_admin():
 		return
 
@@ -290,6 +318,9 @@ def open_branch_sidebar(bootinfo):
 	branch = get_user_branch() or ""
 	# "Manav Marketing - Coimbatore" -> the "Coimbatore" sidebar
 	shell = next((name for name in BRANCH_WORKSPACES if branch.endswith(name)), None)
+	# 2026-11-13: no branches for now: everyone works in HOME_SHELL (shown as "Quotation")
+	if HIDDEN_SHELLS and shell in HIDDEN_SHELLS:
+		shell = HOME_SHELL
 	if shell not in shells:
 		shell = BRANCH_WORKSPACES[0] if BRANCH_WORKSPACES[0] in shells else None
 	if not shell:
