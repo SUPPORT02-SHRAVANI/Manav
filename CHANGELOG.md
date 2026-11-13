@@ -4,6 +4,20 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Quotation / Draft PI / Final PI: a chosen Terms template fills empty Terms.**
+
+- Summary (written in another session, pushed on the user's request): `quotation.fill_terms` (validate
+  of Quotation, Draft PI and Sales Order; also called by `lead_board.make_quotation`) puts the Terms
+  template's text into Terms when Terms is empty (nothing left once the HTML is stripped); terms
+  typed or edited by hand are kept.
+- Reason (from the code notes): quotations made from a lead had the principal's template but empty
+  Terms and Conditions (make_quotation set only tc_name).
+- Files: `manav/hooks.py`, `manav/manav/quotation.py`, `manav/manav/lead_board.py`.
+- Testing (this session): the three files parse; `frappe.utils.strip_html_tags` and
+  `frappe.render_template(..., restrict_globals=...)` exist in the bench's Frappe. Not run: making a
+  quotation from a lead, a Draft PI / Final PI save.
+- Pending: deploy.
+
 **Leads: Sale Manager, managers see their team's leads, Sale Manager notified of quotations / PIs.**
 
 - Summary (as found in the working copy and pushed on the user's request; written in another

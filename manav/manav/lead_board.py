@@ -414,6 +414,12 @@ def make_quotation(lead):
 		qtn.contact_email = qtn.contact_email or lead.email_id
 		qtn.contact_mobile = qtn.contact_mobile or lead.mobile_no
 
+	# 2026-11-13: the principal's Terms template brings its text too (only tc_name was set, so the
+	# quotation opened with empty Terms and Conditions).
+	from manav.manav.quotation import fill_terms
+
+	fill_terms(qtn)
+
 	out = qtn.as_dict()
 	out["__islocal"] = 1
 	return out

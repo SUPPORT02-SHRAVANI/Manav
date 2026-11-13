@@ -333,6 +333,8 @@ doc_events = {
 			# 2026-10-29: CIF ticked -> empty CIF Port / Charges from the principal's defaults
 			# 2026-11-04: CIF = CIF Charges has an amount; the tick is hidden and set from it
 			"manav.manav.quotation.fill_cif_defaults",
+			# 2026-11-13: a Terms template with empty Terms gets the template's text (quotation.fill_terms)
+			"manav.manav.quotation.fill_terms",
 		],
 		# 2026-11-02: a quotation made from a lead (Make Quotation, RFQ stage) becomes the lead's Quotation
 		"on_update": "manav.manav.lead_board.link_quotation_to_lead",
@@ -342,6 +344,8 @@ doc_events = {
 	# 2026-11-13: the lead's Sale Manager gets a bell notification when a Draft PI is made (lead_notify.py)
 	"Draft PI": {
 		"after_insert": "manav.manav.lead_notify.notify_lead_sales_manager",
+		# 2026-11-13: a Terms template with empty Terms gets the template's text (quotation.fill_terms)
+		"validate": "manav.manav.quotation.fill_terms",
 	},
 	# 2026-10-28: the PI (Sales Order) keeps the sub-items' machine prices and numbers like a quotation
 	# CHANGE NOTE
@@ -365,6 +369,8 @@ doc_events = {
 			"manav.manav.pi.fill_price_basis",
 			# 2026-11-04: CIF when CIF Charges has an amount (the tick is hidden)
 			"manav.manav.quotation.fill_cif_defaults",
+			# 2026-11-13: a Terms template with empty Terms gets the template's text (quotation.fill_terms)
+			"manav.manav.quotation.fill_terms",
 		],
 		# 2026-11-04: the CIF fields can be changed after submit (allow_on_submit); keep the tick in step
 		"before_update_after_submit": "manav.manav.quotation.fill_cif_defaults",

@@ -111,7 +111,7 @@ import json
 import frappe
 from frappe import _
 from frappe.query_builder.functions import Length, Max
-from frappe.utils import cint, flt, getdate, nowdate
+from frappe.utils import cint, flt, getdate, nowdate, strip_html_tags
 
 
 @frappe.whitelist()
@@ -293,6 +293,24 @@ def number_sub_items(doc, method=None):
 		key = parent_no or f"?{main_item_code}"
 		counts[key] = counts.get(key, 0) + 1
 		row.custom_sub_item_sr_no = f"{parent_no}.{counts[key]}" if parent_no else str(counts[key])
+
+
+def fill_terms(doc, method=None):
+	"""Quotation / Sales Order validate (hooks.py), and lead_board.make_quotation: a chosen Terms
+	template (tc_name) with empty Terms gets the template's text, as the form does on choosing the
+	template. Empty means no text left once the HTML is stripped (the editor saves "<p><br></p>").
+	Terms typed or edited by hand are kept.
+	2026-11-13: quotations made from a lead had the principal's template but no terms (make_quotation
+	set only tc_name), and a quotation saved before the template's text arrived kept empty terms."""
+	if not doc.get("tc_name") or not doc.meta.has_field("terms"):
+		return
+	if strip_html_tags(doc.get("terms") or "").replace("&nbsp;", " ").strip():
+		return
+	template = frappe.db.get_value("Terms and Conditions", doc.tc_name, "terms")
+	if template:
+		# the same rendering as ERPNext's get_terms_and_conditions, without its read-permission check
+		# (the user chose the template, or the principal did)
+		doc.terms = frappe.render_template(template, doc.as_dict(), restrict_globals=1)
 
 
 def fill_account_manager(doc, method=None):
