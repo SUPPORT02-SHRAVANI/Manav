@@ -4,6 +4,21 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Quotation prints: no port on the "Prices :" line of a CIF quotation.**
+
+- Summary: Classic (`manav_quotation_data.html`) and Modern / with HSN Code
+  (`manav_quotation_pi_totals.html`): when the quotation has CIF charges, the "Prices : ..." line is
+  Ex-Works From only; the port is printed in "CIF Charges - <port>" under the points. Without CIF the
+  line is as before (Ex-Works From and Port); Jagdeep never prints the port.
+- Reason: the user marked "chennai sea port" on the price line of 26QX000006 (CIF 5000, CIF port
+  Chennai Sea Port): it should not be on that line.
+- Files: `manav/templates/print_formats/manav_quotation_data.html`,
+  `manav/templates/print_formats/manav_quotation_pi_totals.html`.
+- Testing (manav.local): Classic, Modern and with HSN Code render (HTML and PDF) for 26QX000089 /
+  26QX000091 / 26QX000078; the 5 Sales Order formats render for 26FPI00003. Not seen: a quotation with
+  both a port and CIF charges (none on manav.local); check 26QX000006 on live after the deploy.
+- Pending: deploy.
+
 **Modern / HSN quotation: CIF charges placed as on Classic.**
 
 - Summary: in Manav Modern Quotation and Quotation with HSN Code the CIF charges (and other charges)

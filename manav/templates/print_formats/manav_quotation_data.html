@@ -98,6 +98,12 @@
 	Ex-Works From and the CIF fields are read under the Draft PI's names too (ex_works_from, is_cif,
 	cif_charges, cif_port).
 	Reason: The user asked for the same three print formats on the Draft PI and the Final PI.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: A quotation with CIF charges prints the "Prices : ..." line without the Port (has_cif); the
+	port is in "CIF Charges - <port>" under the points.
+	Reason: The user marked the port on the price line of a CIF quotation: it should not be there.
 -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
@@ -171,6 +177,9 @@
     CHENNAI"), else (older quotations) the principal's Price Basis -#}
 {#- 2026-11-13: Jagdeep: the Port is not printed (Ex-Works Punjab, no port); machine.price_zero
     (below): a 0 price is left blank, not printed as "0.00" -#}
+{#- 2026-11-13: with CIF charges the port is printed in "CIF Charges - <port>" only, not again in the
+    "Prices : ..." line (the user's request) -#}
+{%- set has_cif = (doc.get("custom_is_cif") or doc.get("is_cif")) and frappe.utils.flt(doc.get("custom_cif_charges") or doc.get("cif_charges")) -%}
 {%- set q = {
 	"company": doc.company,
 	"number": doc.name,
@@ -187,7 +196,7 @@
 	],
 	"currency": currency,
 	"currency_label": currency_label,
-	"price_basis": ([doc.get("custom_ex_works_from") or doc.get("ex_works_from"), None if is_jagdeep else doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
+	"price_basis": ([doc.get("custom_ex_works_from") or doc.get("ex_works_from"), None if (is_jagdeep or has_cif) else doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
 	"is_jagdeep": is_jagdeep,
 	"title": {"Draft PI": "Draft Proforma Invoice", "Sales Order": "Proforma Invoice"}.get(doc.doctype, "Quotation"),
 	"machines": [],
