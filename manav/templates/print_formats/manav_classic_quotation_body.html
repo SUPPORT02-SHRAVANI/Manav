@@ -57,6 +57,15 @@
 	name (before its points); the CIF and other charges stay after the last machine's points. The
 	lines of the terms table and the options table are black (were light grey).
 	Reason: The user asked for the machine's price under the machine name and for darker table lines.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Jagdeep quotations: the "Prices : <Ex-Works From>  RS <amount>" line after the machine's
+	points (other principals keep it under the name), no port (manav_quotation_data.html); a 0 price
+	is left blank. The terms table has fixed column widths (No. 5%, Term 28% in bold, Details) and
+	its rows split by the text editor are joined again (mend_terms in manav_quotation_data.html).
+	Reason: The user showed the old Jagdeep print and asked for the Classic print in that layout,
+	with the terms fixed, no port and no 0 amount printed.
 -#}
 <style>
 	.mcq { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -110,6 +119,10 @@
 	/* 2026-11-12: black line under every term (was theme.border, light grey) */
 	.print-format .mcq .terms table td { padding: 2px 4px !important; border-bottom: 1px solid {{ theme.dark }}; }
 	.mcq .terms table tr:nth-child(even) td { background: {{ theme.band }}; }
+	/* 2026-11-13: No. | Term | Details widths; the text editor drops the widths of the template's cells */
+	.mcq .terms table { width: 100%; table-layout: fixed; }
+	.mcq .terms table td:nth-child(1) { width: 5%; }
+	.mcq .terms table td:nth-child(2) { width: 28%; font-weight: bold; }
 	.mcq .small { font-size: 8pt; }
 </style>
 
@@ -159,16 +172,21 @@
 		</table>
 
 		{#- "Prices : <basis>" with the machine's own amount (not its options), as on the old print.
-		    2026-11-12: right under the machine's name (was after its points), the user's request. -#}
-		<table class="price-lines" style="margin-top: 2px;">
+		    2026-11-12: right under the machine's name (was after its points), the user's request.
+		    2026-11-13: Jagdeep: after the points, as on the old Jagdeep print; a 0 amount is left
+		    blank (machine.price_zero). -#}
+		{% set price_line %}
+		<table class="price-lines" style="margin-top: {{ '6px' if q.is_jagdeep else '2px' }};">
 			<tr>
 				<td style="width: 8%;"></td>
 				{#- 2026-11-04: bold, as before (for a while that day it was not bold; the user asked for bold) -#}
 				<td style="width: 52%;">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
 				<td style="width: 20%;"></td>
-				<td style="width: 20%;"><table><tr><td class="cur">{{ machine.price_digits.split(" ")[0] }}</td><td class="num">{{ machine.price_digits.split(" ", 1)[1] }}</td></tr></table></td>
+				<td style="width: 20%;">{% if not machine.price_zero %}<table><tr><td class="cur">{{ machine.price_digits.split(" ")[0] }}</td><td class="num">{{ machine.price_digits.split(" ", 1)[1] }}</td></tr></table>{% endif %}</td>
 			</tr>
 		</table>
+		{% endset %}
+		{% if not q.is_jagdeep %}{{ price_line }}{% endif %}
 
 		{% if machine.bullets %}
 		<table class="bullets">
@@ -183,6 +201,7 @@
 			{% endfor %}
 		</table>
 		{% endif %}
+		{% if q.is_jagdeep %}{{ price_line }}{% endif %}
 
 		{#- under the last machine's points: CIF charges and other charges, a dotted leader each
 		    (2026-11-12: a table of their own, as the machine's price line moved under its name) -#}

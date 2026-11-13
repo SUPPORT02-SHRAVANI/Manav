@@ -68,6 +68,12 @@ Date: 2026-11-06
 Change: import_item_groups drops the 8-digit tariff code from the group names ("01 MACHINES"
 instead of "01 MACHINES - 16301000") and renames the groups already made.
 Reason: The user asked for the number to be removed from the Item Group dropdown.
+
+CHANGE NOTE
+Date: 2026-11-13
+Change: terms_as_html joins the lines of a term's text with a space instead of <br>.
+Reason: The quotation's text editor turns a <br> inside a table cell into a new cell, so the
+Jagdeep terms printed as a broken table (one column per line).
 """
 
 import gzip
@@ -767,7 +773,9 @@ def terms_as_html(terms):
 		# A second line of the same term continues without its number and heading.
 		first = bool(term.get("term_desc")) or term.get("sr_no") in (None, 0, 1)
 		number = term.get("term_type") if first and term.get("term_type") is not None else ""
-		text = html.escape(term.get("description") or "", quote=False).replace("\n", "<br>")
+		# 2026-11-13: lines joined with a space, not <br>: the quotation's text editor splits a cell
+		# at every <br> into a new cell. The old system broke its lines only to fit its own page.
+		text = " ".join(html.escape(term.get("description") or "", quote=False).split())
 		heading = html.escape(term.get("term_desc") or "", quote=False)
 		rows.append(
 			f'<tr><td style="width: 5%;">{number}</td>'

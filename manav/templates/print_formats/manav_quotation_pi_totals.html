@@ -72,6 +72,12 @@
 	right and no dots or quantity (q.price_no_dots), above "CIF Charges - <port> ...... amount".
 	Reason: The user showed the old quotation print for the quotation, and the "Price <type> <port>
 	(1 NOS) ...... amount" line for the Draft PI and Final PI only.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Jagdeep quotations: the Port is left out of the price line; q.is_jagdeep is set.
+	Reason: The user said a Jagdeep quotation mostly has no port, and asked for its price line
+	below the machine's points (Manav Modern Quotation).
 -#}
 {%- set with_taxes = with_taxes if with_taxes is defined else True -%}
 {%- set is_cif = doc.get("custom_is_cif") -%}
@@ -80,7 +86,11 @@
 {#- the price line -#}
 {#- 2026-11-04: the quotation's Ex-Works From, then its Port when typed (no fixed text; CIF or
     not); a quotation with neither prints its principal's Price Basis -#}
-{%- set price_basis = [doc.get("custom_ex_works_from"), doc.get("custom_price_port")] | select | map("trim") | select | join(" ") -%}
+{#- 2026-11-13: Jagdeep (Quotation Type "JAGDEEP"): no Port in the price line; q.is_jagdeep lets
+    Manav Modern Quotation print the price line after the machine's points -#}
+{%- set is_jagdeep = ((frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "description") or "") | trim | upper == "JAGDEEP") if doc.get("custom_quotation_type") else False -%}
+{%- set _ = q.update({"is_jagdeep": is_jagdeep}) -%}
+{%- set price_basis = [doc.get("custom_ex_works_from"), None if is_jagdeep else doc.get("custom_price_port")] | select | map("trim") | select | join(" ") -%}
 {%- set price_basis = price_basis or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.get("custom_quotation_type") else None) or "" -%}
 {#- the currency code (USD, INR) with the amounts and in the column heads (2026-11-02; before "US$" / "Rs.") -#}
 {%- set currency_label = doc.currency or "" -%}

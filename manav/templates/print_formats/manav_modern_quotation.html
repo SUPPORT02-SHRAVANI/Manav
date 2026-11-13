@@ -122,6 +122,11 @@
 	columns (one Price column), and no price line after all lines; the user asked for the Classic
 	arrangement in every format.
 	Reason: The user asked for the machine's price under its name in every print format, as on Classic.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Each machine has price_zero (its amount is 0); the body leaves that amount blank.
+	Reason: The user asked that a 0 amount is not printed as zero.
 -#}
 {#- a sales person whose name was taken already is stored as "NAME (CODE)"; the code is not printed -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] }}{%- endmacro -%}
@@ -259,7 +264,7 @@
 	    before the Item had any has none: the Item's Specifications are used then. -#}
 	{#- no specifications are printed (no_specs, 2026-11-02): the description as points -#}
 	{%- set about = {} -%}{{- describe(item.description, about) -}}
-	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "price_digits": ({"USD": "US$", "INR": "Rs."}.get(doc.currency, doc.currency or "") ~ " " ~ ("%.2f" | format(frappe.utils.flt(item.amount)))) | trim, "options": options}) -%}
+	{%- set _ = q.machines.append({"points": about.points, "head": about.head, "code": item.item_code, "name": item.item_name, "image": image, "spec_text": None, "description": item.description, "rate": item.get_formatted("rate", doc), "qty": item.get_formatted("qty", doc), "amount": item.get_formatted("amount", doc), "price_digits": ({"USD": "US$", "INR": "Rs."}.get(doc.currency, doc.currency or "") ~ " " ~ ("%.2f" | format(frappe.utils.flt(item.amount)))) | trim, "price_zero": not frappe.utils.flt(item.amount), "options": options}) -%}
 {%- endfor -%}
 {%- for option in lines | selectattr("custom_main_item_code") | rejectattr("custom_main_item_code", "in", main_codes) -%}
 	{%- set about = {} -%}{{- describe(option.description, about) -}}

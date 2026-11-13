@@ -2,6 +2,56 @@
 
 Changes to the Manav app, newest first.
 
+## 2026-11-13
+
+**Jagdeep quotation print (Classic): terms fixed, old Jagdeep layout, no port, no 0 amount.**
+
+- Summary:
+  - `manav_quotation_data.html`: `q.is_jagdeep` (Quotation Type "JAGDEEP"); for Jagdeep the currency
+    label is the principal's Currency Code ("RS") and the price text is Ex-Works From only (the Port
+    is not printed). `machine.price_zero`: a machine's 0 price is left blank. New macro
+    `mend_terms`: a terms table row the text editor split into extra cells is joined back into
+    No. | Term | Details, and line breaks inside a term become spaces (Classic, Banded, Colour).
+  - `manav_classic_quotation_body.html`: for Jagdeep the "Prices : <Ex-Works From>  RS <amount>"
+    line comes after the machine's points, as on the old Jagdeep print (others keep it under the
+    name); terms table with fixed widths (No. 5%, Term 28% bold, Details).
+  - `manav_builder_lines.html` (Quotation Classic / Bordered): 0 price left blank.
+  - Manav Modern Quotation (later the same day, the user marked the old Jagdeep print: "price
+    below"): `manav_quotation_pi_totals.html` sets `q.is_jagdeep` and leaves the Port out of a
+    Jagdeep price line; `manav_modern_quotation_body.html` prints the machine's "Prices : ...  Rs.
+    <amount>" row after its points for Jagdeep (others keep it under the name);
+    `manav_modern_quotation.html` gives each machine `price_zero`, and a 0 amount is left blank.
+  - `import_legacy.terms_as_html`: a term's lines joined with a space instead of `<br>`.
+  - Live data (mmblr.frappe.cloud, 2026-11-13, old values saved in `C:\e2e-out\jagdeep-fix-mmblr.frappe.cloud.json`
+    on the tester's PC): Terms "Manav - Jagdeep" without `<br>` in its cells; Item JVTM-1.2 name
+    "CENTER) - JVTM-1.2" -> "JAGDEEP CNC VTM- (VERTICAL TURN-MILL CENTER) - JVTM-1.2 (HSN : 84589990)";
+    Quotation Type 7 Default Ex-Works From and Price Basis "Ex-Works, Punjab India." (were empty);
+    draft 26QX000002 terms reloaded and its JVTM-1.2 line name corrected. manav.local: only the
+    terms template (the test login may not edit Items).
+- Reason: the user showed the old Jagdeep print and asked for the Classic print on the live site to
+  match it: the terms printed as a broken table (the quotation's text editor turns each `<br>` inside
+  a cell into a new cell), Jagdeep mostly has no port, and a 0 CIF / price must not print as 0.
+- Files: `manav/templates/print_formats/manav_quotation_data.html`,
+  `manav/templates/print_formats/manav_classic_quotation_body.html`,
+  `manav/templates/print_formats/manav_builder_lines.html`, `manav/manav/import_legacy.py`,
+  `manav/templates/print_formats/manav_quotation_pi_totals.html`,
+  `manav/templates/print_formats/manav_modern_quotation.html`,
+  `manav/templates/print_formats/manav_modern_quotation_body.html`.
+- Testing (manav.local, which reads the templates from this bench): all 7 enabled Quotation formats
+  render (HTML view and PDF) for Jagdeep 26QX000089 (CIF 1500), Jagdeep draft 26QX000078 and Haas
+  26QX000091: 21/21 pass. Screenshots looked at: Jagdeep price line after the points with "RS",
+  "Price in RS", CIF line only when not 0, terms as a 3-column table; Haas unchanged apart from the
+  terms widths. `mend_terms` run with Jinja2 3.1.6 on the live quotation's split terms: 10 rows of 3
+  cells, no `<br>` left. Live after the data fixes: 26QX000002 renders in all 7 formats, terms and
+  machine name correct. After the Modern change: the 21 quotation renders pass again, Draft PI
+  26DPI00004 (1 format) and Final PI 26FPI00003 (5 formats) render (HTML and PDF); Modern screenshot
+  of 26QX000089 looked at: price row after the points, before the options. `py_compile` of import_legacy.py and a Jinja2 parse of the three templates
+  (Windows): OK. Not run: the import itself; the live server's print with the new templates (needs
+  the deploy).
+- Pending: commit, push and deploy to Frappe Cloud; until then live still prints the price under
+  the name, "Rs." and 0.00. Draft 26QX000002 has rate 0, so its price stays blank until a price is
+  entered. Ex-Works From typed on old quotations ("Ex- Works ,Punjab India") is printed as typed.
+
 ## 2026-11-12
 
 **Desk: every page opens in the user's branch sidebar (not ERPNext's Selling / Stock ...).**

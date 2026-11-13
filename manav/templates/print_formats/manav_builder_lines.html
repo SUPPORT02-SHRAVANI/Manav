@@ -17,6 +17,12 @@
 
 	Created: 2026-11-12, when the user asked for the Classic machine line ("01 CODE Name", then
 	"Prices : <basis>  US$ <amount>") in every quotation print format, and for no Quantity / Rate.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: A machine's 0 price is left blank (machine.price_zero); a Jagdeep quotation prints "RS"
+	and no port (both from manav_quotation_data.html).
+	Reason: The user asked that a 0 amount is not printed and that Jagdeep prints without a port.
 -#}
 <style>
 	.mbl { font-size: 9.5pt; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -53,7 +59,8 @@
 			<tr class="price-row">
 				<td></td>
 				<td colspan="2">{% if q.price_basis %}Prices : {{ q.price_basis }}{% else %}Price :{% endif %}</td>
-				<td class="right">{{ machine.price_digits }}</td>
+				{#- 2026-11-13: a 0 price is left blank (machine.price_zero), not printed as "0.00" -#}
+				<td class="right">{{ "" if machine.price_zero else machine.price_digits }}</td>
 			</tr>
 			{% for option in machine.options %}
 			<tr class="opt">

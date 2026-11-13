@@ -80,14 +80,54 @@
 	Change: price_basis (Classic "Prices : ...") is the quotation's Ex-Works From and Port when typed,
 	CIF or not (was "Ex-Works, <place>." for CIF only, else the principal's Price Basis).
 	Reason: The user asked for the price text to be typed on the quotation, not fixed.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Jagdeep (Quotation Type "JAGDEEP"): q.is_jagdeep; the currency label is the principal's
+	Currency Code ("RS"); the price text is Ex-Works From only, the Port is not printed. Every
+	quotation: machine.price_zero / q.cif_line only when the amount is not 0 (a 0 price is not
+	printed as "0.00"). The terms are mended (mend_terms): a row the text editor split into extra
+	cells (it turns a line break inside a cell into a new cell) has those cells joined again.
+	Reason: The user showed the old Jagdeep print and asked for the Classic print to match it: the
+	terms printed broken, Jagdeep mostly has no port, and a 0 CIF / price must not print as zero.
 -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
 {%- macro plain(html) -%}
 	{{- frappe.utils.strip_html((html or "") | replace("</p>", "\n") | replace("</div>", "\n") | replace("<br>", "\n") | replace("<br/>", "\n") | replace("<br />", "\n")) | replace("&nbsp;", " ") | replace("&amp;", "&") | trim -}}
 {%- endmacro -%}
+{#- 2026-11-13: the terms table as the text editor keeps it can have a row split into more cells (a
+    line break inside a cell becomes a new cell): cells after the third are joined into the third
+    again, so that every term prints as No. | Term | Details; line breaks inside a term become
+    spaces. -#}
+{%- macro mend_terms(html) -%}
+	{%- if html and "<tr" in html -%}
+		{%- set rows = html.split("<tr") -%}
+		{{- rows[0] -}}
+		{%- for row in rows[1:] -%}
+			{%- set cells = row.split("<td") -%}
+			{%- if cells | length > 4 -%}
+				{%- set texts = [] -%}
+				{%- for cell in cells[3:] -%}
+					{%- set text = (cell.split(">", 1)[1] if ">" in cell else "").split("</td>")[0] | replace("<br>", " ") | trim -%}
+					{%- if text -%}{%- set _ = texts.append(text) -%}{%- endif -%}
+				{%- endfor -%}
+				<tr{{ cells[0] }}<td{{ cells[1] }}<td{{ cells[2] }}<td>{{ texts | join(" ") }}</td>{{ cells[-1].split("</td>", 1)[1] if "</td>" in cells[-1] else "" }}
+			{%- else -%}
+				{#- the old system broke its lines only to fit its own page: a break becomes a space -#}
+				<tr{{ row | replace("<br></td>", "</td>") | replace("<br>", " ") }}
+			{%- endif -%}
+		{%- endfor -%}
+	{%- else -%}
+		{{- html or "" -}}
+	{%- endif -%}
+{%- endmacro -%}
+{#- 2026-11-13: the principal (Quotation Type): Jagdeep prints with its own Currency Code ("RS") and
+    without a port, as on the old Jagdeep print -#}
+{%- set qtype = frappe.db.get_value("Quotation Type", doc.custom_quotation_type, ["description", "currency_code"], as_dict=1) if doc.get("custom_quotation_type") else None -%}
+{%- set is_jagdeep = ((qtype.description or "") | trim | upper == "JAGDEEP") if qtype else False -%}
 {%- set currency = doc.currency or "" -%}
-{%- set currency_label = {"USD": "US$", "INR": "Rs."}.get(currency, currency) -%}
+{%- set currency_label = (qtype.currency_code if is_jagdeep and qtype.currency_code else {"USD": "US$", "INR": "Rs."}.get(currency, currency)) -%}
 {%- macro amount_plain(value) -%}{{ currency_label }} {{ frappe.utils.fmt_money(value or 0, 2) }}{%- endmacro -%}
 
 {%- set lines = doc.get("items") or [] -%}
@@ -121,6 +161,8 @@
 {#- price_basis (2026-11-03): a CIF quotation with Ex-Works From prints "Prices : Ex-Works, <place>." -#}
 {#- 2026-11-04: now on every quotation: Ex-Works From, then Port when typed ("EX-WORKS FTWZ WAREHOUSE
     CHENNAI"), else (older quotations) the principal's Price Basis -#}
+{#- 2026-11-13: Jagdeep: the Port is not printed (Ex-Works Punjab, no port); machine.price_zero
+    (below): a 0 price is left blank, not printed as "0.00" -#}
 {%- set q = {
 	"company": doc.company,
 	"number": doc.name,
@@ -137,7 +179,8 @@
 	],
 	"currency": currency,
 	"currency_label": currency_label,
-	"price_basis": ([doc.get("custom_ex_works_from"), doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
+	"price_basis": ([doc.get("custom_ex_works_from"), None if is_jagdeep else doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
+	"is_jagdeep": is_jagdeep,
 	"machines": [],
 	"loose_options": [],
 	"subtotal": doc.get_formatted("net_total"),
@@ -147,7 +190,7 @@
 	"grand_total_plain": amount_plain(doc.grand_total),
 	"in_words": doc.in_words,
 	"payment": [],
-	"terms": doc.terms,
+	"terms": mend_terms(doc.terms),
 	"signer": person(doc.custom_signed_by),
 	"signature": frappe.db.get_value("Sales Person", doc.custom_signed_by, "custom_signature") if doc.custom_signed_by and doc.get("custom_print_signature") != 0 else None,
 	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
@@ -217,6 +260,7 @@
 		"amount": item.get_formatted("amount", doc),
 		"amount_plain": amount_plain(item.amount),
 		"price_digits": currency_label ~ " " ~ ("%.2f" | format(frappe.utils.flt(item.amount))),
+		"price_zero": not frappe.utils.flt(item.amount),
 		"options": options,
 	}) -%}
 {%- endfor -%}

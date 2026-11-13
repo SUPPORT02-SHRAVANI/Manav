@@ -317,6 +317,12 @@
 	Reason: The user asked for the word Ex-Works not in bold.
 	Later the same day: q.price_no_dots prints the price line without dots (the quotation's
 	"Prices : <Ex-Works From>"), as on the old quotation print.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Jagdeep quotations (q.is_jagdeep): the machine's "Prices : ...  Rs. <amount>" row is
+	printed after its points (others keep it under the name); a 0 amount is left blank (price_zero).
+	Reason: The user marked the old Jagdeep print: the price below the points, then the terms.
 -#}
 {#- one point of a description: "!text" (a bold list item, 2026-11-03) in bold, else as it is -#}
 {%- macro point_html(point) -%}{%- if (point or "").startswith("!") -%}<b>{{ point[1:] }}</b>{%- else -%}{{ point }}{%- endif -%}{%- endmacro -%}
@@ -406,13 +412,18 @@
 	{#- 2026-11-12: machine_price_line - "Prices : <basis>   US$ <amount>" right under the machine's
 	    name, as on Manav Classic Quotation (the user's request); q.price_line is set by
 	    manav_quotation_pi_totals.html ("Prices : <Ex-Works From> <Port>", else "Price :") -#}
+	{#- 2026-11-13: Jagdeep (q.is_jagdeep, manav_quotation_pi_totals.html): this row is printed after
+	    the machine's points instead, as on the old Jagdeep print (the user's request) -#}
+	{% set price_row %}
 	{% if kind == "machine" and q.machine_price_line and line.price_digits %}
 	<tr class="mm-machine-price-row">
 		<td></td>
 		<td class="mm-mprice-text"{% if hsn %} colspan="2"{% endif %}>{{ q.price_line or "Price :" }}</td>
-		<td class="mm-num mm-mprice-amount">{{ line.price_digits }}</td>
+		<td class="mm-num mm-mprice-amount">{{ "" if line.price_zero else line.price_digits }}</td>
 	</tr>
 	{% endif %}
+	{% endset %}
+	{% if not q.is_jagdeep %}{{ price_row }}{% endif %}
 	{#- the description as points in two columns, reading down the left column first; the
 	    picture, when given, on their left -#}
 	{% set image = line.image if pic else "" %}
@@ -443,6 +454,7 @@
 		</td>
 	</tr>
 	{% endif %}
+	{% if q.is_jagdeep %}{{ price_row }}{% endif %}
 {%- endmacro -%}
 {#- A line table: entries is a list of [line, title]. Each line is a piece of its own (a small
     table of one row, the first with the column headings), so that a page can end between two
