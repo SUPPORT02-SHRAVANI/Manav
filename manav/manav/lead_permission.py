@@ -23,6 +23,17 @@ Change: The same rule for Manav Visit (visit_query_conditions / visit_has_permis
         user's Sales Person as Sales Engineer at once).
 Reason: The user asked that each login sees only its own leads and visits, and that the Sales Engineer
         of a lead is the user who made it.
+
+CHANGE NOTE
+Date: 2026-11-13
+Change: has_permission and visit_has_permission return True ("no objection") where they returned None.
+        The installed Frappe (16.54 / 16.55) treats a None from a has_permission hook as a refusal
+        (frappe/permissions.py has_controller_permissions: "if not controller_permission: return
+        False"), so every user but Administrator was refused leads and visits, even creating one ("Not
+        allowed via controller permission check"). True only means "this hook does not object": the
+        role permissions still decide, and False still refuses another user's lead or visit.
+Reason: The user could not create a Manav Lead on the live site ("You need the 'create' permission on
+        Manav Lead"); the same was found on manav.local.
 """
 
 import frappe
@@ -50,19 +61,19 @@ def get_permission_query_conditions(user=None):
 
 
 def has_permission(doc, ptype=None, user=None, debug=False):
-	"""Single-document check: False refuses another user's lead; None leaves the decision to the
-	role permissions."""
+	"""Single-document check: False refuses another user's lead; True leaves the decision to the
+	role permissions (2026-11-13: was None, which the installed Frappe reads as a refusal)."""
 	user = user or frappe.session.user
 	if _sees_all(user):
-		return None
+		return True
 	# A lead being created has no owner check to make yet.
 	if not doc.get("name") or (hasattr(doc, "is_new") and doc.is_new()):
-		return None
+		return True
 	if doc.get("owner") == user:
-		return None
+		return True
 	sales_person = sales_person_for_user(user)
 	if sales_person and doc.get("sale_engineer") == sales_person:
-		return None
+		return True
 	return False
 
 
@@ -98,15 +109,16 @@ def visit_query_conditions(user=None):
 def visit_has_permission(doc, ptype=None, user=None, debug=False):
 	"""Single-visit check: False refuses a visit that is neither the user's nor of the user's lead."""
 	user = user or frappe.session.user
+	# 2026-11-13: True ("no objection") where this returned None, as in has_permission above
 	if _sees_all(user):
-		return None
+		return True
 	if not doc.get("name") or (hasattr(doc, "is_new") and doc.is_new()):
 		# a new visit: only to a lead the user may see
 		if doc.get("lead") and not _is_own_lead(doc.get("lead"), user):
 			return False
-		return None
+		return True
 	if doc.get("owner") == user or _is_own_lead(doc.get("lead"), user):
-		return None
+		return True
 	return False
 
 

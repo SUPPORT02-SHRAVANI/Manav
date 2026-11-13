@@ -4,6 +4,49 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Leads and visits: every user could be refused ("Not allowed via controller permission check").**
+
+- Summary: `lead_permission.has_permission` and `visit_has_permission` return True ("no objection")
+  where they returned None. The installed Frappe (16.54 local / 16.55 live) reads a None from a
+  has_permission hook as a refusal (`frappe/permissions.py`, has_controller_permissions), so every
+  user but Administrator was refused creating or opening a lead or a visit, System Managers too.
+  False still refuses another user's lead or visit; the role permissions still apply.
+- Reason: the user could not create a Manav Lead on the live site ("You need the 'create' permission
+  on Manav Lead"); the same was found on manav.local earlier the same day (403 opening LEAD-00001).
+- Files: `manav/manav/lead_permission.py`.
+- Testing (manav.local, as e2e.admin): the lead flow test (`lead-flow.mjs`) end to end: lead saved
+  (LEAD-00008), Next Stage, DVR saved and submitted (VISIT-00016, lead moved to RFQ), Make Quotation
+  (26QX000092 linked to the lead), Make Quotation again opens the same one, Leads Board / Dashboard /
+  lists / forms open; the lead form shows Open Quotation (screenshot; the test's own button check ran
+  before the button was drawn). Test records deleted afterwards (the test's cleanup was refused by
+  CSRF in its browser session; deleted with a fresh API login, none left). `py_compile` OK.
+  Not tested: a user with only the Sales roles (no System Manager); the live site (needs deploy).
+- Pending: deploy; then a non-admin user creates a lead on live.
+
+**Print button prints the server PDF; Classic head room fixed; signing block kept together.**
+
+- Summary: Print Settings "Print the PDF" (Frappe's `print_generated_pdf`) is switched on by
+  `setup_erpnext_fields` after every migrate (set on the live site by hand the same day), so the
+  Print button prints the PDF made on the server. Classic: more room at the top of each PDF page
+  for the letter head and the repeated box (title 10 mm, box at least 36 mm or 17 + 4.2 mm per
+  address line, heads 9 mm, 4 mm gap); the signing block and the FMT / CC line stay on one page.
+  ERPNext's "Proforma Invoice" (Sales Order) is added to HIDDEN_PRINT_FORMATS.
+- Reason: the user found the pages wrong when clicking Print on 26QX000003 (live). The browser's own
+  print repeats a table head only while it is under about a quarter of the page: with the Classic
+  box in the head, page 1 had the head only, the content started on page 2 and no head or page
+  number followed. In the server PDF the top of the letter head was cut off and the FMT line went
+  onto a page of its own.
+- Files: `manav/templates/print_formats/manav_classic_quotation_body.html`,
+  `manav/manav/erpnext_fields.py`.
+- Testing: live, before the change: Chrome's print of 26QX000003 (Classic) drawn page by page
+  (3 pages: head only / content without head / terms without head); the server PDF drawn page by
+  page (head box and "Page n of 3" on every page, letter head cut at the top, page 3 only the FMT
+  line). After "Print the PDF" on live: clicking Print on /desk/bangalore/print/Quotation/26QX000003
+  loads frappe.utils.print_format.download_pdf (Classic, Haas Factory Outlet). manav.local: Classic
+  and Quotation Classic render (HTML and PDF) for 26QX000089 / 26QX000091; `py_compile` OK. Not seen
+  yet: the live PDF with the new top margin (needs the deploy).
+- Pending: deploy; then look at 26QX000003's PDF again.
+
 **Three print formats on Quotation, Draft PI and Final PI; Classic head on every page; closer
 option rows; Print Signature on a closed Draft PI.**
 

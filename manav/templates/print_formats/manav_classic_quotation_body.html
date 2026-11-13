@@ -142,12 +142,14 @@
 {#- 2026-11-13: the title, the customer / document box and the column heads are repeated at the top
     of every page, under the letter head (frame_head_extra of manav_page_frame.html), as the user
     asked. The address runs on in one line (commas) to keep the head short; frame_head_extra_mm is
-    its height for the PDF's top margin: title 8 mm, box (6 lines of references, or the customer's
-    lines with about 3.6 mm per 55 letters of address), column heads 8 mm. -#}
+    its height for the PDF's top margin: title 10 mm, box (6 lines of references, 36 mm, or the
+    customer's lines with about 4.2 mm per 55 letters of address), column heads 9 mm, 4 mm gap.
+    (Later the same day: the first figures, 8 / 27 / 3.6 / 8 mm, left the top of the letter head cut
+    off in the live PDF of 26QX000003; these are measured from that PDF.) -#}
 {% set head_address = (q.address or "") | replace("<br>\n", ", ") | replace("<br/>", ", ") | replace("<br>", ", ") | replace("\n", " ") | trim %}
 {% set head_address = head_address[:-1] if head_address.endswith(",") else head_address %}
 {% set address_lines = [[((frappe.utils.strip_html(head_address) | length) / 55) | round(0, "ceil") | int, 1] | max, 4] | min %}
-{% set frame_head_extra_mm = 8 + ([27, 15 + 3.6 * address_lines + (4 if q.phone else 0)] | max) + 8 + 2 %}
+{% set frame_head_extra_mm = 10 + ([36, 17 + 4.2 * address_lines + (4.5 if q.phone else 0)] | max) + 9 + 4 %}
 {% set frame_lh_mm = 22 %}
 {% set frame_head_extra %}
 <div class="mcq">
@@ -288,6 +290,9 @@
 	</div>
 	{% endif %}
 
+	{#- 2026-11-13: the signing block and the FMT / CC line stay on one page (the FMT line alone
+	    had gone over onto a page of its own) -#}
+	<div style="page-break-inside: avoid;">
 	<div class="block">
 		<div class="caps">For {{ q.company or "" }}</div>
 		{#- 2026-11-03: the signer's Signature image (Sales Person) in the space left for signing -#}
@@ -304,6 +309,7 @@
 			<td style="width: 28%;" class="small right">E &amp; O.E</td>
 		</tr>
 	</table>
+	</div>
 </div>
 {% endset %}
 {#- 2026-11-03: "Page n of m" at the foot of every page of the PDF -#}

@@ -191,7 +191,9 @@ Change: Each of Quotation, Draft PI and Final PI (Sales Order) keeps three print
 with HSN Code and Modern. Disabled after every migrate (HIDDEN_PRINT_FORMATS): Manav Banded /
 Colour Quotation, Manav Quotation Classic / Bordered, Manav Draft PI, Manav Proforma Invoice
 (replaced by Draft PI / Proforma Invoice with HSN Code, the same print) and ERPNext's four Sales
-Order formats. The Final PI opens with "Proforma Invoice with HSN Code" (DEFAULT_PI_PRINT_FORMAT).
+Order formats (later the same day also ERPNext's "Proforma Invoice"). The Final PI opens with "Proforma
+Invoice with HSN Code" (DEFAULT_PI_PRINT_FORMAT). Print Settings "Print the PDF" is switched on, so
+that the Print button prints the server's PDF (head and page number on every page).
 Reason: The user asked for only those three formats on the quotation, the Draft PI and the Final PI.
 """
 
@@ -233,6 +235,8 @@ HIDDEN_PRINT_FORMATS = (
 	"Sales Order Classic",
 	"Sales Order Modern",
 	"Sales Order Modern with Images",
+	# 2026-11-13 (later): ERPNext's own "Proforma Invoice" of the Sales Order (on the live site)
+	"Proforma Invoice",
 )
 
 ERPNEXT_FIELDS = {
@@ -825,6 +829,13 @@ def setup_erpnext_fields():
 	for print_format in HIDDEN_PRINT_FORMATS:
 		if frappe.db.get_value("Print Format", print_format, "disabled") == 0:
 			frappe.db.set_value("Print Format", print_format, "disabled", 1, update_modified=False)
+
+	# 2026-11-13: Print Settings "Print the PDF" on: the Print button prints the PDF made on the
+	# server (letter head, the Classic head box and "Page n of m" on every page) instead of the
+	# browser's own print of the page, which repeats a head only while it is under about a quarter
+	# of the page and so left the first page empty and no head on the others. Frappe's own setting.
+	if frappe.get_meta("Print Settings").has_field("print_generated_pdf"):
+		frappe.db.set_single_value("Print Settings", "print_generated_pdf", 1)
 
 
 def place_sub_item_no_first(doctype="Quotation Item"):
