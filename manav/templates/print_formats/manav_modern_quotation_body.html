@@ -344,6 +344,14 @@
 	Draft PI / Final PI prints (manav_proforma_invoice.html).
 	Reason: The user asked for less line spacing in the quotation, Draft PI and Final PI prints, and
 	found the signature still printed on the Draft PI with Print Signature unticked.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Quotation prints (machine_price_line: Manav Modern Quotation, Quotation with HSN Code): the
+	CIF and other charges are rows under the last machine's points, "CIF Charges - <port> . . . .
+	US$ 5000.00" in the price column with the machine price's currency mark, as on Manav Classic
+	Quotation; the separate charge lines after the table are left for a quotation without a machine.
+	Reason: The user asked for the CIF charges and port in Modern as in the Classic format.
 -#}
 {#- one point of a description: "!text" (a bold list item, 2026-11-03) in bold, else as it is -#}
 {%- macro point_html(point) -%}{%- if (point or "").startswith("!") -%}<b>{{ point[1:] }}</b>{%- else -%}{{ point }}{%- endif -%}{%- endmacro -%}
@@ -485,6 +493,20 @@
 	</tr>
 	{% endif %}
 	{% if q.is_jagdeep %}{{ price_row }}{% endif %}
+	{#- 2026-11-13: under the last machine's points, the CIF charges and other charges as on Manav
+	    Classic Quotation: "CIF Charges - <port> . . . .  US$ 5000.00" in the price column, with the
+	    machine price's currency mark (US$ / Rs.) instead of the code (USD); printed here instead of
+	    the separate lines after the table (the user's request) -#}
+	{% if kind == "machine" and q.machine_price_line and q.charge_lines and q.machines and line == q.machines[-1] %}
+	{% for charge in q.charge_lines %}
+	{% set amount = charge[1].split(" ", 1) %}
+	<tr class="mm-machine-price-row mm-charge-row">
+		<td></td>
+		<td class="mm-mprice-text mm-charge-text"{% if hsn %} colspan="2"{% endif %}>{{ charge[0] }} <span class="mm-charge-dots">{{ " ." * 120 }}</span></td>
+		<td class="mm-num mm-mprice-amount">{{ {"USD": "US$", "INR": "Rs."}.get(amount[0], amount[0]) }} {{ amount[1] if amount | length > 1 else "" }}</td>
+	</tr>
+	{% endfor %}
+	{% endif %}
 {%- endmacro -%}
 {#- A line table: entries is a list of [line, title]. Each line is a piece of its own (a small
     table of one row, the first with the column headings), so that a page can end between two
@@ -624,6 +646,9 @@
 	.print-format .mm .mm-lines tr.mm-machine-price-row > td { padding-top: 4px !important; padding-bottom: 2px !important; border-bottom: 0 !important; }
 	.print-format .mm .mm-lines tr.mm-machine-price-row > td.mm-mprice-text,
 	.print-format .mm .mm-lines tr.mm-machine-price-row > td.mm-mprice-amount { font-size: 10pt; font-weight: 800; color: #000; }
+	/* 2026-11-13: a charge row (CIF ...) under the last machine: dotted leader cut at the cell's edge */
+	.print-format .mm .mm-lines tr.mm-charge-row > td.mm-charge-text { overflow: hidden; white-space: nowrap; max-width: 0; }
+	.mm .mm-charge-dots { font-weight: 400; color: #555; letter-spacing: 1px; }
 
 	.mm .mm-sum { margin-top: 14px; page-break-inside: avoid; }
 	.print-format .mm .mm-sum > tbody > tr > td { width: 50%; }
@@ -980,7 +1005,9 @@
 	    a table, as the PDF maker knows no flexbox -#}
 	{#- 2026-11-12 (later): with machine_price_line the price is under each machine; only the CIF and
 	    other charges are printed here, as on Manav Classic Quotation -#}
-	{% if q.price_line and (not q.machine_price_line or q.charge_lines) %}
+	{#- 2026-11-13: with machine_price_line the charges are under the last machine (line_row), so
+	    this block is the PI prints' price line only (and a quotation's charges when it has no machine) -#}
+	{% if q.price_line and (not q.machine_price_line or (q.charge_lines and not q.machines)) %}
 	</div><!--mm-cut--><div class="mm">
 	<table class="mm-price-line">
 		{% if not q.machine_price_line %}

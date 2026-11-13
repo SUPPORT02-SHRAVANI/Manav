@@ -4,6 +4,21 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Modern / HSN quotation: CIF charges placed as on Classic.**
+
+- Summary: in Manav Modern Quotation and Quotation with HSN Code the CIF charges (and other charges)
+  are rows under the last machine's points, "CIF Charges - <port> . . . .  US$ 1500.00" in the price
+  column with the machine price's currency mark (US$ / Rs.), as on Manav Classic Quotation; they were
+  a separate, larger line after the table with the currency code (USD). A quotation without a
+  machine line keeps the separate line. The PI prints are unchanged.
+- Reason: the user showed 26QX000006 (Modern) and asked for the CIF charges and port as in Classic.
+- Files: `manav/templates/print_formats/manav_modern_quotation_body.html`.
+- Testing (manav.local): 26QX000091 (VF-9/50, CIF 1500) in Modern and with HSN Code drawn page by
+  page: the CIF row under the points, before the sub-items, US$ 1500.00 in the price column. Modern
+  and HSN render (HTML and PDF) for 26QX000089 / 26QX000091 / 26QX000078; the 5 Sales Order formats
+  render for 26FPI00003.
+- Pending: deploy.
+
 **Quotation / Draft PI / Final PI: a chosen Terms template fills empty Terms.**
 
 - Summary (written in another session, pushed on the user's request): `quotation.fill_terms` (validate
