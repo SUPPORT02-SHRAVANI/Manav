@@ -159,6 +159,14 @@
 // Change: The Item Code dropdown of the Items table offers every sales item of the Item Master on
 // every line; it is no longer limited to the principal's Item Group (or Options on sub-item lines).
 // Reason: The user asked for the full Item Master in the dropdown when adding a quotation item.
+//
+// CHANGE NOTE
+// Date: 2026-11-13
+// Change: CIF Charges / CIF Port that this form wrote itself (a principal that is CIF by default,
+// e.g. MACHINES: 1500, Chennai Sea Port) are cleared again when the principal is changed to one that
+// is not CIF by default (e.g. JAGDEEP). Amounts the user typed are kept.
+// Reason: The user asked for the CIF line to print only when CIF was filled on the quotation; a
+// Jagdeep quotation started as MACHINES kept the MACHINES CIF and printed it.
 
 const MANAV_QUOTATION = "manav.manav.quotation";
 
@@ -199,7 +207,19 @@ const quotation_events = {
 			// 2026-11-04: no tick any more: its CIF Charges (1500 without a default) are written,
 			// and custom_cif_charges below fills the port and Ex-Works From
 			if (defaults.custom_is_cif && !flt(frm.doc.custom_cif_charges) && frm.doc.docstatus === 0) {
-				frm.set_value("custom_cif_charges", flt(defaults.custom_cif_charges) || DEFAULT_CIF_CHARGES);
+				const charges = flt(defaults.custom_cif_charges) || DEFAULT_CIF_CHARGES;
+				frm.set_value("custom_cif_charges", charges);
+				// 2026-11-13: remembered, so that a change to a non-CIF principal can take it back
+				frm.manav_auto_cif = { charges: charges, port: defaults.custom_cif_port || "FTWZ Chennai" };
+			} else if (!defaults.custom_is_cif && frm.doc.docstatus === 0 && frm.manav_auto_cif) {
+				// 2026-11-13: the new principal is not CIF by default: CIF written by this form (not
+				// typed by the user) is cleared, so the print shows no CIF line
+				const auto = frm.manav_auto_cif;
+				frm.manav_auto_cif = null;
+				if (flt(frm.doc.custom_cif_charges) === auto.charges) {
+					frm.set_value("custom_cif_charges", 0);
+					if (frm.doc.custom_cif_port === auto.port) frm.set_value("custom_cif_port", "");
+				}
 			}
 			// 2026-11-04: Ex-Works From starts the price line ("Price <Ex-Works From> <Port> (1 NOS)"):
 			// an empty one gets the principal's Ex-Works From, else its Price Basis; the user changes it
@@ -230,7 +250,11 @@ const quotation_events = {
 		load_type_defaults(frm).then((defaults) => {
 			defaults = defaults || {};
 			// 2026-11-03: port FTWZ Chennai when the principal has none; Ex-Works From from the principal
-			if (!frm.doc.custom_cif_port) frm.set_value("custom_cif_port", defaults.custom_cif_port || "FTWZ Chennai");
+			if (!frm.doc.custom_cif_port) {
+				frm.set_value("custom_cif_port", defaults.custom_cif_port || "FTWZ Chennai");
+				// 2026-11-13: the port written here is the form's, like the charges (manav_auto_cif)
+				if (frm.manav_auto_cif) frm.manav_auto_cif.port = defaults.custom_cif_port || "FTWZ Chennai";
+			}
 			if (defaults.custom_ex_works_from && frm.fields_dict.custom_ex_works_from && !frm.doc.custom_ex_works_from) {
 				frm.set_value("custom_ex_works_from", defaults.custom_ex_works_from);
 			}

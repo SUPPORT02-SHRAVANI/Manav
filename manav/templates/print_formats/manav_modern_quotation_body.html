@@ -323,6 +323,18 @@
 	Change: Jagdeep quotations (q.is_jagdeep): the machine's "Prices : ...  Rs. <amount>" row is
 	printed after its points (others keep it under the name); a 0 amount is left blank (price_zero).
 	Reason: The user marked the old Jagdeep print: the price below the points, then the terms.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: An option (sub-item) row prints its description in a column beside its code (code 30%,
+	description the rest of the cell), not under the code. Machine rows are unchanged.
+	Reason: The user asked for the options' description in the next column, not below.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: No lines inside a machine's points (the dark_lines rule and Frappe's table borders no
+	longer draw a line under / beside each point).
+	Reason: The user asked for the lines in the points list to be removed.
 -#}
 {#- one point of a description: "!text" (a bold list item, 2026-11-03) in bold, else as it is -#}
 {%- macro point_html(point) -%}{%- if (point or "").startswith("!") -%}<b>{{ point[1:] }}</b>{%- else -%}{{ point }}{%- endif -%}{%- endmacro -%}
@@ -394,8 +406,17 @@
 	<tr{% if kind %} class="mm-{{ kind }}-row"{% endif %}>
 		<td class="mm-no">{{ number }}{% if kind != "option" %}.{% endif %}</td>
 		<td class="mm-desc">
+			{% if kind == "machine" %}
 			<div class="mm-code">{{ line.code or "" }}</div>
 			{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}
+			{% else %}
+			{#- 2026-11-13: an option's description in the next column beside its code, not under it
+			    (the user's request); a table, not flex, so the PDF maker lays it out the same -#}
+			<table class="mm-opt-line"><tr>
+				<td class="mm-opt-code"><div class="mm-code">{{ line.code or "" }}</div></td>
+				<td class="mm-opt-text">{% if title and title != line.code %}<div class="mm-sub">{{ title }}</div>{% endif %}</td>
+			</tr></table>
+			{% endif %}
 		</td>
 		{% if hsn %}<td class="mm-hsn">{{ line.hsn or "" }}</td>{% endif %}
 		{#- 2026-11-12: option_amount_only - a sub-item (kind "option", or a loose option "") shows
@@ -509,6 +530,11 @@
 <style>
 	.mm { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1a1a1a; line-height: 1.4; }
 	.mm table { width: 100%; border-collapse: collapse; }
+	/* 2026-11-13: an option row: code | description side by side inside the description cell */
+	.mm table.mm-opt-line { table-layout: fixed; }
+	.print-format .mm .mm-opt-line td { padding: 0 !important; border: 0 !important; vertical-align: top; }
+	.print-format .mm .mm-opt-line td.mm-opt-code { width: 30%; padding-right: 8px !important; word-break: break-word; }
+	.mm .mm-opt-line .mm-sub { margin-top: 0; }
 	/* Frappe's print style forces 6px padding on every cell and a margin on every paragraph; the
 	   !important rules below set the paddings this layout needs. */
 	.print-format .mm td, .print-format .mm th { padding: 0 !important; vertical-align: top; line-height: 1.4; border: 0; }
@@ -680,6 +706,14 @@
 	.print-format .mm .mm-terms-table tr.mm-term-more td { border-top: 0; }
 </style>
 {% endif %}
+{#- 2026-11-13: no lines inside a machine's points (two columns of "* ..."): neither the dark lines
+    above nor Frappe's table borders; the user asked for the lines in the points removed -#}
+<style>
+	.print-format .mm .mm-lines .mm-points td,
+	.print-format .mm .mm-lines .mm-points-wrap td,
+	.print-format .mm .mm-lines .mm-points-wrap > tbody > tr > td { border: 0 !important; }
+	.mm table.mm-points, .mm table.mm-points-wrap { border: 0 !important; }
+</style>
 {% set head_line = "#1f2937" if q.dark_lines else "#9ca3af" %}
 {% set head_inner_line = "#4b5563" if q.dark_lines else "#d1d5db" %}
 

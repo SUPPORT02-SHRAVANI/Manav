@@ -274,7 +274,8 @@
 	<table class="box" style="margin-top: -1px;">
 		<tr>
 			<td style="width: 16%;" class="small">FMT: QUOT-11</td>
-			<td class="small">CC : &nbsp;{{ q.sales_engineer }}</td>
+			{#- 2026-11-13: the Signed By sales person (was the Sales Engineer), the user's request -#}
+			<td class="small">CC : &nbsp;{{ q.signer }}</td>
 			<td style="width: 28%;" class="small right">E &amp; O.E</td>
 		</tr>
 	</table>

@@ -4,6 +4,57 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Quotation prints: no lines in the points, CC = Signed By, page numbers on the builder formats;
+CIF written by the form taken back on a change of principal; signatures on live.**
+
+- Summary:
+  - Manav Modern Quotation: no lines inside a machine's points (two columns of "* ...").
+  - Manav Classic Quotation: "CC :" prints the Signed By sales person (was the Sales Engineer).
+  - Manav Quotation Classic / Bordered (print-builder): Page Number "Bottom Right" (was "Hide"),
+    so their PDF has "Page n of m" like the other formats.
+  - Quotation form (`quotation.js`): CIF Charges / Port that the form wrote for a principal that is
+    CIF by default (MACHINES: 1500, Chennai Sea Port) are cleared when the principal is changed to
+    one that is not (e.g. JAGDEEP); amounts the user typed are kept. The print already shows the CIF
+    line only when CIF Charges has an amount.
+  - Live data (mmblr.frappe.cloud): the 19 Sales Persons' signature images copied from manav.local
+    (live had none, so the Print Signature switch had nothing to show; list in
+    `C:\e2e-out\signatures-copied.json` on the tester's PC); draft 26QX000003 (Jagdeep, started as
+    MACHINES): CIF Charges 1500 / Chennai Sea Port cleared.
+- Reason: the user asked for the lines in the points removed, the Signed By name in CC, the header
+  and "Page 1 of 3" on every page of every print, the CIF line only when CIF was filled, and
+  reported that the Print Signature switch did nothing.
+- Files: `manav/templates/print_formats/manav_modern_quotation_body.html`,
+  `manav/templates/print_formats/manav_classic_quotation_body.html`,
+  `manav/manav/print_format/manav_quotation_classic/manav_quotation_classic.json`,
+  `manav/manav/print_format/manav_quotation_bordered/manav_quotation_bordered.json`,
+  `manav/public/js/quotation.js`.
+- Testing: live PDFs of 26QX000002 / 26QX000003 in all 7 formats checked page by page (pypdf):
+  Classic, Modern, Banded, Colour, Quotation with HSN Code have the letter head image(s) and
+  "Page n of m" on every page; Quotation Classic / Bordered have the letter head but no page number
+  (fixed in the JSON; their Page Number cannot be changed on the live site, HTTP 417, as they are
+  app formats). Live Print Signature switch: Classic and Modern print the signature when ticked and
+  not when unticked (26QX000002, restored to its value). 26QX000003 Classic after the CIF clear: no
+  CIF line. Local Modern screenshot: no lines in the points. `node --check` of quotation.js and a
+  Jinja2 parse of the two templates: OK. Not run: the quotation form in a browser (principal change);
+  the builder formats' page number (needs deploy and migrate). manav.local's own PDFs have no
+  letter head / page number in any format (its wkhtmltopdf does not draw header-html /
+  footer-html); live does, so this was not changed.
+- Pending: deploy (and migrate for the two print format JSONs). 26QX000003 still has the Haas
+  Factory Outlet letter head and the MACHINES-era values the principal change did not reset.
+
+**Modern quotation print: an option's description beside its code, not under it.**
+
+- Summary: in Manav Modern Quotation an option (sub-item) row prints code | description side by side
+  (a two-cell table inside the description cell: code 30%, description the rest); machine rows are
+  unchanged.
+- Reason: the user asked for the options' description in the next column instead of below the code.
+- Files: `manav/templates/print_formats/manav_modern_quotation_body.html`.
+- Testing (manav.local): all 7 enabled Quotation formats render (HTML and PDF) for 26QX000089,
+  26QX000078 and 26QX000091: 21/21 pass. Screenshot of 26QX000089 (Modern) looked at: 7 options with
+  code and description on one row, a long description wraps in its own column. Not looked at: the
+  PDF pages themselves (no PDF viewer here).
+- Pending: deploy to Frappe Cloud.
+
 **Jagdeep quotation print (Classic): terms fixed, old Jagdeep layout, no port, no 0 amount.**
 
 - Summary:
