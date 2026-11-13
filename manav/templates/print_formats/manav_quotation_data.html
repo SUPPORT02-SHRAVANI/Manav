@@ -90,6 +90,14 @@
 	cells (it turns a line break inside a cell into a new cell) has those cells joined again.
 	Reason: The user showed the old Jagdeep print and asked for the Classic print to match it: the
 	terms printed broken, Jagdeep mostly has no port, and a 0 CIF / price must not print as zero.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Also gathers a Draft PI or a Final PI (Sales Order), for Manav Classic Draft PI / Manav
+	Classic Proforma Invoice: q.title ("Quotation", "Draft Proforma Invoice", "Proforma Invoice");
+	Ex-Works From and the CIF fields are read under the Draft PI's names too (ex_works_from, is_cif,
+	cif_charges, cif_port).
+	Reason: The user asked for the same three print formats on the Draft PI and the Final PI.
 -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] | trim }}{%- endmacro -%}
 {#- text of a field that may be stored as HTML: paragraph ends become new lines, tags are removed -#}
@@ -179,8 +187,9 @@
 	],
 	"currency": currency,
 	"currency_label": currency_label,
-	"price_basis": ([doc.get("custom_ex_works_from"), None if is_jagdeep else doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
+	"price_basis": ([doc.get("custom_ex_works_from") or doc.get("ex_works_from"), None if is_jagdeep else doc.get("custom_price_port")] | select | map("trim") | select | join(" ")) or (frappe.db.get_value("Quotation Type", doc.custom_quotation_type, "price_basis") if doc.custom_quotation_type else None),
 	"is_jagdeep": is_jagdeep,
+	"title": {"Draft PI": "Draft Proforma Invoice", "Sales Order": "Proforma Invoice"}.get(doc.doctype, "Quotation"),
 	"machines": [],
 	"loose_options": [],
 	"subtotal": doc.get_formatted("net_total"),
@@ -289,14 +298,16 @@
 {%- endfor -%}
 
 {#- CIF charges (later 2026-10-29): a line, and added to the printed grand total -#}
-{%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges")) if doc.get("custom_is_cif") else 0 -%}
+{#- 2026-11-13: the Draft PI names these fields without custom_ (is_cif, cif_charges, cif_port) -#}
+{%- set cif_port = doc.get("custom_cif_port") or doc.get("cif_port") -%}
+{%- set cif_amount = frappe.utils.flt(doc.get("custom_cif_charges") or doc.get("cif_charges")) if (doc.get("custom_is_cif") or doc.get("is_cif")) else 0 -%}
 {%- if cif_amount -%}
 	{#- 2026-11-03: "CIF Charges upto <port>" (was "CIF Charges - <port>"), as on the old print -#}
 	{#- 2026-11-04: "CIF Charges - <port>" again, e.g. "CIF Charges - Chennai Sea Port" (the user's wording) -#}
-	{%- set _ = q.taxes.append(["CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), frappe.utils.fmt_money(cif_amount, currency=doc.currency), amount_plain(cif_amount)]) -%}
+	{%- set _ = q.taxes.append(["CIF Charges" ~ ((" - " ~ cif_port) if cif_port else ""), frappe.utils.fmt_money(cif_amount, currency=doc.currency), amount_plain(cif_amount)]) -%}
 	{%- set cif_total = frappe.utils.flt(doc.grand_total) + cif_amount -%}
 	{%- set _ = q.update({"grand_total": frappe.utils.fmt_money(cif_total, currency=doc.currency), "grand_total_plain": amount_plain(cif_total), "in_words": frappe.utils.money_in_words(cif_total, doc.currency)}) -%}
-	{%- set _ = q.update({"cif_line": "CIF Charges" ~ ((" - " ~ doc.custom_cif_port) if doc.get("custom_cif_port") else ""), "cif_digits": currency_label ~ " " ~ ("%.2f" | format(cif_amount))}) -%}
+	{%- set _ = q.update({"cif_line": "CIF Charges" ~ ((" - " ~ cif_port) if cif_port else ""), "cif_digits": currency_label ~ " " ~ ("%.2f" | format(cif_amount))}) -%}
 {%- endif -%}
 
 {#- payment schedule and validity -#}

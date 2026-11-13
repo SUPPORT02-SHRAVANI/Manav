@@ -116,6 +116,14 @@
 	Reason: The user asked for the "Prices : ..." line on the quotation only and this line on the
 	Draft PI and Final PI.
 	Reason: The user asked for the word Ex-Works not in bold.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: The HSN Code column can be switched off: a print format that sets pi_show_hsn = False
+	before including this file prints without it (Manav Modern Draft PI / Manav Modern Proforma
+	Invoice); without the setting the column is printed, as before (... with HSN Code).
+	Reason: The user asked for the same three print formats on the Draft PI and Final PI as on the
+	quotation: Classic, with HSN Code and Modern.
 -#}
 {#- a sales person whose name was taken already is stored as "NAME (CODE)"; the code is not printed -#}
 {%- macro person(name) -%}{{ (name or "").split(" (")[0] }}{%- endmacro -%}
@@ -273,7 +281,7 @@
 	"designation": frappe.db.get_value("Employee Master", signer_code, "designation") if signer_code else None,
 	"no_specs": True,
 	"no_page_per_machine": True,
-	"show_hsn": True,
+	"show_hsn": pi_show_hsn if pi_show_hsn is defined else True,
 	"doc_title": "PROFORMA INVOICE" if is_final_pi else "DRAFT PROFORMA INVOICE",
 	"to_label": "Invoice To",
 	"number_label": "PI No." if is_final_pi else "Draft PI No.",

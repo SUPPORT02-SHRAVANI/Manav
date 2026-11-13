@@ -184,6 +184,15 @@ Change: On the Quotation, "Machine Number" (custom_machine_number), "Customer's 
 stay. CIF Port is still filled from the principal's default (else FTWZ Chennai, quotation.fill_cif_defaults)
 and printed in "CIF Charges - <port>". The Final PI (Sales Order) keeps its CIF Port.
 Reason: The user asked to remove these fields from the quotation; the quotation already has a Port.
+
+CHANGE NOTE
+Date: 2026-11-13
+Change: Each of Quotation, Draft PI and Final PI (Sales Order) keeps three print formats: Classic,
+with HSN Code and Modern. Disabled after every migrate (HIDDEN_PRINT_FORMATS): Manav Banded /
+Colour Quotation, Manav Quotation Classic / Bordered, Manav Draft PI, Manav Proforma Invoice
+(replaced by Draft PI / Proforma Invoice with HSN Code, the same print) and ERPNext's four Sales
+Order formats. The Final PI opens with "Proforma Invoice with HSN Code" (DEFAULT_PI_PRINT_FORMAT).
+Reason: The user asked for only those three formats on the quotation, the Draft PI and the Final PI.
 """
 
 import json
@@ -211,6 +220,19 @@ HIDDEN_PRINT_FORMATS = (
 	# "Quotation Classic" / "Quotation Bordered", without "Manav")
 	"Quotation Classic",
 	"Quotation Bordered",
+	# 2026-11-13: three formats per document (Classic, with HSN Code, Modern), the user's request
+	"Manav Banded Quotation",
+	"Manav Colour Quotation",
+	"Manav Quotation Classic",
+	"Manav Quotation Bordered",
+	# replaced by "Draft PI with HSN Code" / "Proforma Invoice with HSN Code" (the same print)
+	"Manav Draft PI",
+	"Manav Proforma Invoice",
+	# ERPNext's own Sales Order formats
+	"Sales Order Bordered",
+	"Sales Order Classic",
+	"Sales Order Modern",
+	"Sales Order Modern with Images",
 )
 
 ERPNEXT_FIELDS = {
@@ -721,7 +743,8 @@ for _doctype in ("Quotation", "Sales Order"):
 	)
 
 # The print format a Sales Order (PI) opens with, when it is on the site.
-DEFAULT_PI_PRINT_FORMAT = "Manav Proforma Invoice"
+# 2026-11-13: was "Manav Proforma Invoice" (now disabled); the same print under its new name
+DEFAULT_PI_PRINT_FORMAT = "Proforma Invoice with HSN Code"
 
 
 def setup_erpnext_fields():

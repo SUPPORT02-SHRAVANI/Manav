@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 0,
  "creation": "2026-10-29 12:00:00.000000",
- "default_print_format": "Manav Draft PI",
+ "default_print_format": "Draft PI with HSN Code",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
@@ -383,7 +383,7 @@
    "link_fieldname": "custom_draft_pi"
   }
  ],
- "modified": "2026-11-04 13:00:00.000000",
+ "modified": "2026-11-13 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Manav",
  "name": "Draft PI",

@@ -335,6 +335,15 @@
 	Change: No lines inside a machine's points (the dark_lines rule and Frappe's table borders no
 	longer draw a line under / beside each point).
 	Reason: The user asked for the lines in the points list to be removed.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Option rows closer together (3px above and below) with the code on one line beside its
+	description and level with it; Print Signature unticked leaves an empty signing space (the
+	signer's name in italics was printed there in place of a missing image). Also used by the
+	Draft PI / Final PI prints (manav_proforma_invoice.html).
+	Reason: The user asked for less line spacing in the quotation, Draft PI and Final PI prints, and
+	found the signature still printed on the Draft PI with Print Signature unticked.
 -#}
 {#- one point of a description: "!text" (a bold list item, 2026-11-03) in bold, else as it is -#}
 {%- macro point_html(point) -%}{%- if (point or "").startswith("!") -%}<b>{{ point[1:] }}</b>{%- else -%}{{ point }}{%- endif -%}{%- endmacro -%}
@@ -531,10 +540,15 @@
 	.mm { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9pt; color: #1a1a1a; line-height: 1.4; }
 	.mm table { width: 100%; border-collapse: collapse; }
 	/* 2026-11-13: an option row: code | description side by side inside the description cell */
+	/* (later the same day) the rules name .mm-lines so that they outweigh ".mm-lines td" below,
+	   whose 6px padding pushed the code down and made each option row tall; the code keeps to
+	   one line (it wrapped at every hyphen in the narrower PI column) */
 	.mm table.mm-opt-line { table-layout: fixed; }
-	.print-format .mm .mm-opt-line td { padding: 0 !important; border: 0 !important; vertical-align: top; }
-	.print-format .mm .mm-opt-line td.mm-opt-code { width: 30%; padding-right: 8px !important; word-break: break-word; }
+	.print-format .mm .mm-lines .mm-opt-line td { padding: 0 !important; border: 0 !important; vertical-align: top; line-height: 1.3; }
+	.print-format .mm .mm-lines .mm-opt-line td.mm-opt-code { width: 34%; padding-right: 8px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.mm .mm-opt-line .mm-sub { margin-top: 0; }
+	/* option rows a little closer together (the user asked for less line spacing) */
+	.print-format .mm .mm-lines tr.mm-option-row > td { padding-top: 3px !important; padding-bottom: 3px !important; }
 	/* Frappe's print style forces 6px padding on every cell and a margin on every paragraph; the
 	   !important rules below set the paddings this layout needs. */
 	.print-format .mm td, .print-format .mm th { padding: 0 !important; vertical-align: top; line-height: 1.4; border: 0; }
@@ -1083,7 +1097,10 @@
 		    the company name at the bottom of every print and Account Manager removed) -#}
 		<div class="mm-label" style="font-size: 9pt;">For {{ q.company or "" }}</div>
 		{#- 2026-11-03: the signer's Signature image (Sales Person) instead of the name in italics -#}
-		{% if q.signature %}<div style="margin: 8px 0 2px 0;"><img src="{{ q.signature }}" style="max-height: 44px; max-width: 200px;"></div>
+		{#- 2026-11-13: Print Signature unticked: an empty signing space; the name in italics (the
+		    stand-in when the signer has no image) was still printed and looked like a signature -#}
+		{% if doc.get("custom_print_signature") == 0 %}<div style="height: 40px;"></div>
+		{% elif q.signature %}<div style="margin: 8px 0 2px 0;"><img src="{{ q.signature }}" style="max-height: 44px; max-width: 200px;"></div>
 		{% else %}<div class="mm-sign-name">{{ q.signer or "" }}</div>{% endif %}
 		<div class="mm-label">{{ q.signer or "" }}</div>
 		<div class="mm-muted" style="text-transform: uppercase; font-size: 7.5pt;">{{ q.designation or "" }}</div>

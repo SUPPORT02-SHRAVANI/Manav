@@ -75,6 +75,14 @@ custom_standard_accessories under the Items (public/js/standard_accessories.js);
 (terms_section is a Tab Break, was a collapsible section), as on the quotation.
 Reason: The user asked to remove the CIF tick, for the Standard Accessories table, and for a Terms
 tab like the quotation's.
+
+CHANGE NOTE
+Date: 2026-11-13
+Change: A closed Draft PI (Final PI made) may still have its Print Signature changed: check_not_closed
+lets a save through when that is the only change (only_print_signature_changed). Its default print
+format is "Draft PI with HSN Code" (draft_pi.json; the same print as Manav Draft PI, now disabled).
+Reason: The print page's Print Signature switch saves the tick on the document; on a closed Draft PI
+that save was refused, so the signature kept printing although the switch was unticked.
 """
 
 import frappe
@@ -113,6 +121,10 @@ class DraftPI(Document):
 		if self.is_new():
 			return
 		final_pi = frappe.db.get_value("Draft PI", self.name, "final_pi")
+		# 2026-11-13: the print page's Print Signature switch is a print choice, not a change of the
+		# Draft PI: it is saved even on a closed Draft PI
+		if final_pi and self.only_print_signature_changed():
+			return
 		if final_pi:
 			frappe.throw(
 				_("Final PI {0} has been made from this Draft PI. Make the changes on the Final PI.").format(
@@ -120,6 +132,25 @@ class DraftPI(Document):
 				),
 				title=_("Draft PI closed"),
 			)
+
+	def only_print_signature_changed(self):
+		"""True when this Draft PI differs from the saved one in Print Signature only (added 2026-11-13):
+		every other field unchanged and every table the same rows with the same values."""
+		before = self.get_doc_before_save()
+		if not before or not self.has_value_changed("custom_print_signature"):
+			return False
+		skip = {"modified", "modified_by", "custom_print_signature"}
+		for df in self.meta.fields:
+			if df.fieldname in skip:
+				continue
+			if df.fieldtype in frappe.model.table_fields:
+				mine = [row.as_dict(no_default_fields=True, convert_dates_to_str=True) for row in self.get(df.fieldname)]
+				stored = [row.as_dict(no_default_fields=True, convert_dates_to_str=True) for row in before.get(df.fieldname)]
+				if mine != stored:
+					return False
+			elif df.fieldtype not in frappe.model.no_value_fields and self.has_value_changed(df.fieldname):
+				return False
+		return True
 
 	def set_amounts(self):
 		"""Amount = quantity x rate on every line; Total and Total Quantity of the lines. No taxes."""

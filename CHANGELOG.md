@@ -4,6 +4,49 @@ Changes to the Manav app, newest first.
 
 ## 2026-11-13
 
+**Three print formats on Quotation, Draft PI and Final PI; Classic head on every page; closer
+option rows; Print Signature on a closed Draft PI.**
+
+- Summary:
+  - Print formats: each document keeps Classic, with HSN Code and Modern. New (app records):
+    "Manav Classic Draft PI", "Draft PI with HSN Code", "Manav Modern Draft PI", "Manav Classic
+    Proforma Invoice", "Proforma Invoice with HSN Code", "Manav Modern Proforma Invoice". The
+    Classic ones use the quotation's Classic templates (`manav_quotation_data.html` now also reads
+    a Draft PI / Sales Order: title, and the Draft PI's ex_works_from / is_cif / cif_charges /
+    cif_port); the Modern ones are the PI template without its HSN Code column (`pi_show_hsn`).
+    Disabled after every migrate (`erpnext_fields.HIDDEN_PRINT_FORMATS`): Manav Banded / Colour
+    Quotation, Manav Quotation Classic / Bordered, Manav Draft PI, Manav Proforma Invoice and
+    ERPNext's Sales Order Bordered / Classic / Modern / Modern with Images. Defaults: Draft PI
+    "Draft PI with HSN Code" (draft_pi.json), Final PI "Proforma Invoice with HSN Code"
+    (DEFAULT_PI_PRINT_FORMAT); both print as before.
+  - Classic (quotation and PI): the title, the customer / document box and the column heads are
+    repeated at the top of every page under the letter head (`manav_page_frame.html`:
+    frame_head_extra, frame_head_extra_mm, frame_lh_mm; the PDF's top margin grows with it).
+  - Modern and the PI prints: option rows closer (3px), the code on one line beside its
+    description (a CSS rule of lower weight had padded the inner cells by 6px).
+  - Print Signature unticked: an empty signing space in the Modern / PI prints (the signer's name
+    in italics was printed instead of a missing image). A closed Draft PI (Final PI made) accepts a
+    change of Print Signature alone (`DraftPI.only_print_signature_changed`); before, the print
+    page's switch could not save it there and the signature kept printing.
+- Reason: the user asked for only three formats (Classic, with HSN Code, Modern) on the quotation,
+  the Draft PI and the Final PI, for the Classic box on every printed page, for less line spacing
+  in the prints, and found the Draft PI signature printed with the switch unticked.
+- Files: `manav/templates/print_formats/manav_page_frame.html`, `manav_classic_quotation_body.html`,
+  `manav_quotation_data.html`, `manav_modern_quotation_body.html`, `manav_proforma_invoice.html`;
+  `manav/manav/print_format/` six new folders; `manav/manav/erpnext_fields.py`;
+  `manav/manav/doctype/draft_pi/draft_pi.py`, `draft_pi.json`.
+- Testing (manav.local): the six new formats' HTML inserted as temporary print formats and rendered
+  (HTML and PDF) on 26DPI00004 / 26FPI00003, plus Classic and Modern quotation on 26QX000089: 7/7
+  pass, then deleted; screenshots looked at (Classic Proforma Invoice layout, Modern Draft PI
+  option rows). All existing formats render again: Quotation 14/14, Draft PI 1/1, Sales Order 5/5.
+  Closed Draft PI 26DPI00004: Print Signature 0 saved and the print has no signature image, then
+  restored to 1; a change of Ref. No. on it is still refused ("Draft PI closed"). `py_compile` of
+  draft_pi.py and erpnext_fields.py: OK. Not checked: the repeated Classic head in the server PDF
+  (manav.local's wkhtmltopdf draws no header-html; check on live after the deploy); the browser's
+  own print repeats a head only while it is at most about a quarter of the page high.
+- Pending: deploy and migrate (new formats, disabled formats and the Draft PI default come with
+  migrate).
+
 **Quotation prints: no lines in the points, CC = Signed By, page numbers on the builder formats;
 CIF written by the form taken back on a change of principal; signatures on live.**
 

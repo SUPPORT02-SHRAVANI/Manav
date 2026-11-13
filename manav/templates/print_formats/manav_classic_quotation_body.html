@@ -66,6 +66,14 @@
 	its rows split by the text editor are joined again (mend_terms in manav_quotation_data.html).
 	Reason: The user showed the old Jagdeep print and asked for the Classic print in that layout,
 	with the terms fixed, no port and no 0 amount printed.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: The title "Quotation", the customer / document box and the column heads are repeated at
+	the top of every page under the letter head (frame_head_extra, manav_page_frame.html); the
+	address there runs on with commas; the letter head is at most 22 mm high. "CC :" prints the
+	Signed By sales person.
+	Reason: The user asked for that box on every printed page, and for the signer's name in CC.
 -#}
 <style>
 	.mcq { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -124,21 +132,34 @@
 	.mcq .terms table td:nth-child(1) { width: 5%; }
 	.mcq .terms table td:nth-child(2) { width: 28%; font-weight: bold; }
 	.mcq .small { font-size: 8pt; }
+	/* 2026-11-13: in the PDF the column heads are in the repeated head, a little above the page's
+	   content, so the first machine closes its own top */
+	.visible-pdf .mcq > .machine:first-child { border-top: 1.5px solid {{ theme.dark }}; }
 </style>
 
 {#- 2026-11-04: the page is drawn into frame_body; manav_page_frame.html (end of this file) puts the
     letter head at the top and its footer and "Page n of m" at the foot of every page -#}
-{% set frame_body %}
+{#- 2026-11-13: the title, the customer / document box and the column heads are repeated at the top
+    of every page, under the letter head (frame_head_extra of manav_page_frame.html), as the user
+    asked. The address runs on in one line (commas) to keep the head short; frame_head_extra_mm is
+    its height for the PDF's top margin: title 8 mm, box (6 lines of references, or the customer's
+    lines with about 3.6 mm per 55 letters of address), column heads 8 mm. -#}
+{% set head_address = (q.address or "") | replace("<br>\n", ", ") | replace("<br/>", ", ") | replace("<br>", ", ") | replace("\n", " ") | trim %}
+{% set head_address = head_address[:-1] if head_address.endswith(",") else head_address %}
+{% set address_lines = [[((frappe.utils.strip_html(head_address) | length) / 55) | round(0, "ceil") | int, 1] | max, 4] | min %}
+{% set frame_head_extra_mm = 8 + ([27, 15 + 3.6 * address_lines + (4 if q.phone else 0)] | max) + 8 + 2 %}
+{% set frame_lh_mm = 22 %}
+{% set frame_head_extra %}
 <div class="mcq">
-	<div class="title">Quotation</div>
+	<div class="title">{{ q.title or "Quotation" }}</div>
 
 	<table class="box">
 		<tr>
 			<td style="width: 52%;">
 				<div class="serif">To</div>
 				<div class="serif">{{ q.customer_name or "" }}</div>
-				<div>{{ q.address or "" }}</div>
-				<div style="margin-top: 5px;"><b>Kind Attn :</b> &nbsp;{{ q.attn or "" }}</div>
+				<div>{{ head_address }}</div>
+				<div style="margin-top: 3px;"><b>Kind Attn :</b> &nbsp;{{ q.attn or "" }}</div>
 				{% if q.phone %}<div><b>Phone :</b> &nbsp;{{ q.phone }}</div>{% endif %}
 			</td>
 			<td>
@@ -159,6 +180,10 @@
 			<th style="width: 20%;">Price in {{ q.currency_label }}</th>
 		</tr>
 	</table>
+</div>
+{% endset %}
+{% set frame_body %}
+<div class="mcq">
 
 	{% for machine in q.machines %}
 	<div class="machine{% if not loop.first %} new-page{% endif %}">

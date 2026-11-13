@@ -24,15 +24,27 @@
 
 	Created: 2026-11-04, when the user asked for the header, the footer and the page number on every
 	page, in whichever format is printed.
+
+	CHANGE NOTE
+	Date: 2026-11-13
+	Change: Optional, set before the include: frame_head_extra (HTML repeated under the letter head
+	on every page, e.g. Classic's title, customer box and column heads), frame_head_extra_mm (its
+	height, added to the PDF's top margin) and frame_lh_mm (the letter head's greatest height,
+	default 27). Without them the frame is as before (Banded, Colour, appointment letter).
+	Reason: The user asked for the Classic quotation's title and customer / document box on every
+	printed page.
 -#}
 {% set frame_letter_head = letter_head if letter_head and not no_letterhead else "" %}
 {% set frame_footer = footer if footer and not no_letterhead else "" %}
+{% set frame_extra = frame_head_extra if frame_head_extra is defined and frame_head_extra else "" %}
+{% set frame_extra_mm = frame_head_extra_mm if frame_extra and frame_head_extra_mm is defined else 0 %}
+{% set frame_lh = frame_lh_mm if frame_lh_mm is defined else 27 %}
 {% set frame_head %}
 <style>
-	.mf-head .letter-head img { max-height: 27mm !important; width: auto !important; max-width: 100% !important; }
+	.mf-head .letter-head img { max-height: {{ frame_lh }}mm !important; width: auto !important; max-width: 100% !important; }
 	.mf-head .letter-head { text-align: center; }
 </style>
-<div class="mf-head">{% if frame_letter_head %}<div class="letter-head" style="margin: 0 0 2mm 0;">{{ frame_letter_head }}</div>{% endif %}</div>
+<div class="mf-head">{% if frame_letter_head %}<div class="letter-head" style="margin: 0 0 2mm 0;">{{ frame_letter_head }}</div>{% endif %}{{ frame_extra }}</div>
 {% endset %}
 <style>
 	.print-format table.mf-sheet { width: 100%; border-collapse: collapse; border: 0; margin: 0; }
@@ -65,11 +77,13 @@
 
 {#- the PDF made on the server -#}
 <style>
-	.print-format { margin-top: {{ 34 if frame_letter_head else 15 }}mm; margin-bottom: {{ 31 if frame_footer else 15 }}mm; }
+	{#- 2026-11-13: room for the letter head (frame_lh + 7 mm; 34 mm as before by default) and the
+	    repeated title / box (frame_extra_mm) -#}
+	.print-format { margin-top: {{ "%.0f" | format(((frame_lh + 7) if frame_letter_head else 15) + frame_extra_mm) }}mm; margin-bottom: {{ 31 if frame_footer else 15 }}mm; }
 	.print-format.print-format { margin-top: 0 !important; margin-bottom: 0 !important; }
 </style>
 <div class="visible-pdf">
-	{% if frame_letter_head %}<div id="header-html">{{ frame_head }}</div>{% endif %}
+	{% if frame_letter_head or frame_extra %}<div id="header-html">{{ frame_head }}</div>{% endif %}
 	{{ frame_body }}
 	{% set page_footer_html = ('<div class="letter-head-footer">' ~ frame_footer ~ '</div>') if frame_footer else "" %}
 	{% include "manav/templates/print_formats/manav_page_number.html" %}
